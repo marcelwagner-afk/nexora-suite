@@ -29,5 +29,7 @@ print(len(html))
 
 # GitHub Pages: vollständige Dokumente
 skel = '<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"></head><body style="margin:0">'
-(out/'index.html').write_text(skel + html + '</body></html>')
-(out/'prototyp.html').write_text(skel + (d/'prototyp.html').read_text() + '</body></html>')
+root = d.parent  # GitHub Pages (Branch main, Ordner /) liefert index.html und prototyp.html aus dem Repo-Stamm
+for target in (out, root):
+    (target/'index.html').write_text(skel + html + '</body></html>')
+    (target/'prototyp.html').write_text(skel + (d/'prototyp.html').read_text() + '</body></html>')
