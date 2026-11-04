@@ -2,7 +2,7 @@
 const E = window.NexoraEngine;
 const LS_KEY = "nexora-suite-v03";
 const T_NAMES = { elevon: "Elevon Industries", novamart: "NovaMart Retail", aventra: "Aventra Consulting" };
-const PROTO_URL = "https://claude.ai/artifact/6p7imWPiPw1T5V3ABFq2Di";
+const ON_PAGES = /github\.io$/.test(location.hostname); const PROTO_URL = ON_PAGES ? "prototyp.html" : "https://claude.ai/artifact/6p7imWPiPw1T5V3ABFq2Di";
 
 /* ---------- Zustand: Welt = Seed + Befehlsprotokoll (reproduzierbar) ---------- */
 let W, LOG = [], BASE = {};

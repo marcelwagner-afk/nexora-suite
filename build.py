@@ -26,3 +26,8 @@ const SAMPLE_DXF = {json.dumps((d.parent/'samples'/'SK-200.dxf').read_text())};
 '''
 (out/'nexora-suite.html').write_text(html)
 print(len(html))
+
+# GitHub Pages: vollständige Dokumente
+skel = '<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"></head><body style="margin:0">'
+(out/'index.html').write_text(skel + html + '</body></html>')
+(out/'prototyp.html').write_text(skel + (d/'prototyp.html').read_text() + '</body></html>')
