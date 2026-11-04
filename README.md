@@ -62,6 +62,17 @@ Jedes Unternehmen hat ein Rollenkonzept mit Berechtigungen, die die Engine bei j
 
 Jede Person, mit der die Seite geteilt ist, kann sich je Unternehmen einen eigenen Account mit frei wählbarer Rolle anlegen und sofort damit arbeiten. Der Account hängt an ihrem claude.ai-Konto und ist Teil des Ereignisprotokolls. Er ist deshalb reproduzierbar und wird beim Zurücksetzen entfernt. Accounts erhalten keine automatische Rechte-Erhöhung.
 
+## Live-Demo
+
+- **Meine Aufgaben:** Freigaben, Posteingang und Einplanungen je Rolle, abgeleitet aus dem Zustand der Engine. Was ein Gerät anstößt, erscheint auf dem anderen sofort. Ein QR-Code öffnet die Seite auf dem Handy.
+- **Präsentationsmodus (Taste P):** größere Schrift, ohne Entwicklerhinweise.
+  - Pfeiltaste → oder Leertaste: nächster Schritt.
+  - Taste N: Sprechertext.
+  - „Springen zu“: führt alle vorherigen Schritte echt aus.
+- **Fernbedienung:** Ein zweites Gerät desselben Kontos zeigt den Sprechertext und schaltet weiter.
+- **Demo vorbereiten:** Zurücksetzen, Selbsttest, Prüfliste (Datenbank, Live-Raum, Claude, Google Drive) und QR-Code.
+- **Belege als PDF:** Angebot, Auftragsbestätigung, Lieferschein, Bestellung, Rechnung und Fertigungsauftrag mit Arbeitsanweisungen und QR-Code. Download oder Ablage in Google Drive.
+
 ## Zeichnungsimport
 
 - **DXF (ASCII):** wird exakt gelesen.

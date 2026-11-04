@@ -107,7 +107,7 @@ const go = r => { if (location.hash.slice(1) === r) render(); else location.hash
 function render() {
   const rt = route(); const t = T(); const u = U(); const inb = t.inbox.filter(m => m.status === "offen").length;
   const mods = visibleMods();
-  const navA = m => { const [lab, icn] = MODS[m]; const st = modSt(m); return `<a href="#${m}" class="${rt === m ? "on" : ""} ${st !== "live" ? "dim" : ""}" ${rt === m ? 'aria-current="page"' : ""}>${ic(icn, 19)}<span>${lab}</span>${m === "inbox" && inb ? `<span class="cnt">${inb}</span>` : st === "plan" ? '<span class="badge b-plan">Geplant</span>' : st === "proto" ? '<span class="badge b-proto">Prototyp</span>' : ""}</a>`; };
+  const navA = m => { const [lab, icn] = MODS[m]; const st = modSt(m); return `<a href="#${m}" class="${rt === m ? "on" : ""} ${st !== "live" ? "dim" : ""}" ${rt === m ? 'aria-current="page"' : ""}>${ic(icn, 19)}<span>${lab}</span>${m === "inbox" && inb ? `<span class="cnt">${inb}</span>` : m === "tasks" && typeof taskCount === "function" && taskCount() ? `<span class="cnt">${taskCount()}</span>` : st === "plan" ? '<span class="badge b-plan">Geplant</span>' : st === "proto" ? '<span class="badge b-proto">Prototyp</span>' : ""}</a>`; };
   const live = S.live && rt !== "admin";
   document.getElementById("root").innerHTML = `<div class="app ${live ? "live" : ""}">
    <nav class="side nav" aria-label="Hauptnavigation">
@@ -124,7 +124,7 @@ function render() {
      <div class="tenant-sw" role="group" aria-label="Demo-Unternehmen">${E.TENANT_IDS.map(id => `<button class="${S.tenant === id ? "on" : ""}" data-act="tenant" data-id="${id}" aria-pressed="${S.tenant === id}"><span class="dotc c-${id}"></span><span class="nm">${T_NAMES[id].split(" ")[0]}</span>${W.tenants[id].inbox.filter(m => m.status === "offen").length ? `<span class="cnt" style="font-size:10.5px;background:var(--accent);color:#fff;border-radius:8px;padding:0 6px">${W.tenants[id].inbox.filter(m => m.status === "offen").length}</span>` : ""}</button>`).join("")}</div>
      <button class="search" data-act="palette">${ic("ai", 17)}<span>Was möchtest du heute erreichen?</span><kbd>⌘ K</kbd></button>
      <span class="sp"></span>
-     <span class="datechip" title="Simuliertes Geschäftsdatum">${ic("cal", 15)}${dDe(t.date)}</span>
+     ${typeof topExtras === "function" ? topExtras() : ""}<span class="datechip" title="Simuliertes Geschäftsdatum">${ic("cal", 15)}${dDe(t.date)}</span>
      <button class="modechip ${S.mode === "guided" ? "p-acc" : "p-neu"}" style="border:none;cursor:pointer" data-act="toggleMode" title="Guided Demo / Free Exploration">${S.mode === "guided" ? "Guided Demo" : "Free Exploration"}</button>
      <button class="round" data-act="toggleLive" title="Live-Ansicht ein/aus" aria-label="Live-Ansicht ein- oder ausblenden">${ic("bars", 19)}</button>
      <button class="avatar" data-act="userMenu" aria-label="Rolle wechseln: ${esc(u.name)}"><span class="face u${t.users.indexOf(u) % 3}">${esc(u.name.split(" ").map(x => x[0]).join("").slice(0, 2))}</span><span class="small" style="text-align:left;line-height:1.2"><b>${esc(u.name)}</b><br><span class="muted">${esc(R().name)}</span></span>${ic("chev", 15)}</button>
@@ -160,7 +160,7 @@ function renderLayer() {
 /* ---------- Ansichten ---------- */
 const VIEWS = {};
 const head = (eyebrow, title, right) => `<div class="page-head"><div><p class="eyebrow">${eyebrow}</p><h1>${title}</h1></div>${right || ""}</div>`;
-const statusNote = (st, txt) => `<div class="note ${st === "live" ? "good" : st === "proto" ? "acc" : "warn"} small">${st === "live" ? "<b>Live-Engine:</b> " : st === "proto" ? "<b>Prototyp:</b> " : "<b>Geplant:</b> "}${txt}</div>`;
+const statusNote = (st, txt) => `<div class="note sn ${st === "live" ? "good" : st === "proto" ? "acc" : "warn"} small">${st === "live" ? "<b>Live-Engine:</b> " : st === "proto" ? "<b>Prototyp:</b> " : "<b>Geplant:</b> "}${txt}</div>`;
 function kpiCard(label, value, sub, color) { return `<div class="card kpi"><span class="eyebrow">${label}</span><span class="v" ${color ? `style="color:${color}"` : ""}>${value}</span>${sub ? `<span class="small muted">${sub}</span>` : ""}</div>`; }
 function tasksFor(t) {
   const role = U().role; const out = [];
