@@ -3,7 +3,7 @@ const BK = { mode: "local", status: "Lokal im Browser", db: null, user: null, ca
 const newTs = () => Date.now() * 1000 + Math.floor(Math.random() * 1000);
 function startBackend() {
   if (!window.claude || !window.claude.use) return;
-  claude.use("user").then(u => { BK.user = u; if (u) { try { BK.canEdit = u.canEdit(); } catch (e) {} } render(); }).catch(() => {});
+  claude.use("user").then(async u => { BK.user = u; if (u) { try { BK.canEdit = (await u.canEdit()) === true; } catch (e) { BK.canEdit = false; } try { BK.canWrite = await u.can("data.write"); } catch (e) { BK.canWrite = null; } } await resolveOwner(); adoptAccounts(); render(); }).catch(() => {});
   claude.use("sample").then(s => { BK.sample = s; render(); }).catch(() => {});
   claude.use("mcp").then(m => { BK.mcp = m; render(); }).catch(() => {});
   claude.use("db").then(db => {
@@ -26,7 +26,7 @@ function replayFromBackend() {
 }
 function persist(entry) {
   if (BK.mode === "db" && BK.db) { const doc = Object.assign({ ts: newTs(), at: new Date().toISOString() }, entry); const col = entry.cmd ? "events" : "control";
-    BK.queue = BK.queue.then(() => BK.db.collection(col).doc().set(JSON.parse(JSON.stringify(doc)))).catch(e => toast(e.code === "invalid_argument" && col === "control" ? "Nur Editoren dürfen Demo-Unternehmen zurücksetzen." : "Speichern fehlgeschlagen: " + (e.code || "unbekannt"), true)); return true; }
+    BK.queue = BK.queue.then(() => BK.db.collection(col).doc().set(JSON.parse(JSON.stringify(doc)))).catch(e => { toast(e.code === "invalid_argument" ? (col === "control" ? "Nur Editoren dürfen Demo-Unternehmen zurücksetzen." : "Du hast auf dieser Seite nur Leserechte. Bitte den Inhaber, dir Mitwirkungsrechte zu geben.") : "Speichern fehlgeschlagen: " + (e.code || "unbekannt"), true); replayFromBackend(); }); return true; }
   return false;
 }
 async function pruneBackend() { if (!(BK.mode === "db" && BK.db)) return; const lastAll = BK.control.filter(c => c.resetAll || c.size).slice(-1)[0]; if (!lastAll) return toast("Erst „Alle zurücksetzen“ – danach sind ältere Ereignisse ohne Wirkung und können entfernt werden.", true);
@@ -261,5 +261,49 @@ VIEWS.admin = () => {
 };
 ACT.prune = async () => { toast("Protokoll wird geleert …"); await pruneBackend(); toast("Protokoll geleert."); };
 
+/* ---------- Rollen und Accounts ---------- */
+MODS.users = ["Benutzer & Rollen", "users", "live"]; ROUTES.push("users");
+Object.assign(ROLE_MODS, { controller: ["finance", "analytics", "processes"], migration: ["migrations", "cutover", "assets", "processes"], resource: ["projects", "hr", "processes"],
+  auditor: ["processes", "sales", "production", "supply", "projects", "service", "finance", "analytics", "hr", "assets", "migrations", "cutover"] });
+const _vm2 = visibleMods;
+visibleMods = function () { const m = _vm2(); const i = m.indexOf("admin"); return m.slice(0, i).filter(x => x !== "users").concat(["users"], m.slice(i)); };
+const PERMS = [["view", "Ansehen"], ["sell", "Verkaufen"], ["buy", "Einkaufen"], ["produce", "Fertigen"], ["receive", "Wareneingang"], ["ship", "Versand/Übergabe"], ["install", "Service/Montage"], ["staff", "Staffing"], ["time", "Zeiten"], ["bill", "Fakturieren"], ["post", "Buchen"], ["pay", "Zahlen"], ["close", "Abschluss"], ["approve", "Freigeben"], ["hr", "Personal"]];
+BK.owner = null;
+function ownerId() { return BK.owner; }
+async function resolveOwner() {
+  if (BK.user) { try { const id = await BK.user.id(); if (id) { BK.owner = id; return; } } catch (e) {} }
+  try { let o = localStorage.getItem("nexora-owner"); if (!o) { o = "local-" + Math.random().toString(36).slice(2, 12); localStorage.setItem("nexora-owner", o); } BK.owner = o; } catch (e) { BK.owner = BK.owner || "local-session"; }
+}
+function myAccount(tid) { const o = ownerId(); return o ? W.tenants[tid].users.find(u => u.account && u.owner === o && u.active !== false) : null; }
+S.accAuto = {};
+function adoptAccounts() { let ch = false; for (const id of E.TENANT_IDS) { const a = myAccount(id); if (a && !S.accAuto[id]) { S.accAuto[id] = true; S.users[id] = a.id; ch = true; } if (!W.tenants[id].users.some(u => u.id === S.users[id])) { S.users[id] = "u3"; ch = true; } } return ch; }
+const _replay = replayFromBackend; replayFromBackend = function () { _replay(); if (adoptAccounts()) render(); };
+VIEWS.users = () => {
+  const t = T(); const mine = myAccount(t.id); const cur = U(); const roleName = id => (t.roles.find(r => r.id === id) || {}).name || id;
+  const accounts = t.users.filter(u => u.account); const personas = t.users.filter(u => !u.account);
+  const roleOpts = sel => t.roles.map(r => `<option value="${r.id}" ${r.id === sel ? "selected" : ""}>${esc(r.name)}</option>`).join("");
+  const desc = id => esc((t.roles.find(r => r.id === id) || {}).desc || "");
+  const sr = S.sel.regRole || "sales";
+  return head("Benutzer & Rollen · " + esc(T_NAMES[t.id]), "Benutzer und Rollen")
+   + statusNote("live", "Jede Person, mit der die Seite geteilt ist, kann sich je Unternehmen einen eigenen Account mit einer Rolle anlegen und sofort damit arbeiten. Die Rolle bestimmt, welche Module sichtbar sind und welche Aktionen die Engine erlaubt. Jede Buchung trägt den Namen des Accounts im Audit-Log.")
+   + (BK.mode === "db" && BK.canWrite === false ? `<div class="note warn small">Du kannst diese Seite ansehen, aber nichts speichern. Für einen eigenen Account braucht dein Zugang Mitwirkungsrechte – bitte den Inhaber der Seite.</div>` : "")
+   + `<section class="card card-pad" style="display:flex;flex-direction:column;gap:12px"><div class="row between"><h3>Mein Account bei ${esc(T_NAMES[t.id])}</h3>${mine ? pill(cur.id === mine.id ? "p-good" : "p-neu", cur.id === mine.id ? "aktiv" : "nicht aktiv") : ""}</div>
+     ${mine ? `<div class="kv"><span>Name</span><span><b>${esc(mine.name)}</b> <span class="mono small faint">${mine.id}</span></span><span>Rolle</span><span>${esc(roleName(mine.role))}<div class="small muted">${desc(mine.role)}</div></span><span>Angelegt</span><span>${dDe(mine.since)}</span></div>
+       <div class="row">${cur.id !== mine.id ? `<button class="btn pri" data-act="setUser" data-id="${mine.id}">Als ${esc(mine.name)} arbeiten</button>` : ""}<label class="row small" style="gap:8px">Rolle wechseln<select class="input" style="width:auto" id="accRole">${roleOpts(mine.role)}</select></label><button class="btn" data-act="accRole" data-id="${mine.id}">Übernehmen</button><button class="btn danger sm" data-act="accClose" data-id="${mine.id}">Account schließen</button></div>`
+     : ownerId() ? `<form class="grid g3" data-form="register" style="align-items:end"><label class="f">Anzeigename<input class="input" id="regName" maxlength="40" placeholder="z. B. Vorname Nachname" autocomplete="name"></label><label class="f">Rolle<select class="input" id="regRole" data-on="regRole">${roleOpts(sr)}</select></label><button class="btn pri" type="submit">Account anlegen</button></form><p class="small muted" id="regDesc">${desc(sr)}</p><p class="small faint">${BK.mode === "db" ? "Der Account hängt an deinem claude.ai-Konto und ist für alle sichtbar, die diese Seite nutzen." : "Ohne gemeinsame Datenbank gilt der Account nur in diesem Browser."} Der Name ist frei wählbar und wird im Audit-Log angezeigt.</p>` : `<p class="small muted">Account wird vorbereitet …</p>`}</section>`
+   + `<section class="card tbl-wrap"><div class="card-h"><h3>Rollen und Berechtigungen</h3><span class="small faint">${t.roles.length} Rollen</span></div><table><thead><tr><th>Rolle</th>${PERMS.map(p => `<th class="r" style="font-size:11px;writing-mode:vertical-rl;transform:rotate(180deg);padding:8px 4px">${p[1]}</th>`).join("")}<th class="r">Personen</th></tr></thead><tbody>${t.roles.map(r => `<tr><td><b>${esc(r.name)}</b><div class="small faint" style="max-width:340px">${esc(r.desc || "")}</div></td>${PERMS.map(p => `<td class="r" style="padding:8px 4px">${r.perms.includes(p[0]) ? `<span style="color:var(--good);font-weight:700" aria-label="ja">✓</span>` : `<span class="faint" aria-label="nein">·</span>`}</td>`).join("")}<td class="r num">${t.users.filter(u => u.role === r.id && u.active !== false).length}</td></tr>`).join("")}</tbody></table><p class="small faint" style="padding:10px 16px">Sichtbare Module je Rolle: ${t.roles.map(r => `<b>${esc(r.name)}</b>: ${ROLE_MODS[r.id] === "all" ? "alle" : (ROLE_MODS[r.id] || []).filter(m => MODS[m]).map(m => MODS[m][0]).join(", ")}`).join(" · ")}. Home, Posteingang, KI-Assistent, HR-Self-Service und Benutzer & Rollen sehen alle.</p></section>`
+   + `<section class="card tbl-wrap"><div class="card-h"><h3>Personen</h3><span class="small faint">${personas.length} Demo-Personen · ${accounts.filter(a => a.active !== false).length} Accounts</span></div><table><thead><tr><th>Name</th><th>Rolle</th><th>Art</th><th></th></tr></thead><tbody>${accounts.concat(personas).map(u => `<tr><td>${esc(u.name)} <span class="mono small faint">${u.id}</span></td><td>${esc(roleName(u.role))}</td><td>${u.account ? (u.active === false ? pill("p-neu", "geschlossen") : pill("p-acc", u.owner === ownerId() ? "mein Account" : "Account")) : pill("p-neu", "Demo-Person")}</td><td class="r">${u.active !== false && (!u.account || u.owner === ownerId()) ? (cur.id === u.id ? pill("p-good", "aktiv") : `<button class="btn sm" data-act="setUser" data-id="${u.id}">Wechseln</button>`) : ""}</td></tr>`).join("")}</tbody></table><p class="small faint" style="padding:10px 16px">Fremde Accounts kann niemand übernehmen. Demo-Personen stehen allen für geführte Demos zur Verfügung.</p></section>`;
+};
+Object.assign(ACT, {
+  goUsers() { S.menu = false; renderLayer(); go("users"); },
+  accRole(d) { act("changeAccountRole", { accountId: d.id, role: document.getElementById("accRole").value, owner: ownerId() }); },
+  accClose(d) { act("closeAccount", { accountId: d.id, owner: ownerId() }); S.users[S.tenant] = "u3"; render(); }
+});
+const _setUser = ACT.setUser;
+ACT.setUser = d => { const u = T().users.find(x => x.id === d.id); if (u && u.account && u.owner !== ownerId()) return toast("Fremde Accounts können nicht übernommen werden.", true); if (u && u.active === false) return toast("Dieser Account ist geschlossen.", true); S.menu = false; _setUser(d); };
+ON.regRole = v => { S.sel.regRole = v; const r = T().roles.find(x => x.id === v); const el = document.getElementById("regDesc"); if (el) el.textContent = r ? r.desc || "" : ""; };
+FORMS.register = () => { const name = document.getElementById("regName").value; const r = act("registerAccount", { name, role: document.getElementById("regRole").value, owner: ownerId() }); if (r && r.ok) { S.users[S.tenant] = r.objects[0]; S.accAuto[S.tenant] = true; saveLog(); render(); toast("Account angelegt – du arbeitest jetzt als " + name.trim()); } };
+
 /* ---------- Start ---------- */
-boot(); render(); startBackend();
+boot(); adoptAccounts(); render(); startBackend();
+if (!(window.claude && window.claude.use)) resolveOwner().then(() => { adoptAccounts(); render(); });

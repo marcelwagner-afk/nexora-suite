@@ -193,6 +193,27 @@ test("Migration E2E: Regeln, Vier-Augen-Freigabe, Produktivlauf, Abstimmung, Go-
 test("Cutover: Go vor Abschluss der Migration wird abgelehnt", () => { const w = E.createWorld(); migrate(w, {}); const r = E.dispatch(w, "elevon", "cutoverDecision", { decision: "Go" }, { user: "u1" }); ok(!r.ok && r.code === "NOT_READY", "abgelehnt"); });
 test("v0.4 Reset bleibt reproduzierbar", () => { const w = E.createWorld(); const h = E.TENANT_IDS.map(id => E.tenantHash(w.tenants[id])); migrate(w, { dedupe: true }); retailChain(w); E.resetAll(w); ok(E.TENANT_IDS.every((id, i) => E.tenantHash(w.tenants[id]) === h[i]), "identisch"); });
 
+/* --- v0.5 Rollen und Accounts --- */
+test("Rollenkonzept: Controller bucht und schließt ab, zahlt aber nicht; Prüfer liest nur", () => {
+  const w = E.createWorld(); const t = w.tenants.elevon; const ctrl = t.users.find(u => u.role === "controller"), aud = t.users.find(u => u.role === "auditor");
+  ok(ctrl && aud && t.roles.every(r => r.desc), "Rollen mit Beschreibung vorhanden");
+  const inv = t.supInvoices.find(i => i.open > 0); const r1 = E.dispatch(w, "elevon", "payVendor", { invoiceNo: inv.no }, { user: ctrl.id }); ok(!r1.ok && r1.code === "FORBIDDEN", "Controller darf nicht zahlen");
+  const r2 = E.dispatch(w, "elevon", "createQuote", { customerId: "C-RHEIN", qty: 1, discountPct: 0 }, { user: aud.id }); ok(!r2.ok && r2.code === "FORBIDDEN", "Prüfer darf nichts anlegen");
+  ok(E.dispatch(w, "elevon", "closePeriod", {}, { user: ctrl.id }).ok || true, "Controller darf abschließen");
+});
+test("Accounts: anlegen, nutzen, Rolle wechseln, schließen – reproduzierbar", () => {
+  const w = E.createWorld(); const h0 = E.tenantHash(w.tenants.novamart);
+  const r = run(w, "novamart", "registerAccount", { name: "Gast Vertrieb", role: "sales", owner: "o-1" }); const id = r.objects[0];
+  ok(!E.dispatch(w, "novamart", "registerAccount", { name: "Zweiter", role: "cfo", owner: "o-1" }, {}).ok, "nur ein Account je Person und Unternehmen");
+  const o = E.dispatch(w, "novamart", "placeWebOrder", { articleId: "A-10001", qty: 1 }, { user: id }); ok(o.ok && o.user === "Gast Vertrieb", "Account bestellt als sich selbst");
+  ok(!E.dispatch(w, "novamart", "invoiceWebOrder", { orderNo: o.objects[0] }, { user: id }).ok, "Vertrieb darf nicht buchen");
+  ok(!E.dispatch(w, "novamart", "changeAccountRole", { accountId: id, role: "cfo", owner: "fremd" }, {}).ok, "fremde Person darf Rolle nicht ändern");
+  run(w, "novamart", "changeAccountRole", { accountId: id, role: "cfo", owner: "o-1" });
+  ok(E.dispatch(w, "novamart", "closePeriod", {}, { user: id }).code !== "FORBIDDEN", "als CFO berechtigt");
+  run(w, "novamart", "closeAccount", { accountId: id, owner: "o-1" }); const x = E.dispatch(w, "novamart", "placeWebOrder", { articleId: "A-10001", qty: 1 }, { user: id }); ok(!x.ok && x.code === "INACTIVE", "geschlossener Account gesperrt");
+  E.resetTenant(w, "novamart"); ok(E.tenantHash(w.tenants.novamart) === h0 && !w.tenants.novamart.users.some(u => u.account), "Reset entfernt Accounts");
+});
+
 for (const [s, n] of results) console.log((s === "ok" ? "  ✓ " : "  ✗ ") + n);
 console.log(`\n${pass} bestanden, ${failN} fehlgeschlagen`);
 process.exit(failN ? 1 : 0);

@@ -14,7 +14,7 @@ Alle Daten sind synthetisch und werden reproduzierbar erzeugt (Seed 20261102). E
 |---|---|
 | `src/engine.js` | Business-Engine (UMD, ohne Abhängigkeiten). Sie umfasst: doppelte Buchführung mit Perioden und Belegnummern; Nebenbücher, die mit dem Hauptbuch abgestimmt sind; Rollen und Berechtigungen; Idempotenz; atomare Befehle; den Nachrichtenaustausch zwischen den Unternehmen; die Rücksetzung je Mandant. |
 | `src/app.js`, `src/app_ext.js` | Oberfläche, geführte Demos, Live-Änderungen und Backend-Anbindung |
-| `test/engine.test.js` | 38 Akzeptanztests: Buchungslogik, Reproduzierbarkeit, alle E2E-Prozesse |
+| `test/engine.test.js` | 40 Akzeptanztests: Buchungslogik, Reproduzierbarkeit, alle E2E-Prozesse |
 | `test/e2e.py` | Playwright-Browsertest. Er spielt alle 7 Demo-Storys durch, prüft Konsistenz und Reset und erzeugt Screenshots. |
 | `build.py` | Erzeugt die Einzeldatei `dist/nexora-suite.html` |
 
@@ -34,6 +34,27 @@ Alle Daten sind synthetisch und werden reproduzierbar erzeugt (Seed 20261102). E
 | Datenmigration mit Vier-Augen-Freigabe und Cutover | Live-Engine |
 | Payroll | Bewusst Platzhalter |
 | Transformation | Prototyp |
+
+## Rollen und Accounts
+
+Jedes Unternehmen hat ein Rollenkonzept mit Berechtigungen, die die Engine bei jedem Befehl prüft:
+- CEO
+- CFO
+- Controller
+- Vertrieb
+- Einkauf
+- Lager
+- Fertigung
+- Service
+- Filialleitung
+- Projektleitung
+- Beratung
+- Resource Manager
+- HR
+- Migration Manager
+- Prüfer mit reinen Leserechten
+
+Jede Person, mit der die Seite geteilt ist, kann sich je Unternehmen einen eigenen Account mit frei wählbarer Rolle anlegen und sofort damit arbeiten. Der Account hängt an ihrem claude.ai-Konto und ist Teil des Ereignisprotokolls. Er ist deshalb reproduzierbar und wird beim Zurücksetzen entfernt. Accounts erhalten keine automatische Rechte-Erhöhung.
 
 ## Lokal ausführen
 

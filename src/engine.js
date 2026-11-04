@@ -309,14 +309,48 @@ function seedAventra(seed, size) {
 }
 
 /* ---------- Welt, Reset, Reproduzierbarkeit ---------- */
+/* --- Rollenkonzept: zusätzliche Unternehmensrollen und Demo-Personen --- */
+const ROLE_DESC = {
+  ceo: "Geschäftsführung: sieht alles, gibt Angebote, Migrationen und Go-live frei",
+  cfo: "Finanzvorstand: bucht, zahlt, schließt Perioden ab und gibt frei",
+  controller: "Controlling: bucht, schließt Perioden ab, analysiert Ergebnis und Kosten – keine Zahlungen, keine Freigaben",
+  sales: "Vertrieb: Angebote, Kundenaufträge, Onlinebestellungen, Retouren",
+  prod: "Fertigung: Bedarfsermittlung, Fertigungsaufträge, Rückmeldungen",
+  buy: "Einkauf: Bestellungen, Rechnungsprüfung",
+  wh: "Lager: Wareneingang, Kommissionierung, Versand, Retourenprüfung",
+  service: "Service: Tickets, Technikerplanung, Ersatzteile, Montage, Abrechnung",
+  store: "Filialleitung: Click & Collect bereitstellen und übergeben",
+  pm: "Projektleitung: Staffing, Zeitfreigabe, Projektabrechnung",
+  consultant: "Beratung: Zeiten und Reisekosten erfassen",
+  resource: "Ressourcenplanung: passende Berater finden und einplanen",
+  hr: "Personal: Einstellungen, Abwesenheiten, Personalkosten; genehmigt Abwesenheiten",
+  migration: "Migration Manager: Testmigrationen, Freigabe anfordern, Produktivlauf je Objekt",
+  auditor: "Prüfer: liest alles, darf nichts verändern"
+};
+const EXTRA_ROLES = {
+  common: [{ id: "controller", name: "Controller", perms: ["view", "post", "close"] }, { id: "auditor", name: "Prüfer (nur Lesen)", perms: ["view"] }],
+  elevon: [{ id: "migration", name: "Migration Manager", perms: ["view", "post"] }],
+  novamart: [], aventra: [{ id: "resource", name: "Resource Manager", perms: ["view", "staff"] }]
+};
+const EXTRA_USERS = {
+  elevon: [["Lars Ehrlich", "controller"], ["Mira Thalberg", "migration"], ["Johanna Vierling", "auditor"]],
+  novamart: [["Paul Rieger", "controller"], ["Kerstin Adler", "auditor"]],
+  aventra: [["Nora Weidner", "controller"], ["Tobias Kern", "resource"], ["Henrik Saalfeld", "auditor"]]
+};
+function seedRoles(t) {
+  t.roles.push(...EXTRA_ROLES.common.concat(EXTRA_ROLES[t.id]).map(r => Object.assign({}, r, { perms: r.perms.slice() })));
+  for (const r of t.roles) r.desc = ROLE_DESC[r.id] || "";
+  let n = t.users.length; for (const [name, role] of EXTRA_USERS[t.id]) t.users.push({ id: "u" + (++n), name, role });
+  return t;
+}
 const SEEDERS = { elevon: seedElevon, novamart: seedNovaMart, aventra: seedAventra };
 const EXT = { elevon: seedExtElevon, novamart: seedExtNovaMart, aventra: seedExtAventra };
-function seedTenant(id, seed, size) { const t = EXT[id](SEEDERS[id](seed, size)); t.events = []; t.audit = [{ seq: 1, date: t.date, user: "System", cmd: "seed", text: `Ausgangszustand erzeugt (Seed ${seed}, Größe ${size})` }]; return t; }
+function seedTenant(id, seed, size) { const t = seedRoles(EXT[id](SEEDERS[id](seed, size))); t.events = []; t.audit = [{ seq: 1, date: t.date, user: "System", cmd: "seed", text: `Ausgangszustand erzeugt (Seed ${seed}, Größe ${size})` }]; return t; }
 function createWorld(opts) { opts = opts || {}; const w = { version: VERSION, seed: opts.seed == null ? 20261102 : opts.seed, size: opts.size || "S", tenants: {} }; for (const id of TENANT_IDS) w.tenants[id] = seedTenant(id, w.seed, w.size); return w; }
 function resetTenant(w, id) { if (!SEEDERS[id]) fail("TENANT", "Unbekannter Mandant."); w.tenants[id] = seedTenant(id, w.seed, w.size); }
 function resetAll(w) { for (const id of TENANT_IDS) resetTenant(w, id); }
 function stableHash(obj) { return hashStr(JSON.stringify(obj)).toString(16).padStart(8, "0"); }
-function tenantHash(t) { return stableHash({ docs: t.docs, stock: t.stock, inbox: t.inbox, so: t.salesOrders, po: t.purchaseOrders, prod: t.prodOrders, web: t.webOrders, te: t.timeEntries, ar: t.custInvoices, ap: t.supInvoices, co: t.co, date: t.date, periods: t.periods, sv: t.serviceOrders || null, ret: t.returns || null, abs: t.absences || null, mig: t.migration || null, emp: t.master.employees.length, cust: t.master.customers.length, assets: (t.master.assets || []).length }); }
+function tenantHash(t) { return stableHash({ users: t.users, docs: t.docs, stock: t.stock, inbox: t.inbox, so: t.salesOrders, po: t.purchaseOrders, prod: t.prodOrders, web: t.webOrders, te: t.timeEntries, ar: t.custInvoices, ap: t.supInvoices, co: t.co, date: t.date, periods: t.periods, sv: t.serviceOrders || null, ret: t.returns || null, abs: t.absences || null, mig: t.migration || null, emp: t.master.employees.length, cust: t.master.customers.length, assets: (t.master.assets || []).length }); }
 
 /* ---------- Kennzahlen (immer aus Belegen und Nebenbüchern berechnet) ---------- */
 function kpis(t) {
@@ -437,7 +471,8 @@ const materialOf = (t, id) => t.master.materials ? t.master.materials.find(m => 
 const roleOf = (t, u) => t.roles.find(r => r.id === u.role);
 function need(t, ctx, perm) {
   const u = (t.users || []).find(x => x.id === ctx.user) || t.users[0]; const r = roleOf(t, u);
-  if (r.perms.includes(perm)) return u;
+  if (u.active === false && !ctx.auto) fail("INACTIVE", `Der Account ${u.name} ist geschlossen.`);
+  if (u.active !== false && r.perms.includes(perm)) return u;
   if (ctx.auto) { const alt = t.users.find(x => roleOf(t, x).perms.includes(perm)); if (alt) { ctx.user = alt.id; ctx.userName = alt.name; return alt; } }
   fail("FORBIDDEN", `${u.name} (${r.name}) hat keine Berechtigung für diese Aktion (${PERM_TXT[perm] || perm}).`);
 }
@@ -931,6 +966,26 @@ function dispatch(w, tenantId, cmd, payload, ctx) {
   }
 }
 const QUERY_ONLY = { findStaff: true };
+/* --- Accounts: jede Person kann sich je Unternehmen einen Account mit Rolle anlegen --- */
+Object.assign(CMD, {
+  registerAccount(w, t, p, ctx) {
+    const name = String(p.name || "").trim().replace(/\s+/g, " "); if (name.length < 2 || name.length > 40) fail("NAME", "Name: 2 bis 40 Zeichen.");
+    const owner = String(p.owner || ""); if (!owner || owner.length > 80) fail("OWNER", "Account ohne Inhaber.");
+    const role = t.roles.find(r => r.id === p.role); if (!role) fail("ROLE", "Unbekannte Rolle.");
+    const mine = t.users.find(u => u.owner === owner && u.active !== false); if (mine) fail("DUPLICATE", `Du hast bei diesem Unternehmen bereits den Account ${mine.name}.`);
+    const u = { id: "acc" + (t.users.filter(x => x.account).length + 1), name, role: role.id, owner, account: true, since: t.date, active: true }; t.users.push(u);
+    ctx.userName = name; return { text: `Account ${name} angelegt – Rolle ${role.name}`, objects: [u.id] };
+  },
+  changeAccountRole(w, t, p, ctx) {
+    const u = find(t.users.filter(x => x.account), "id", p.accountId, "Account"); if (u.owner !== p.owner) fail("FORBIDDEN", "Nur der Inhaber kann seinen Account ändern.");
+    const role = t.roles.find(r => r.id === p.role); if (!role) fail("ROLE", "Unbekannte Rolle."); if (u.active === false) fail("INACTIVE", "Account ist geschlossen.");
+    const old = roleOf(t, u).name; u.role = role.id; ctx.userName = u.name; return { text: `${u.name}: Rolle ${old} → ${role.name}` };
+  },
+  closeAccount(w, t, p, ctx) {
+    const u = find(t.users.filter(x => x.account), "id", p.accountId, "Account"); if (u.owner !== p.owner) fail("FORBIDDEN", "Nur der Inhaber kann seinen Account schließen.");
+    u.active = false; ctx.userName = u.name; return { text: `Account ${u.name} geschlossen` };
+  }
+});
 
-return { dueMaintenance, returnRate, personnelCost, cutoverStatus, legacyData, MIG_OBJECTS, MIG_LABEL, isAbsent, absHoursInPeriod, SERVICE_RATE, VERSION, START_DATE, TENANT_IDS, COA, SIZES, E5, createWorld, resetTenant, resetAll, dispatch, kpis, plOf, trialBalance, balance, projectMetrics, replenishmentProposals, processInstances, tenantHash, costing, avail, periodOf, customerName, supplierName, articleName, materialOf, QUERY_ONLY, _internal: { HIST, crossHistory } };
+return { ROLE_DESC, dueMaintenance, returnRate, personnelCost, cutoverStatus, legacyData, MIG_OBJECTS, MIG_LABEL, isAbsent, absHoursInPeriod, SERVICE_RATE, VERSION, START_DATE, TENANT_IDS, COA, SIZES, E5, createWorld, resetTenant, resetAll, dispatch, kpis, plOf, trialBalance, balance, projectMetrics, replenishmentProposals, processInstances, tenantHash, costing, avail, periodOf, customerName, supplierName, articleName, materialOf, QUERY_ONLY, _internal: { HIST, crossHistory } };
 });

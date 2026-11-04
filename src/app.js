@@ -42,7 +42,8 @@ const KPI_DEF = {
 function snapshot() { const o = {}; for (const id of E.TENANT_IDS) { const t = W.tenants[id]; o[id] = { k: E.kpis(t), inbox: t.inbox.filter(m => m.status === "offen").length, docs: t.docs.length, stockQty: Object.fromEntries(Object.values(t.stock).map(s => [s.mat + "@" + s.wh, [s.qty, s.res]])) }; } return o; }
 function act(cmd, payload, opt) {
   opt = opt || {}; const tid = opt.tenant || S.tenant; const t = W.tenants[tid];
-  const ctx = { user: opt.user || S.users[tid], auto: !!opt.auto || S.mode === "guided" };
+  const uid = opt.user || S.users[tid]; const isAcc = !!(t.users.find(x => x.id === uid) || {}).account;
+  const ctx = { user: uid, auto: !!opt.auto || (S.mode === "guided" && !isAcc) };
   const before = snapshot(); const r = E.dispatch(W, tid, cmd, payload, ctx);
   if (r.ok && !E.QUERY_ONLY[cmd]) logEntry({ t: tid, cmd, p: payload, ctx: { user: ctx.user, auto: ctx.auto } });
   if (E.QUERY_ONLY[cmd]) return r;
@@ -51,7 +52,7 @@ function act(cmd, payload, opt) {
   const deltas = []; for (const [key, label, f] of KPI_DEF.common.concat(KPI_DEF[tid] || [])) { const a = before[tid].k[key], b = after[tid].k[key]; if (a != null && b != null && Math.abs(b - a) > 0.004) deltas.push({ label, a, b, f }); }
   const stockCh = []; for (const [k, [q, res]] of Object.entries(after[tid].stockQty)) { const [q0, r0] = before[tid].stockQty[k] || [0, 0]; if (q !== q0 || res !== r0) stockCh.push({ k, q0, q, r0, res }); }
   const cross = E.TENANT_IDS.filter(x => x !== tid && after[x].inbox > before[x].inbox).map(x => ({ tenant: x, n: after[x].inbox - before[x].inbox, msg: W.tenants[x].inbox.slice(-1)[0] }));
-  S.last = { tenant: tid, cmd, ok: r.ok, text: r.text, user: r.user || "", code: r.code, docs, deltas, stockCh, cross, payload, retry: !r.ok && r.code === "FORBIDDEN" ? { cmd, payload, tenant: tid } : null };
+  S.last = { tenant: tid, cmd, ok: r.ok, text: r.text, user: r.user || "", code: r.code, docs, deltas, stockCh, cross, payload, retry: !r.ok && r.code === "FORBIDDEN" && !isAcc ? { cmd, payload, tenant: tid } : null };
   if (!r.ok) toast(r.text, true);
   render(); return r;
 }
@@ -149,7 +150,7 @@ function liveCard(inline) {
 const matName = (tid, id) => { const t = W.tenants[tid]; if (id === "P-E5") return "Aufzug E5 (Fertigware)"; const m = (t.master.materials || []).find(x => x.id === id) || (t.master.articles || []).find(x => x.id === id); return m ? m.name : id; };
 function renderLayer() {
   const L = document.getElementById("layer"); let h = "";
-  if (S.menu) { const t = T(); h += `<div style="position:fixed;inset:0;z-index:44" data-act="closeMenu"></div><div class="menu-pop" role="menu"><div class="eyebrow" style="padding:6px 10px">Rolle wechseln · ${esc(T_NAMES[S.tenant])}</div>${t.users.map(x => { const r = t.roles.find(y => y.id === x.role); return `<button class="pal-item" role="menuitem" data-act="setUser" data-id="${x.id}"><span style="flex:1"><b style="display:block">${esc(x.name)}</b><span class="small muted">${esc(r.name)}</span></span>${x.id === U().id ? ic("check", 16) : ""}</button>`; }).join("")}<div style="border-top:1px solid var(--line);margin-top:6px;padding-top:6px"><button class="pal-item" data-act="theme">${ic("moon", 16)}Hell / Dunkel</button></div></div>`; }
+  if (S.menu) { const t = T(); h += `<div style="position:fixed;inset:0;z-index:44" data-act="closeMenu"></div><div class="menu-pop" role="menu"><div class="eyebrow" style="padding:6px 10px">Rolle wechseln · ${esc(T_NAMES[S.tenant])}</div>${t.users.map(x => { const r = t.roles.find(y => y.id === x.role); return `<button class="pal-item" role="menuitem" data-act="setUser" data-id="${x.id}"><span style="flex:1"><b style="display:block">${esc(x.name)}</b><span class="small muted">${esc(r.name)}</span></span>${x.id === U().id ? ic("check", 16) : ""}</button>`; }).join("")}<div style="border-top:1px solid var(--line);margin-top:6px;padding-top:6px"><button class="pal-item" data-act="goUsers">${ic("users", 16)}${typeof myAccount === "function" && myAccount(S.tenant) ? "Mein Account" : "Eigenen Account anlegen"}</button><button class="pal-item" data-act="theme">${ic("moon", 16)}Hell / Dunkel</button></div></div>`; }
   if (S.modal) h += `<div class="scrim" data-act="closeModal"><div class="dlg" role="dialog" aria-modal="true" onclick="event.stopPropagation()">${S.modal()}</div></div>`;
   if (S.toast) h += `<div class="toast" role="status" style="${S.toast.err ? "background:var(--crit)" : ""}">${esc(S.toast.t)}</div>`;
   L.innerHTML = h; const f = L.querySelector("[autofocus]"); if (f) f.focus();

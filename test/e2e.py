@@ -32,6 +32,18 @@ async def main():
       for r in rs:
         await pg.evaluate(f"location.hash='{r}'"); await pg.wait_for_timeout(80); await pg.screenshot(path=SP+f"v_{tn}_{r}.png")
     await pg.evaluate("ACT.tenant({id:'novamart'})"); await pg.evaluate("location.hash='sales'"); await pg.click("[data-t=cc]"); await pg.wait_for_timeout(80); await pg.screenshot(path=SP+"v_nm_cc.png"); await pg.click("[data-t=ret]"); await pg.wait_for_timeout(80); await pg.screenshot(path=SP+"v_nm_ret.png")
+    # Accounts und Rollen
+    await pg.evaluate("ACT.tenant({id:'novamart'})"); await pg.evaluate("location.hash='users'"); await pg.wait_for_timeout(150)
+    await pg.fill("#regName","Test Person"); await pg.select_option("#regRole","sales"); await pg.click("text=Account anlegen"); await pg.wait_for_timeout(150)
+    print("last:", await pg.evaluate("JSON.stringify(S.last && {ok:S.last.ok,text:S.last.text,cmd:S.last.cmd})"), await pg.evaluate("BK.owner"))
+    acc=await pg.evaluate("U().id+'|'+U().name+'|'+U().role"); print("Account aktiv:",acc); assert acc.startswith("acc1|Test Person|sales"), acc
+    await pg.screenshot(path=SP+"v_users.png", full_page=True)
+    await pg.evaluate("act('placeWebOrder',{articleId:'A-10001',qty:1})"); r=await pg.evaluate("S.last.ok && S.last.user"); assert r=="Test Person", r
+    await pg.evaluate("act('closePeriod',{})"); r=await pg.evaluate("S.last.code"); assert r=="FORBIDDEN", r
+    await pg.select_option("#accRole","cfo"); await pg.click("text=Übernehmen"); await pg.wait_for_timeout(100)
+    r=await pg.evaluate("U().role"); assert r=="cfo", r
+    await pg.evaluate("ACT.tenant({id:'elevon'})"); await pg.evaluate("ACT.setUser({id:'u11'})"); await pg.evaluate("location.hash='home'"); await pg.wait_for_timeout(100)
+    nav=await pg.evaluate("[...document.querySelectorAll('nav.side a')].map(a=>a.textContent.trim()).join('|')"); print("Prüfer sieht:",nav)
     await pg.evaluate("ACT.tenant({id:'elevon'})"); await pg.evaluate("location.hash='processes'"); await pg.wait_for_timeout(120)
     await pg.screenshot(path=SP+"s_proc.png")
     await pg.evaluate("location.hash='analytics'"); await pg.wait_for_timeout(120); await pg.screenshot(path=SP+"s_an.png")
