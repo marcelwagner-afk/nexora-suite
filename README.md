@@ -14,8 +14,10 @@ Alle Daten sind synthetisch und werden reproduzierbar erzeugt (Seed 20261102). E
 |---|---|
 | `src/engine.js` | Business-Engine (UMD, ohne Abhängigkeiten). Sie umfasst: doppelte Buchführung mit Perioden und Belegnummern; Nebenbücher, die mit dem Hauptbuch abgestimmt sind; Rollen und Berechtigungen; Idempotenz; atomare Befehle; den Nachrichtenaustausch zwischen den Unternehmen; die Rücksetzung je Mandant. |
 | `src/app.js`, `src/app_ext.js` | Oberfläche, geführte Demos, Live-Änderungen und Backend-Anbindung |
-| `test/engine.test.js` | 40 Akzeptanztests: Buchungslogik, Reproduzierbarkeit, alle E2E-Prozesse |
-| `test/e2e.py` | Playwright-Browsertest. Er spielt alle 7 Demo-Storys durch, prüft Konsistenz und Reset und erzeugt Screenshots. |
+| `test/engine.test.js` | 46 Akzeptanztests: Buchungslogik, Reproduzierbarkeit, alle E2E-Prozesse |
+| `test/e2e.py` | Playwright-Browsertest. Er spielt alle 10 Demo-Storys durch, prüft Konsistenz und Reset und erzeugt Screenshots. |
+| `src/dxf.js` | DXF-Leser: Schriftfeld- und Positionsattribute, Geometrie, Schnittlängen aus Abwicklungen |
+| `samples/SK-200.dxf` | Synthetische Beispielzeichnung Schachtkonsole (erzeugt mit `samples/make_sk200.py`) |
 | `build.py` | Erzeugt die Einzeldatei `dist/nexora-suite.html` |
 
 ## Prozesse
@@ -32,6 +34,9 @@ Alle Daten sind synthetisch und werden reproduzierbar erzeugt (Seed 20261102). E
 | Click & Collect | Live-Engine |
 | HR: Stamm, Abwesenheiten, Personalkostenplanung | Live-Engine |
 | Datenmigration mit Vier-Augen-Freigabe und Cutover | Live-Engine |
+| Design-to-Make: Zeichnung → Stückliste, Arbeitsplan, Bezugsquellen → Fertigung mit Vorgängen und Lohnbearbeitung | Live-Engine |
+| Einkauf direkt (aus Bedarfsplanung) und indirekt (Katalog, Freitext, Freigabegrenzen, Kostenstellen) | Live-Engine |
+| HR Recruiting und Onboarding mit Ausstattungsanforderungen | Live-Engine |
 | Payroll | Bewusst Platzhalter |
 | Transformation | Prototyp |
 
@@ -55,6 +60,15 @@ Jedes Unternehmen hat ein Rollenkonzept mit Berechtigungen, die die Engine bei j
 - Prüfer mit reinen Leserechten
 
 Jede Person, mit der die Seite geteilt ist, kann sich je Unternehmen einen eigenen Account mit frei wählbarer Rolle anlegen und sofort damit arbeiten. Der Account hängt an ihrem claude.ai-Konto und ist Teil des Ereignisprotokolls. Er ist deshalb reproduzierbar und wird beim Zurücksetzen entfernt. Accounts erhalten keine automatische Rechte-Erhöhung.
+
+## Zeichnungsimport
+
+- **DXF (ASCII):** wird exakt gelesen.
+  - Das Schriftfeld ist ein Block mit dem Attribut `ZEICHNUNGSNR`. Weitere Attribute: `BENENNUNG`, `REVISION`, `OBERFLAECHE`, `NAHTLAENGE`, `NAHTDICKE`.
+  - Positionen sind Blöcke mit dem Attribut `POS`. Weitere Attribute: `BENENNUNG`, `MENGE`, `ART`, `WERKSTOFF`, `DICKE`, `LAENGE`, `BREITE`, `BIEGUNGEN`, `BOHRUNGEN`, `BOHR_D`, `NORM`, `TEILENR`.
+  - Die Abwicklung eines Blechteils liegt auf dem Layer `POS-n`. Daraus berechnet die Seite die Schnittlänge.
+- **PNG/JPG:** Claude erkennt die Stückliste. Das Ergebnis ist ein Vorschlag, der vor der Übernahme geprüft wird.
+- **DWG/STEP:** werden nicht im Browser gelesen. Bitte im CAD-System als DXF exportieren.
 
 ## Lokal ausführen
 

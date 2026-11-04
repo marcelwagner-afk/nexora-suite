@@ -422,11 +422,11 @@ function plOf(t, per) {
 function stockKey(mat, wh) { return mat + "@" + wh; }
 function stk(t, mat, wh) { const k = stockKey(mat, wh); if (!t.stock[k]) t.stock[k] = { mat, wh, qty: 0, res: 0, value: 0 }; return t.stock[k]; }
 function avgCost(s) { return s.qty > 0 ? s.value / s.qty : 0; }
-function moveIn(t, mat, wh, qty, value) { const s = stk(t, mat, wh); s.qty += qty; s.value = r2(s.value + value); t.moves.push({ date: t.date, mat, wh, qty, value: r2(value), type: "Zugang" }); }
+function moveIn(t, mat, wh, qty, value) { const s = stk(t, mat, wh); s.qty = Math.round((s.qty + qty) * 1000) / 1000; s.value = r2(s.value + value); t.moves.push({ date: t.date, mat, wh, qty, value: r2(value), type: "Zugang" }); }
 function moveOut(t, mat, wh, qty, fromReserved) {
   const s = stk(t, mat, wh);
-  if (s.qty < qty) fail("STOCK", `Bestand ${mat} reicht nicht: ${s.qty} vorhanden, ${qty} benötigt.`);
-  const v = r2(avgCost(s) * qty); s.qty -= qty; s.value = r2(s.value - v); if (fromReserved) s.res = Math.max(0, s.res - qty);
+  if (s.qty + 1e-9 < qty) fail("STOCK", `Bestand ${mat} reicht nicht: ${s.qty} vorhanden, ${qty} benötigt.`);
+  const v = r2(avgCost(s) * qty); s.qty = Math.round((s.qty - qty) * 1000) / 1000; s.value = r2(s.value - v); if (fromReserved) s.res = Math.max(0, s.res - qty);
   if (s.qty === 0) s.value = 0;
   t.moves.push({ date: t.date, mat, wh, qty: -qty, value: -v, type: "Abgang" }); return v;
 }
@@ -671,7 +671,8 @@ const ROLE_DESC = {
   resource: "Ressourcenplanung: passende Berater finden und einplanen",
   hr: "Personal: Einstellungen, Abwesenheiten, Personalkosten; genehmigt Abwesenheiten",
   migration: "Migration Manager: Testmigrationen, Freigabe anfordern, Produktivlauf je Objekt",
-  auditor: "Prüfer: liest alles, darf nichts verändern"
+  auditor: "Prüfer: liest alles, darf nichts verändern",
+  engineer: "Konstruktion: Zeichnungen importieren, Stücklisten und Arbeitspläne ableiten, Konstruktion freigeben (Vier-Augen)"
 };
 const EXTRA_ROLES = {
   common: [{ id: "controller", name: "Controller", perms: ["view", "post", "close"] }, { id: "auditor", name: "Prüfer (nur Lesen)", perms: ["view"] }],
@@ -685,8 +686,9 @@ const EXTRA_USERS = {
 };
 function seedRoles(t) {
   t.roles.push(...EXTRA_ROLES.common.concat(EXTRA_ROLES[t.id]).map(r => Object.assign({}, r, { perms: r.perms.slice() })));
-  for (const r of t.roles) r.desc = ROLE_DESC[r.id] || "";
   let n = t.users.length; for (const [name, role] of EXTRA_USERS[t.id]) t.users.push({ id: "u" + (++n), name, role });
+  seedProcurementHR(t); if (t.id === "elevon") seedEngineering(t);
+  for (const r of t.roles) r.desc = ROLE_DESC[r.id] || "";
   return t;
 }
 const SEEDERS = { elevon: seedElevon, novamart: seedNovaMart, aventra: seedAventra };
@@ -859,7 +861,12 @@ const CMD = {
     need(t, ctx, "receive"); const po = find(t.purchaseOrders, "no", p.poNo, "Bestellung"); if (po.status !== "bestellt" && po.status !== "teilgeliefert") fail("STATUS", `Bestellung ${po.no} hat Status „${po.status}“.`);
     const lines = []; let value = 0;
     for (const l of po.lines) { const q = l.qty - l.received; if (q <= 0) continue; const v = r2(q * l.price); value += v; l.received += q;
-      if (l.kind === "Anlage") lines.push({ acct: "0700", dr: v }); else { moveIn(t, l.mat, po.wh, q, v); lines.push({ acct: t.id === "novamart" ? "1310" : "1300", dr: v }); } }
+      if (l.kind === "Anlage") lines.push({ acct: "0700", dr: v });
+      else if (l.kind === "Sachkosten") lines.push({ acct: l.acct || "6800", dr: v, cc: l.costCenter || null });
+      else if (l.kind === "Lohnbearbeitung") { const pa = t.prodOrders.find(x => x.no === l.prod); const op = pa && pa.ops.find(o => o.no === l.op);
+        if (!op || op.status !== "beim Lohnbearbeiter") fail("STATUS", "Wareneingang Lohnbearbeitung erst, wenn die Baugruppen an den Lohnbearbeiter versandt wurden.");
+        lines.push({ acct: "1320", dr: v }); pa.wip = r2(pa.wip + v); pa.ext = r2(pa.ext + v); op.status = "erledigt"; op.cost = v; }
+      else { moveIn(t, l.mat, po.wh, q, v); lines.push({ acct: t.id === "novamart" ? "1310" : "1300", dr: v }); } }
     lines.push({ acct: "1700", cr: r2(value) });
     const d = post(t, { date: t.date, text: "Wareneingang " + po.no, user: ctx.userName, ref: { type: "purchaseOrder", id: po.no }, lines });
     po.status = "geliefert"; po.grDoc = d.no; return { text: `Wareneingang zu ${po.no}: Bestand und WE/RE-Verrechnung ${r2(value)} €`, docs: [d.no] };
@@ -1292,7 +1299,7 @@ function personnelCost(t) { const by = {}; for (const e of t.master.employees) {
 
 /* ---------- Dispatcher: Berechtigung, Idempotenz, Atomarität, Audit ---------- */
 function dispatch(w, tenantId, cmd, payload, ctx) {
-  const t = w.tenants[tenantId]; if (!t) fail("TENANT", "Unbekannter Mandant."); const fn = CMD[cmd]; if (!fn) fail("CMD", "Unbekannter Befehl " + cmd);
+  const t = w.tenants[tenantId]; if (!t) fail("TENANT", "Unbekannter Mandant."); const fn = Object.prototype.hasOwnProperty.call(CMD, cmd) && !String(cmd).startsWith("_") ? CMD[cmd] : null; if (!fn) fail("CMD", "Unbekannter Befehl " + cmd);
   ctx = Object.assign({}, ctx || {}); const u = (t.users.find(x => x.id === ctx.user) || t.users[0]); ctx.user = u.id; ctx.userName = u.name;
   if (ctx.idem && t.idem[ctx.idem]) return Object.assign({ replay: true }, t.idem[ctx.idem]);
   const snap = JSON.stringify(w.tenants); // Atomarität: bei Fehler alles zurück (auch Nachrichten an andere Mandanten)
@@ -1311,6 +1318,277 @@ function dispatch(w, tenantId, cmd, payload, ctx) {
     throw e;
   }
 }
+/* =====================================================================
+   v0.6 Konstruktion → Stückliste → Arbeitsplan → Bezugsquellen → Einkauf
+   (direkt und indirekt) → Fertigung mit Vorgängen und Lohnbearbeitung,
+   HR-Recruiting mit Onboarding. Alle Stammdaten synthetisch.
+   ===================================================================== */
+Object.assign(COA, {
+  "6470": ["Instandhaltung und Werkzeuge", "X"], "6815": ["Bürobedarf und Arbeitsschutz", "X"],
+  "6830": ["IT-Ausstattung (GWG) und Software", "X"], "6835": ["Gebäudereinigung und Facility", "X"]
+});
+const DENSITY = { "S235JR": 7.85, "1.4301": 7.9, "AlMg3": 2.66 };
+const LASER_SPEED = { "S235JR": { 3: 4.5, 5: 3.0, 8: 1.8, 10: 1.4 }, "1.4301": { 2: 5.0 }, "AlMg3": { 3: 6.0 } }; // m/min
+const WORK_CENTERS = [
+  { id: "LAS", name: "Laserschneiden", rate: 145 }, { id: "KANT", name: "Abkanten", rate: 92 }, { id: "SAEG", name: "Sägen", rate: 70 },
+  { id: "SCHW", name: "Schweißen (MAG)", rate: 88 }, { id: "MONT", name: "Baugruppenmontage", rate: 78 }, { id: "QS", name: "Endprüfung", rate: 82 }
+];
+const SCRAP = 0.15; // Verschnitt beim Schachteln von Blechteilen
+const APPROVAL_LIMITS = [[1000, null], [25000, "approve"], [Infinity, "ceo"]]; // bis 1.000 € automatisch, bis 25.000 € Freigabeberechtigte, darüber CEO
+const INDIRECT_SUPPLIERS = [{ id: "S-I01", name: "Ott Arbeitsschutz & Büro KG", city: "Heilbronn" }, { id: "S-I02", name: "Lindner IT-Systemhaus GmbH", city: "Mannheim" }, { id: "S-I03", name: "Haas Gebäudeservice GmbH", city: "Karlsruhe" }];
+const CATALOG = [
+  { id: "K-01", name: "Arbeitsschutz-Set (Helm, Brille, Handschuhe)", price: 48.5, supplier: "S-I01", category: "Arbeitsschutz", acct: "6815" },
+  { id: "K-02", name: "Sicherheitsschuhe S3", price: 89, supplier: "S-I01", category: "Arbeitsschutz", acct: "6815" },
+  { id: "K-03", name: "Kopierpapier A4, Karton 2.500 Blatt", price: 21.9, supplier: "S-I01", category: "Büromaterial", acct: "6815" },
+  { id: "K-04", name: "Tonerkartusche Laserdrucker", price: 64, supplier: "S-I01", category: "Büromaterial", acct: "6815" },
+  { id: "K-05", name: "Notebook Standard (GWG bis 800 €)", price: 779, supplier: "S-I02", category: "IT", acct: "6830" },
+  { id: "K-06", name: "Monitor 27 Zoll", price: 219, supplier: "S-I02", category: "IT", acct: "6830" },
+  { id: "K-07", name: "Drehmomentschlüssel 40–200 Nm", price: 189, supplier: "S-I01", category: "Werkzeug", acct: "6470" },
+  { id: "K-08", name: "Unterhaltsreinigung, Monatspauschale", price: 2450, supplier: "S-I03", category: "Facility", acct: "6835" },
+  { id: "K-09", name: "Wartung Druckluftkompressor (Dienstleistung)", price: 1380, supplier: "S-I03", category: "Instandhaltung", acct: "6470" }
+];
+const CATEGORY_DEFAULT = { "Arbeitsschutz": ["S-I01", "6815"], "Büromaterial": ["S-I01", "6815"], "IT": ["S-I02", "6830"], "Werkzeug": ["S-I01", "6470"], "Facility": ["S-I03", "6835"], "Instandhaltung": ["S-I03", "6470"], "Beratung/Dienstleistung": ["S-I03", "6800"] };
+
+function seedProcurementHR(t) {
+  t.master.suppliers = t.master.suppliers || []; t.master.suppliers.push(...INDIRECT_SUPPLIERS.map(s => Object.assign({ indirect: true }, s)));
+  if (!t.master.costCenters) t.master.costCenters = [{ id: "KS100", name: "Zentrale" }, { id: "KS110", name: "Logistik Zentrallager" }, { id: "KS120", name: "Filialen" }, { id: "KS130", name: "E-Commerce" }];
+  t.catalog = CATALOG.map(c => Object.assign({}, c)); t.reqs = [];
+  const rng = mulberry32(t.seed ^ hashStr(t.id + "-hr"));
+  const pos = { elevon: [["Servicetechniker/in Aufzugstechnik", "Servicetechniker", 58], ["Konstrukteur/in Stahlbau", "Konstruktion", 64]], novamart: [["Filialmitarbeiter/in Köln", "Filiale", 22], ["Category Manager/in Elektronik", "Einkauf", 41]], aventra: [["SAP-Berater/in FI/CO", "Berater", 66], ["Projektleiter/in S/4HANA", "Berater", 78]] }[t.id];
+  t.hr = { positions: pos.map(([title, role, rate], i) => ({ id: "ST-" + (i + 1), title, role, costRate: rate, status: "offen", opened: addDays(START_DATE, -int(rng, 10, 40)) })), applicants: [], onboarding: [] };
+  let k = 0; for (const p of t.hr.positions) for (let j = 0; j < 3; j++) t.hr.applicants.push({ id: "BW-" + (++k), name: person(rng), position: p.id, status: j === 0 ? "Interview" : "neu", fit: int(rng, 55, 95), since: addDays(START_DATE, -int(rng, 2, 20)) });
+  return t;
+}
+function seedEngineering(t) {
+  t.master.suppliers.push({ id: "S-2001", name: "Brandl Normteile GmbH", city: "Heilbronn" }, { id: "S-2002", name: "Feuerverzinkerei Kocher GmbH", city: "Schwäbisch Hall" }, { id: "S-2003", name: "Blechcenter Neckar GmbH", city: "Neckarsulm" });
+  const M = (id, name, price, supplier, leadDays, type, extra) => t.master.materials.push(Object.assign({ id, name, price, supplier, leadDays, type, unit: "Stk", moq: 1 }, extra || {}));
+  for (const [id, th, grade, price] of [["M-2001", 3, "S235JR", 1.38], ["M-2002", 5, "S235JR", 1.32], ["M-2003", 8, "S235JR", 1.29], ["M-2004", 10, "S235JR", 1.29], ["M-2005", 2, "1.4301", 4.85], ["M-2006", 3, "AlMg3", 5.4]])
+    M(id, `Blech ${grade} ${th} mm`, price, "S-2003", 5, "Halbzeug", { unit: "kg", moq: 100, form: "Blech", grade, thickness: th });
+  M("M-2007", "Flachstahl S235JR 40×8", 1.45, "S-1004", 7, "Halbzeug", { unit: "kg", moq: 50, form: "Flach", grade: "S235JR", section: "40x8", kgPerM: 2.51 });
+  M("M-2008", "Quadratrohr S235JR 40×40×3", 1.62, "S-1004", 7, "Halbzeug", { unit: "kg", moq: 50, form: "Rohr", grade: "S235JR", section: "40x40x3", kgPerM: 3.30 });
+  for (const [id, name, price, norm] of [["M-2101", "Sechskantschraube DIN 933 M12×40 8.8 verzinkt", 0.21, "DIN 933 M12x40"], ["M-2102", "Sechskantschraube DIN 933 M10×30 8.8 verzinkt", 0.12, "DIN 933 M10x30"], ["M-2103", "Sechskantmutter DIN 934 M12 verzinkt", 0.06, "DIN 934 M12"], ["M-2104", "Sechskantmutter DIN 934 M10 verzinkt", 0.04, "DIN 934 M10"], ["M-2105", "Scheibe DIN 125 A13 verzinkt", 0.03, "DIN 125 A13"], ["M-2106", "Scheibe DIN 125 A10,5 verzinkt", 0.02, "DIN 125 A10.5"], ["M-2107", "Bolzenanker M12×110", 1.85, "ANKER M12x110"]])
+    M(id, name, price, "S-2001", 3, "Normteil", { moq: 100, norm });
+  M("M-2201", "Schienenklammer SK-16", 6.8, "S-1004", 10, "Zukaufteil", { moq: 20, partNo: "SK-16" });
+  M("M-2301", "Feuerverzinken nach DIN EN ISO 1461 (je kg)", 0.95, "S-2002", 5, "Lohnbearbeitung", { unit: "kg", moq: 0, minCharge: 45 });
+  // Anfangsbestand Halbzeuge und Normteile, als Bestandsübernahme gebucht (Bilanz, keine GuV-Wirkung)
+  const open = [["M-2002", 120], ["M-2003", 60], ["M-2101", 200], ["M-2103", 150], ["M-2105", 40], ["M-2201", 10]]; let v = 0;
+  for (const [m, q] of open) { const val = r2(q * materialOf(t, m).price); moveIn(t, m, "WH1", q, val); v = r2(v + val); }
+  t.moves = []; postHist(t, { date: "2026-10-31", text: "Bestandsübernahme Halbzeuge und Normteile Werk Stuttgart", lines: [{ acct: "1300", dr: v }, { acct: "1100", cr: v }] });
+  t.workCenters = WORK_CENTERS.map(w => Object.assign({}, w));
+  t.eng = { drawings: [] };
+  t.roles.push({ id: "engineer", name: "Konstruktion", perms: ["view", "engineer"] });
+  let n = t.users.length; t.users.push({ id: "u" + (++n), name: "Felix Amann", role: "engineer" }, { id: "u" + (++n), name: "Selin Kaya", role: "engineer" });
+  return t;
+}
+
+/* --- Ableitung aus einer normalisierten Zeichnung: Stückliste, Arbeitsplan, Bezugsquellen, Kalkulation --- */
+const KINDS = ["Blechteil", "Profil", "Normteil", "Zukaufteil"];
+function deriveDrawing(t, d) {
+  const issues = [], bom = [], ops = [], parts = []; let weight = 0;
+  const findSheet = (grade, th) => t.master.materials.find(m => m.form === "Blech" && m.grade === grade && m.thickness === th);
+  const findSection = (grade, sec) => t.master.materials.find(m => (m.form === "Flach" || m.form === "Rohr") && m.grade === grade && m.section === sec);
+  const normKey = s => String(s || "").toUpperCase().replace(/[×X]/g, "X").replace(/,/g, ".").replace(/\s+/g, " ").trim();
+  const addBom = (mat, qty, src) => { const b = bom.find(x => x.mat === mat); if (b) { b.qty = r2(b.qty + qty); b.from.push(src); } else bom.push({ mat, qty: r2(qty), from: [src] }); };
+  let laserH = 0, kantH = 0, saegH = 0, montMin = 0, lasParts = 0, kantParts = 0, saegParts = 0;
+  for (const it of d.items) {
+    const tag = "Pos. " + it.pos;
+    if (!KINDS.includes(it.kind)) { issues.push([tag, `Teileart „${it.kind}“ unbekannt`, "error"]); continue; }
+    if (!(it.qty > 0) || Math.round(it.qty) !== it.qty) { issues.push([tag, "Menge muss eine ganze Zahl > 0 sein", "error"]); continue; }
+    if (it.kind === "Blechteil") {
+      const m = findSheet(it.grade, +it.thickness); if (!m) { issues.push([tag, `Kein Materialstamm für Blech ${it.grade} ${it.thickness} mm`, "error"]); continue; }
+      if (!(it.length > 0 && it.width > 0)) { issues.push([tag, "Abmessungen fehlen", "error"]); continue; }
+      const kg = r2(it.length / 100 * it.width / 100 * it.thickness / 100 * (DENSITY[it.grade] || 7.85)); weight = r2(weight + kg * it.qty);
+      const cut = it.cutLength > 0 ? it.cutLength : 2 * (it.length + it.width) + (it.holes || 0) * Math.PI * (it.holeDia || 13);
+      const speed = (LASER_SPEED[it.grade] || {})[+it.thickness] || 2;
+      const perPiece = cut / 1000 / speed / 60 + ((it.holes || 0) + 1) * 2 / 3600;
+      laserH += perPiece * it.qty; lasParts++;
+      if (it.bends > 0) { kantH += it.bends * 0.6 / 60 * it.qty; kantParts++; }
+      addBom(m.id, r2(kg * it.qty * (1 + SCRAP)), tag);
+      parts.push({ pos: it.pos, name: it.name, kind: it.kind, qty: it.qty, mat: m.id, kg, cutLength: Math.round(cut), bends: it.bends || 0, source: "Eigenfertigung" });
+    } else if (it.kind === "Profil") {
+      const m = findSection(it.grade, it.section); if (!m) { issues.push([tag, `Kein Materialstamm für Profil ${it.grade} ${it.section}`, "error"]); continue; }
+      const kg = r2(it.length / 1000 * m.kgPerM); weight = r2(weight + kg * it.qty); saegH += 2 / 60 * it.qty; saegParts++;
+      addBom(m.id, r2(kg * it.qty * 1.05), tag); parts.push({ pos: it.pos, name: it.name, kind: it.kind, qty: it.qty, mat: m.id, kg, source: "Eigenfertigung" });
+    } else if (it.kind === "Normteil") {
+      const m = t.master.materials.find(x => x.type === "Normteil" && normKey(x.norm) === normKey(it.norm)); if (!m) { issues.push([tag, `Normteil „${it.norm}“ nicht im Materialstamm`, "error"]); continue; }
+      montMin += 0.5 * it.qty; addBom(m.id, it.qty, tag); parts.push({ pos: it.pos, name: m.name, kind: it.kind, qty: it.qty, mat: m.id, source: "Katalog " + supplierName(t, m.supplier) });
+    } else {
+      const m = it.mat ? materialOf(t, it.mat) : t.master.materials.find(x => (it.partNo && x.partNo === it.partNo) || x.name.toLowerCase() === String(it.name).toLowerCase());
+      if (!m) { issues.push([tag, `Zukaufteil „${it.name}${it.partNo ? " " + it.partNo : ""}“ ohne Materialstamm und Bezugsquelle – Einkauf muss eine Quelle zuordnen`, "error"]); parts.push({ pos: it.pos, name: it.name, kind: it.kind, qty: it.qty, mat: null, source: "offen" }); continue; }
+      montMin += 3 * it.qty; addBom(m.id, it.qty, tag); parts.push({ pos: it.pos, name: m.name, kind: it.kind, qty: it.qty, mat: m.id, source: supplierName(t, m.supplier) });
+    }
+  }
+  const pcs = 1; // Zeiten je Baugruppe; Rüstzeiten getrennt
+  const op = (wc, text, setup, perUnit, instr) => { if (perUnit <= 0 && !setup) return; const w = t.workCenters.find(x => x.id === wc); ops.push({ no: String((ops.length + 1) * 10).padStart(4, "0"), wc, wcName: w.name, rate: w.rate, text, setup: r2(setup), perUnit: Math.round(perUnit * 1000) / 1000, instr }); };
+  if (lasParts) op("LAS", "Blechteile schneiden", 0.25, laserH, `Zuschnitt aller Blechteile nach Zeichnung ${d.drawingNo} Rev. ${d.revision}. Teile entgraten und mit Positionsnummer kennzeichnen. Schnittlänge gesamt je Baugruppe: ${Math.round(parts.filter(p => p.kind === "Blechteil").reduce((a, p) => a + p.cutLength * p.qty, 0))} mm.`);
+  if (kantParts) op("KANT", "Blechteile abkanten", 0.3, kantH, `Biegungen gemäß Zeichnung, Innenradius = Blechdicke, Winkeltoleranz ±1°. Erstteil messen und dokumentieren.`);
+  if (saegParts) op("SAEG", "Profile sägen", 0.15, saegH, `Profile auf Länge sägen, Toleranz ±1 mm, entgraten.`);
+  if (d.weldLength > 0) op("SCHW", "Baugruppe heften und schweißen", 0.3, d.weldLength / 1000 * 0.35, `Teile in Vorrichtung ausrichten, heften, Maßkontrolle. Kehlnähte a=${d.weldSize || 4} mm umlaufend nach Zeichnung (MAG, ISO 5817 C). Nahtlänge je Baugruppe ${d.weldLength} mm.`);
+  if (d.finish === "Feuerverzinkt") ops.push({ no: String((ops.length + 1) * 10).padStart(4, "0"), wc: "EXT", wcName: "Fremdbearbeitung", text: "Feuerverzinken (Lohnbearbeitung)", external: true, mat: "M-2301", supplier: "S-2002", instr: `Baugruppen zur Feuerverzinkerei senden. Verzinkung nach DIN EN ISO 1461, Gewinde vor Verzinkung schützen. Rückmeldung über Wareneingang.` });
+  if (montMin > 0) op("MONT", "Normteile und Zukaufteile montieren", 0.2, montMin / 60, `Normteile und Zukaufteile nach Stückliste beilegen bzw. montieren. Schrauben M12 mit 79 Nm anziehen (8.8, verzinkt, μ=0,14).`);
+  op("QS", "Endprüfung und Kennzeichnung", 0.1, 0.1, `Hauptmaße, Schweißnähte (Sichtprüfung) und Oberfläche prüfen. Typenschild mit Zeichnungsnummer und Auftragsnummer anbringen.`);
+  const matCost = r2(bom.reduce((a, b) => a + b.qty * materialOf(t, b.mat).price, 0));
+  const labor = r2(ops.filter(o => !o.external).reduce((a, o) => a + (o.perUnit + o.setup / 10) * o.rate, 0)); // Rüstzeit auf Losgröße 10 umgelegt
+  const ext = d.finish === "Feuerverzinkt" ? r2(weight * materialOf(t, "M-2301").price) : 0;
+  return { bom, ops, parts, issues, weight, costing: { material: matCost, labor, external: ext, total: r2(matCost + labor + ext), basis: "Losgröße 10 für Rüstzeiten" } };
+}
+function newReq(t, r, ctx, auto) {
+    const net = r2(r.qty * r.price); const lvl = auto ? null : reqApprovalLevel(net);
+    const q = Object.assign({ no: nextNo(t, "BANF"), date: t.date, requester: ctx.user, requesterName: ctx.userName, net, status: lvl ? "zur Freigabe" : "freigegeben", level: lvl, approvedBy: auto ? "Bedarfsplanung (Fertigungsauftrag)" : (lvl ? null : "automatisch bis 1.000 €"), po: null }, r);
+    t.reqs.push(q); return q;
+}
+function prodOfDrawing(t, no) { return t.master.products.find(p => p.drawing === no); }
+function reqApprovalLevel(net) { for (const [lim, lvl] of APPROVAL_LIMITS) if (net <= lim) return lvl; return "ceo"; }
+
+Object.assign(CMD, {
+  /* Konstruktion */
+  importDrawing(w, t, p, ctx) {
+    need(t, ctx, "engineer"); if (t.id !== "elevon") fail("TENANT", "Konstruktion gibt es in dieser Demo bei Elevon.");
+    const d = p.drawing || {}; const no = String(d.drawingNo || "").trim(); if (!no) fail("DRAWING", "Zeichnungsnummer fehlt im Schriftfeld.");
+    if (!Array.isArray(d.items) || !d.items.length) fail("DRAWING", "Keine Stücklistenpositionen in der Zeichnung gefunden.");
+    const rev = String(d.revision || "A"); const ex = t.eng.drawings.find(x => x.no === no && x.rev === rev); if (ex) fail("DUPLICATE", `Zeichnung ${no} Rev. ${rev} ist bereits importiert.`);
+    const items = d.items.map(i => ({ pos: String(i.pos), name: String(i.name || "").slice(0, 80), qty: +i.qty, kind: i.kind, grade: i.grade || null, thickness: i.thickness != null ? +i.thickness : null, length: +i.length || 0, width: +i.width || 0, section: i.section || null, norm: i.norm || null, partNo: i.partNo || null, bends: +i.bends || 0, holes: +i.holes || 0, holeDia: +i.holeDia || 0, cutLength: +i.cutLength || 0, mat: i.mat || null }));
+    const dr = { no, rev, title: String(d.title || no).slice(0, 80), source: d.source || "DXF", file: d.file || null, finish: d.finish || "ohne", weldLength: +d.weldLength || 0, weldSize: +d.weldSize || 4, scale: d.scale || null, author: d.author || null, items, aiAssisted: !!d.aiAssisted, importedBy: ctx.user, importedByName: ctx.userName, date: t.date, status: "importiert", geometry: d.geometry || null };
+    Object.assign(dr, deriveDrawing(t, Object.assign({ drawingNo: no, revision: rev }, dr))); t.eng.drawings.push(dr);
+    const err = dr.issues.filter(i => i[2] === "error").length;
+    return { text: `Zeichnung ${no} Rev. ${rev} importiert: ${items.length} Positionen, ${dr.bom.length} Stücklistenmaterialien, ${dr.ops.length} Arbeitsgänge, Gewicht ${dr.weight} kg${err ? ` – ${err} Klärungspunkt(e)` : ""} – keine Buchung`, objects: [no] };
+  },
+  createPurchasedPart(w, t, p, ctx) {
+    need(t, ctx, "buy"); const sup = find(t.master.suppliers, "id", p.supplierId, "Lieferant"); const name = String(p.name || "").trim(); if (name.length < 3) fail("NAME", "Bezeichnung fehlt.");
+    if (!(p.price > 0)) fail("PRICE", "Preis aus dem Lieferantenangebot fehlt."); const dup = t.master.materials.find(m => m.name.toLowerCase() === name.toLowerCase() || (p.partNo && m.partNo === p.partNo)); if (dup) fail("DUPLICATE", `Material existiert bereits: ${dup.id} ${dup.name}.`);
+    const id = "M-" + (2400 + t.master.materials.filter(m => m.id.startsWith("M-24")).length + 1);
+    t.master.materials.push({ id, name, price: r2(p.price), supplier: sup.id, leadDays: +p.leadDays || 10, type: "Zukaufteil", unit: "Stk", moq: +p.moq || 1, partNo: p.partNo || null, quote: p.quoteRef || null });
+    for (const dr of t.eng.drawings.filter(x => x.status === "importiert")) { for (const it of dr.items) if (it.kind === "Zukaufteil" && !it.mat && (it.name.toLowerCase() === name.toLowerCase() || (p.partNo && it.partNo === p.partNo))) it.mat = id; Object.assign(dr, deriveDrawing(t, Object.assign({ drawingNo: dr.no, revision: dr.rev }, dr))); }
+    return { text: `Zukaufteil ${id} „${name}“ angelegt: ${sup.name}, ${r2(p.price)} €/Stk, ${+p.leadDays || 10} Tage Lieferzeit`, objects: [id] };
+  },
+  releaseDesign(w, t, p, ctx) {
+    need(t, ctx, "engineer"); const dr = find(t.eng.drawings, "no", p.drawingNo, "Zeichnung"); if (dr.status !== "importiert") fail("STATUS", `Zeichnung hat Status „${dr.status}“.`);
+    if (dr.importedBy === ctx.user) fail("FOUR_EYES", "Vier-Augen-Prinzip: Die Konstruktionsfreigabe muss eine andere Person erteilen als die, die importiert hat.");
+    const err = dr.issues.filter(i => i[2] === "error"); if (err.length) fail("ISSUES", `Freigabe nicht möglich: ${err.length} offene Klärungspunkte (${err.map(e => e[0]).join(", ")}).`);
+    const id = "B-" + dr.no.replace(/[^A-Za-z0-9]/g, ""); const prod = { id, name: dr.title, drawing: dr.no, rev: dr.rev, type: "Baugruppe", bom: dr.bom.map(b => [b.mat, b.qty]), ops: dr.ops.map(o => Object.assign({}, o)), weight: dr.weight, stdCost: dr.costing.total, released: t.date, releasedBy: ctx.userName };
+    const i = t.master.products.findIndex(x => x.id === id); if (i >= 0) t.master.products[i] = prod; else t.master.products.push(prod);
+    dr.status = "freigegeben"; dr.releasedBy = ctx.userName; dr.product = id;
+    return { text: `Konstruktionsfreigabe ${dr.no} Rev. ${dr.rev} durch ${ctx.userName}: Material ${id} mit Stückliste (${prod.bom.length} Positionen) und Arbeitsplan (${prod.ops.length} Vorgänge), Plan-Herstellkosten ${prod.stdCost} €/Stk`, objects: [id] };
+  },
+
+  /* Fertigung Baugruppen */
+  createAssemblyOrder(w, t, p, ctx) {
+    need(t, ctx, "produce"); const pr = find(t.master.products, "id", p.productId, "Baugruppe"); if (pr.type !== "Baugruppe") fail("TYPE", "Nur freigegebene Baugruppen.");
+    const qty = +p.qty; if (!(qty > 0) || Math.round(qty) !== qty) fail("QTY", "Menge muss eine ganze Zahl > 0 sein.");
+    const comps = pr.bom.map(([mat, per]) => ({ mat, qty: Math.round(per * qty * 10) / 10, issued: 0 }));
+    const ops = pr.ops.map(o => Object.assign({}, o, { hours: o.external ? 0 : r2(o.setup + o.perUnit * qty), status: "offen", extQty: o.external ? Math.ceil(pr.weight * qty) : 0 }));
+    const pa = { no: nextNo(t, "PA"), kind: "Baugruppe", product: pr.id, qty, status: "eröffnet", components: comps, ops, labor: 0, ext: 0, docs: [], wip: 0, so: null, date: t.date, mrp: null };
+    t.prodOrders.push(pa); return { text: `Fertigungsauftrag ${pa.no}: ${qty} × ${pr.name}, ${ops.length} Vorgänge, ${r2(ops.reduce((a, o) => a + o.hours, 0))} h geplant – keine Buchung`, objects: [pa.no] };
+  },
+  planAssemblyOrder(w, t, p, ctx) {
+    need(t, ctx, "produce"); const pa = find(t.prodOrders, "no", p.prodNo, "Fertigungsauftrag"); if (pa.kind !== "Baugruppe") fail("TYPE", "Nur Baugruppenaufträge."); if (pa.mrp) fail("DONE", "Bedarfsplanung bereits erfolgt.");
+    const reqs = [];
+    for (const c of pa.components) { const m = materialOf(t, c.mat); const short = r2(c.qty - avail(t, c.mat, "WH1")); if (short <= 0) continue;
+      const qty = m.unit === "kg" ? Math.max(Math.ceil(short), m.moq || 0) : Math.max(Math.ceil(short), m.moq || 1);
+      reqs.push(newReq(t, { type: "direkt", mat: m.id, text: m.name, qty, unit: m.unit, price: m.price, supplier: m.supplier, prod: pa.no, acct: "1300" }, ctx, true)); }
+    for (const o of pa.ops.filter(x => x.external)) { const m = materialOf(t, o.mat); const net = Math.max(r2(o.extQty * m.price), m.minCharge || 0); const price = r2(net / o.extQty);
+      reqs.push(newReq(t, { type: "Lohnbearbeitung", mat: m.id, text: `${o.text} ${pa.no}`, qty: o.extQty, unit: "kg", price, supplier: o.supplier, prod: pa.no, op: o.no, acct: "1320" }, ctx, true)); }
+    pa.mrp = { date: t.date, reqs: reqs.map(r => r.no) };
+    return { text: `Bedarfsplanung ${pa.no}: ${reqs.length} Bedarfsanforderung(en) – ${reqs.map(r => `${r.text} ${r.qty} ${r.unit} bei ${supplierName(t, r.supplier)}`).join("; ") || "alles am Lager"}`, objects: reqs.map(r => r.no) };
+  },
+  confirmOperation(w, t, p, ctx) {
+    need(t, ctx, "produce"); const pa = find(t.prodOrders, "no", p.prodNo, "Fertigungsauftrag"); if (pa.kind !== "Baugruppe") fail("TYPE", "Nur Baugruppenaufträge.");
+    if (!["freigegeben", "in Fertigung"].includes(pa.status)) fail("STATUS", "Fertigungsauftrag muss freigegeben sein.");
+    const op = pa.ops.find(o => o.status !== "erledigt"); if (!op) fail("DONE", "Alle Vorgänge sind rückgemeldet."); if (op.external) fail("EXTERNAL", `Vorgang ${op.no} ist Fremdbearbeitung: Rückmeldung über den Wareneingang der Lohnbearbeitung.`);
+    const docs = [];
+    if (pa.status === "freigegeben") { let v = 0; for (const c of pa.components) { const q = r2(c.qty - c.issued); if (q > 0) { v += moveOut(t, c.mat, "WH1", q, true); c.issued = r2(c.issued + q); } }
+      const d = post(t, { date: t.date, text: "Materialentnahme " + pa.no, user: ctx.userName, ref: { type: "prodOrder", id: pa.no }, lines: [{ acct: "1320", dr: r2(v) }, { acct: "1300", cr: r2(v) }] }); pa.wip = r2(pa.wip + v); pa.docs.push(d.no); docs.push(d.no); pa.status = "in Fertigung"; }
+    const h = p.hours > 0 ? +p.hours : op.hours; const v = r2(h * op.rate);
+    const d = post(t, { date: t.date, text: `Rückmeldung ${pa.no} Vorgang ${op.no} ${op.wcName}: ${h} h`, user: ctx.userName, ref: { type: "prodOrder", id: pa.no }, lines: [{ acct: "1320", dr: v }, { acct: "6990", cr: v }] });
+    op.status = "erledigt"; op.actual = h; pa.labor = r2(pa.labor + v); pa.wip = r2(pa.wip + v); pa.docs.push(d.no); docs.push(d.no);
+    const next = pa.ops.find(o => o.status !== "erledigt"); if (next && next.external) next.status = "bereit zum Versand";
+    return { text: `Vorgang ${op.no} ${op.wcName} rückgemeldet: ${h} h × ${op.rate} € = ${v} €${next ? " · nächster Vorgang: " + next.text : " · alle Vorgänge erledigt"}`, docs };
+  },
+  completeAssemblyOrder(w, t, p, ctx) {
+    need(t, ctx, "produce"); const pa = find(t.prodOrders, "no", p.prodNo, "Fertigungsauftrag"); if (pa.kind !== "Baugruppe") fail("TYPE", "Nur Baugruppenaufträge.");
+    if (pa.ops.some(o => o.status !== "erledigt")) fail("STATUS", "Erst alle Vorgänge rückmelden (inkl. Fremdbearbeitung).");
+    const v = pa.wip; moveIn(t, pa.product, "WH2", pa.qty, v);
+    const d = post(t, { date: t.date, text: `Ablieferung ${pa.no}: ${pa.qty} × ${pa.product}`, user: ctx.userName, ref: { type: "prodOrder", id: pa.no }, lines: [{ acct: "1330", dr: v }, { acct: "1320", cr: v }] });
+    pa.docs.push(d.no); pa.status = "abgeschlossen"; pa.wip = 0; pa.unitCost = r2(v / pa.qty); const pr = t.master.products.find(x => x.id === pa.product);
+    return { text: `${pa.qty} × ${pr.name} ins Fertigwarenlager, Ist-Herstellkosten ${pa.unitCost} €/Stk (Plan ${pr.stdCost} €)`, docs: [d.no] };
+  },
+
+  /* Einkauf: Bedarfsanforderungen direkt und indirekt */
+  createRequisition(w, t, p, ctx) {
+    need(t, ctx, "view"); let r;
+    if (p.catalogId) { const c = find(t.catalog, "id", p.catalogId, "Katalogartikel"); const qty = +p.qty || 1; if (!(qty > 0) || Math.round(qty) !== qty) fail("QTY", "Menge muss eine ganze Zahl sein.");
+      r = { type: "indirekt", text: c.name, catalog: c.id, qty, unit: "Stk", price: c.price, supplier: c.supplier, acct: c.acct, category: c.category }; }
+    else { const cat = CATEGORY_DEFAULT[p.category]; if (!cat) fail("CATEGORY", "Warengruppe wählen."); const text = String(p.text || "").trim(); if (text.length < 3) fail("TEXT", "Beschreibung fehlt.");
+      if (!(p.price > 0)) fail("PRICE", "Geschätzter Preis fehlt."); r = { type: "indirekt", text, qty: +p.qty || 1, unit: p.unit || "Stk", price: r2(p.price), supplier: p.supplierId || cat[0], acct: cat[1], category: p.category, freeText: true }; }
+    const cc = p.costCenter || (t.master.costCenters[0] || {}).id; if (!t.master.costCenters.find(c => c.id === cc)) fail("CC", "Kostenstelle unbekannt."); r.costCenter = cc; if (p.forEmployee) r.forEmployee = p.forEmployee;
+    const q = newReq(t, r, ctx, false);
+    return { text: `Bedarfsanforderung ${q.no}: ${q.qty} × ${q.text}, ${q.net} € netto, Kostenstelle ${cc} – ${q.status === "freigegeben" ? "automatisch freigegeben (bis 1.000 €)" : q.level === "ceo" ? "Freigabe durch Geschäftsführung nötig (über 25.000 €)" : "Freigabe nötig (über 1.000 €)"}`, objects: [q.no] };
+  },
+  approveRequisition(w, t, p, ctx) {
+    const q = find(t.reqs, "no", p.reqNo, "Bedarfsanforderung"); if (q.status !== "zur Freigabe") fail("STATUS", `Status „${q.status}“.`);
+    const u = need(t, ctx, "approve"); if (q.level === "ceo" && u.role !== "ceo") fail("FORBIDDEN", "Über 25.000 € gibt nur die Geschäftsführung frei.");
+    if (q.requester === ctx.user) fail("FOUR_EYES", "Vier-Augen-Prinzip: Eigene Anforderungen kann man nicht selbst freigeben.");
+    if (p.reject) { q.status = "abgelehnt"; q.approvedBy = ctx.userName; return { text: `Bedarfsanforderung ${q.no} abgelehnt (${ctx.userName})` }; }
+    q.status = "freigegeben"; q.approvedBy = ctx.userName; return { text: `Bedarfsanforderung ${q.no} über ${q.net} € freigegeben (${ctx.userName})` };
+  },
+  convertRequisitions(w, t, p, ctx) {
+    need(t, ctx, "buy"); const open = t.reqs.filter(q => q.status === "freigegeben" && !q.po && (!p.reqNos || p.reqNos.includes(q.no))); if (!open.length) fail("NONE", "Keine freigegebenen Bedarfsanforderungen.");
+    const by = {}; for (const q of open) (by[q.supplier] = by[q.supplier] || []).push(q);
+    const nos = []; for (const [sup, qs] of Object.entries(by)) {
+      const lines = qs.map(q => ({ mat: q.mat || q.catalog || q.no, qty: q.qty, price: q.price, kind: q.type === "indirekt" ? "Sachkosten" : q.type === "Lohnbearbeitung" ? "Lohnbearbeitung" : "Material" }));
+      const r = CMD.createPO(w, t, { supplierId: sup, lines }, ctx); const po = t.purchaseOrders.find(x => x.no === r.objects[0]);
+      po.lines.forEach((l, i) => { const q = qs[i]; l.req = q.no; l.acct = q.acct; l.costCenter = q.costCenter || null; l.prod = q.prod || null; l.op = q.op || null; l.text = q.text; q.po = po.no; q.status = "bestellt"; });
+      po.kind = qs.every(q => q.type === "indirekt") ? "indirekt" : qs.some(q => q.type === "Lohnbearbeitung") ? "Lohnbearbeitung" : "direkt"; nos.push(po.no); }
+    return { text: `${nos.length} Bestellung(en) aus ${open.length} Bedarfsanforderungen: ${nos.join(", ")} – keine Buchung`, objects: nos };
+  },
+  shipToSubcontractor(w, t, p, ctx) {
+    need(t, ctx, "ship"); const pa = find(t.prodOrders, "no", p.prodNo, "Fertigungsauftrag"); const op = pa.ops.find(o => o.external && o.status === "bereit zum Versand");
+    if (!op) fail("STATUS", "Kein Vorgang bereit zur Fremdbearbeitung (vorherige Vorgänge zuerst rückmelden)."); const q = t.reqs.find(r => r.prod === pa.no && r.op === op.no);
+    if (!q || !q.po) fail("ORDER", "Für die Lohnbearbeitung gibt es noch keine Bestellung."); op.status = "beim Lohnbearbeiter"; op.shipped = t.date;
+    return { text: `${pa.qty} Baugruppen (${op.extQty} kg) an ${supplierName(t, op.supplier)} versandt – Lieferschein zu ${q.po}, keine Buchung` };
+  },
+
+  /* HR: Recruiting und Onboarding */
+  openPosition(w, t, p, ctx) { need(t, ctx, "hr"); const title = String(p.title || "").trim(); if (title.length < 3) fail("TITLE", "Stellenbezeichnung fehlt."); if (!(p.costRate > 0)) fail("RATE", "Kostensatz fehlt.");
+    const s = { id: "ST-" + (t.hr.positions.length + 1), title, role: p.role || "Mitarbeiter", costRate: r2(p.costRate), status: "offen", opened: t.date }; t.hr.positions.push(s); return { text: `Stelle ${s.id} „${title}“ ausgeschrieben`, objects: [s.id] }; },
+  moveApplicant(w, t, p, ctx) { need(t, ctx, "hr"); const a = find(t.hr.applicants, "id", p.id, "Bewerbung"); const flow = ["neu", "Interview", "Angebot"]; if (p.to === "abgesagt") { a.status = "abgesagt"; return { text: `${a.name}: Absage versandt` }; }
+    if (!flow.includes(a.status) || flow.indexOf(p.to) !== flow.indexOf(a.status) + 1) fail("STATUS", `Von „${a.status}“ nicht nach „${p.to}“.`); a.status = p.to; return { text: `${a.name}: ${p.to === "Interview" ? "zum Interview eingeladen" : "Vertragsangebot versandt"}` }; },
+  hireApplicant(w, t, p, ctx) {
+    need(t, ctx, "hr"); const a = find(t.hr.applicants, "id", p.id, "Bewerbung"); if (a.status !== "Angebot") fail("STATUS", "Einstellung erst nach angenommenem Angebot."); const s = find(t.hr.positions, "id", a.position, "Stelle");
+    const r = CMD.hireEmployee(w, t, { name: a.name, role: s.role, skill: s.role, costRate: s.costRate }, ctx); const empId = r.objects[0]; a.status = "eingestellt"; s.status = "besetzt";
+    const start = addDays(t.date, 14); const cc = (t.master.costCenters[0] || {}).id; const reqs = [];
+    reqs.push(newReq(t, { type: "indirekt", text: "Notebook Standard (GWG bis 800 €) für " + a.name, catalog: "K-05", qty: 1, unit: "Stk", price: 779, supplier: "S-I02", acct: "6830", category: "IT", costCenter: cc, forEmployee: empId }, ctx, false));
+    if (/techniker|konstruktion|filiale|monteur/i.test(s.role)) reqs.push(newReq(t, { type: "indirekt", text: "Arbeitsschutz-Set für " + a.name, catalog: "K-01", qty: 1, unit: "Stk", price: 48.5, supplier: "S-I01", acct: "6815", category: "Arbeitsschutz", costCenter: cc, forEmployee: empId }, ctx, false));
+    t.hr.onboarding.push({ employee: empId, name: a.name, start, tasks: [["Arbeitsvertrag erstellt", true], ["Personalstamm angelegt", true], ...reqs.map(q => ["Ausstattung angefordert: " + q.text.split(" für ")[0] + " (" + q.no + ")", true]), ["Erster Arbeitstag " + start, false], ["Einweisung Arbeitssicherheit", false]] });
+    return { text: `${a.name} eingestellt (${s.title}), Start ${start}; Onboarding mit ${reqs.length} Bedarfsanforderung(en) für die Ausstattung angelegt`, objects: [empId] };
+  }
+});
+
+/* Prozessinstanzen: Konstruktion bis Fertigware und Procure-to-Pay indirekt */
+const _piV05 = processInstances;
+processInstances = function (t) {
+  const out = _piV05(t).filter(i => !(i.object && i.object.kind === "Baugruppe"));
+  if (t.eng) for (const dr of t.eng.drawings) {
+    const pas = t.prodOrders.filter(p => p.product === dr.product); const pa = pas[pas.length - 1];
+    const reqs = pa ? t.reqs.filter(r => r.prod === pa.no) : []; const pos = [...new Set(reqs.map(r => r.po).filter(Boolean))].map(no => t.purchaseOrders.find(x => x.no === no));
+    const ext = pa && pa.ops.find(o => o.external); const intDone = pa ? pa.ops.filter(o => !o.external && o.status === "erledigt").length : 0, intAll = pa ? pa.ops.filter(o => !o.external).length : 0;
+    const err = dr.issues.filter(i => i[2] === "error");
+    const s = [stepOf("Zeichnung importiert", "Konstruktion", "done", [dr.no + " Rev. " + dr.rev]), stepOf("Stückliste und Arbeitsplan abgeleitet", "System", "done", [dr.bom.length + " Materialien", dr.ops.length + " Vorgänge"]),
+      stepOf("Bezugsquellen geklärt", "Einkauf", err.length ? "error" : "done", [], err.length ? err.map(e => e[1]).join("; ") : null), stepOf("Konstruktionsfreigabe", "Konstruktion (Vier-Augen)", dr.status === "freigegeben" ? "done" : err.length ? "open" : "active", dr.product ? [dr.product] : []),
+      stepOf("Fertigungsauftrag", "Arbeitsvorbereitung", pa ? "done" : dr.status === "freigegeben" ? "active" : "open", pa ? [pa.no] : []), stepOf("Bedarfsplanung", "Arbeitsvorbereitung", pa && pa.mrp ? "done" : pa ? "active" : "open", reqs.map(r => r.no)),
+      stepOf("Bestellungen", "Einkauf", reqs.length && reqs.every(r => r.po) ? "done" : pa && pa.mrp ? "active" : "open", pos.map(p => p.no)), stepOf("Wareneingang", "Lager", pos.length && pos.filter(p => p.kind !== "Lohnbearbeitung").every(p => p.grDoc) ? "done" : reqs.length && reqs.every(r => r.po) ? "active" : "open", pos.filter(p => p.grDoc && p.kind !== "Lohnbearbeitung").map(p => p.grDoc)),
+      stepOf("Fertigung (Vorgänge)", "Fertigung", pa && intDone === intAll ? "done" : pa && ["freigegeben", "in Fertigung"].includes(pa.status) ? "active" : pa && pa.status === "eröffnet" && pa.mrp && pos.filter(p => p.kind !== "Lohnbearbeitung").every(p => p.grDoc) ? "active" : "open", pa ? [intDone + "/" + intAll + " Vorgänge"] : []),
+      stepOf("Lohnbearbeitung", "Lager / Einkauf", !ext ? "skipped" : ext.status === "erledigt" ? "done" : ["bereit zum Versand", "beim Lohnbearbeiter"].includes(ext.status) ? "active" : "open", ext && ext.status !== "offen" ? [ext.status] : []),
+      stepOf("Ablieferung ins Lager", "Fertigung", pa && pa.status === "abgeschlossen" ? "done" : "open", pa && pa.unitCost ? [pa.unitCost + " €/Stk"] : [])];
+    out.push({ id: dr.no, chain: "Design-to-Make", title: `${dr.no} · ${dr.title}${pa ? " · " + pa.qty + " Stk" : ""}`, steps: s, object: { drawing: dr, pa } });
+  }
+  for (const q of (t.reqs || []).filter(r => r.type === "indirekt")) { const po = q.po && t.purchaseOrders.find(x => x.no === q.po); const inv = po && t.supInvoices.find(i => i.poNo === po.no);
+    const s = [stepOf("Bedarfsanforderung", q.requesterName, "done", [q.no]), stepOf("Freigabe", q.level === "ceo" ? "CEO" : q.level ? "Freigabeberechtigte" : "automatisch", q.status === "abgelehnt" ? "error" : q.status === "zur Freigabe" ? "active" : "done", q.approvedBy ? [q.approvedBy] : []),
+      stepOf("Bestellung", "Einkauf", po ? "done" : q.status === "freigegeben" ? "active" : "open", po ? [po.no] : []), stepOf("Wareneingang / Leistung", "Anforderer / Lager", po && po.grDoc ? "done" : po ? "active" : "open", po && po.grDoc ? [po.grDoc] : []),
+      stepOf("Rechnung", "Kreditoren", inv ? "done" : po && po.grDoc ? "active" : "open", inv ? [inv.no] : []), stepOf("Zahlung", "CFO", inv && inv.open === 0 ? "done" : inv ? "active" : "open", [])];
+    out.push({ id: q.no, chain: "Procure-to-Pay indirekt", title: `${q.no} · ${q.qty} × ${q.text} · ${q.net} €`, steps: s, object: q }); }
+  return out;
+};
 const QUERY_ONLY = { findStaff: true };
 /* --- Accounts: jede Person kann sich je Unternehmen einen Account mit Rolle anlegen --- */
 Object.assign(CMD, {
@@ -1333,7 +1611,68 @@ Object.assign(CMD, {
   }
 });
 
-return { ROLE_DESC, dueMaintenance, returnRate, personnelCost, cutoverStatus, legacyData, MIG_OBJECTS, MIG_LABEL, isAbsent, absHoursInPeriod, SERVICE_RATE, VERSION, START_DATE, TENANT_IDS, COA, SIZES, E5, createWorld, resetTenant, resetAll, dispatch, kpis, plOf, trialBalance, balance, projectMetrics, replenishmentProposals, processInstances, tenantHash, costing, avail, periodOf, customerName, supplierName, articleName, materialOf, QUERY_ONLY, _internal: { HIST, crossHistory } };
+return { WORK_CENTERS, CATALOG, CATEGORY_DEFAULT, deriveDrawing, ROLE_DESC, dueMaintenance, returnRate, personnelCost, cutoverStatus, legacyData, MIG_OBJECTS, MIG_LABEL, isAbsent, absHoursInPeriod, SERVICE_RATE, VERSION, START_DATE, TENANT_IDS, COA, SIZES, E5, createWorld, resetTenant, resetAll, dispatch, kpis, plOf, trialBalance, balance, projectMetrics, replenishmentProposals, processInstances, tenantHash, costing, avail, periodOf, customerName, supplierName, articleName, materialOf, QUERY_ONLY, _internal: { HIST, crossHistory } };
+});
+
+/* NEXORA DXF-Leser: liest ASCII-DXF (R12 bis aktuelle Versionen), Schriftfeld- und Positionsattribute
+   sowie Geometrie (LINE, CIRCLE, ARC, LWPOLYLINE, POLYLINE/VERTEX, TEXT, MTEXT).
+   Ergebnis: normalisierte Zeichnung für die Engine + Geometrie für die Anzeige. Keine Abhängigkeiten. */
+(function (root, factory) { if (typeof module === "object" && module.exports) module.exports = factory(); else root.NexoraDXF = factory(); })(typeof self !== "undefined" ? self : this, function () {
+  function pairs(text) {
+    const lines = String(text).replace(/\r\n?/g, "\n").split("\n"); const out = [];
+    for (let i = 0; i + 1 < lines.length; i += 2) { const c = parseInt(lines[i].trim(), 10); if (isNaN(c)) { i--; continue; } out.push([c, lines[i + 1].replace(/\s+$/, "")]); }
+    return out;
+  }
+  function parse(text) {
+    const P = pairs(text); if (!P.length || !P.some(p => p[0] === 0 && p[1] === "SECTION")) throw new Error("Keine gültige ASCII-DXF-Datei (Binär-DXF und DWG werden nicht unterstützt – bitte als ASCII-DXF exportieren).");
+    let i = 0, section = null; const ents = [], header = {};
+    while (i < P.length) {
+      const [c, v] = P[i];
+      if (c === 0 && v === "SECTION") { section = P[i + 1] && P[i + 1][1]; i += 2; continue; }
+      if (c === 0 && v === "ENDSEC") { section = null; i++; continue; }
+      if (section === "HEADER" && c === 9) { header[v] = P[i + 1] && P[i + 1][1]; i += 2; continue; }
+      if (section === "ENTITIES" && c === 0) { const e = { type: v, g: [] }; i++; while (i < P.length && P[i][0] !== 0) { e.g.push(P[i]); i++; } ents.push(e); continue; }
+      i++;
+    }
+    const num = (e, code, k = 0) => { const f = e.g.filter(p => p[0] === code); return f[k] ? parseFloat(f[k][1]) : undefined; };
+    const str = (e, code) => { const f = e.g.find(p => p[0] === code); return f ? f[1] : undefined; };
+    const geom = [], texts = [], inserts = []; let poly = null, cur = null;
+    for (const e of ents) {
+      const layer = str(e, 8) || "0";
+      if (e.type === "LINE") geom.push({ t: "line", layer, x1: num(e, 10), y1: num(e, 20), x2: num(e, 11), y2: num(e, 21) });
+      else if (e.type === "CIRCLE") geom.push({ t: "circle", layer, x: num(e, 10), y: num(e, 20), r: num(e, 40) });
+      else if (e.type === "ARC") geom.push({ t: "arc", layer, x: num(e, 10), y: num(e, 20), r: num(e, 40), a1: num(e, 50), a2: num(e, 51) });
+      else if (e.type === "LWPOLYLINE") { const xs = e.g.filter(p => p[0] === 10).map(p => +p[1]), ys = e.g.filter(p => p[0] === 20).map(p => +p[1]); geom.push({ t: "poly", layer, pts: xs.map((x, k) => [x, ys[k]]), closed: ((num(e, 70) || 0) & 1) === 1 }); }
+      else if (e.type === "POLYLINE") { poly = { t: "poly", layer, pts: [], closed: ((num(e, 70) || 0) & 1) === 1 }; }
+      else if (e.type === "VERTEX" && poly) poly.pts.push([num(e, 10), num(e, 20)]);
+      else if (e.type === "SEQEND") { if (poly) { geom.push(poly); poly = null; } if (cur) { inserts.push(cur); cur = null; } }
+      else if (e.type === "TEXT" || e.type === "MTEXT") texts.push({ layer, x: num(e, 10), y: num(e, 20), h: num(e, 40) || 2.5, s: (str(e, 1) || "").replace(/\\P/g, " ").replace(/\{\\[^;]*;|\}/g, "") });
+      else if (e.type === "INSERT") { const it = { block: str(e, 2), layer, x: num(e, 10), y: num(e, 20), attrs: {} }; if (str(e, 66) === "1") cur = it; else inserts.push(it); }
+      else if (e.type === "ATTRIB" && cur) cur.attrs[String(str(e, 2) || "").toUpperCase()] = str(e, 1) || "";
+    }
+    return { header, geom, texts, inserts };
+  }
+  const len = g => g.t === "line" ? Math.hypot(g.x2 - g.x1, g.y2 - g.y1) : g.t === "circle" ? 2 * Math.PI * g.r : g.t === "arc" ? g.r * (((g.a2 - g.a1) % 360 + 360) % 360 || 360) * Math.PI / 180 : g.pts.reduce((a, p, k) => k ? a + Math.hypot(p[0] - g.pts[k - 1][0], p[1] - g.pts[k - 1][1]) : 0, 0) + (g.closed && g.pts.length > 2 ? Math.hypot(g.pts[0][0] - g.pts[g.pts.length - 1][0], g.pts[0][1] - g.pts[g.pts.length - 1][1]) : 0);
+  const KIND = { BLECHTEIL: "Blechteil", BLECH: "Blechteil", PROFIL: "Profil", NORMTEIL: "Normteil", NORM: "Normteil", ZUKAUFTEIL: "Zukaufteil", KAUFTEIL: "Zukaufteil" };
+  /* Normalisierung: Schriftfeld = Block mit Attribut ZEICHNUNGSNR (oder DWGNO/DRAWING_NO); Positionen = Blöcke mit Attribut POS */
+  function toDrawing(text, fileName) {
+    const d = parse(text); const tb = d.inserts.find(x => x.attrs.ZEICHNUNGSNR || x.attrs.DWGNO || x.attrs.DRAWING_NO) || { attrs: {} }; const a = tb.attrs;
+    const warnings = []; const items = [];
+    for (const ins of d.inserts.filter(x => x.attrs.POS)) {
+      const t = ins.attrs; const kind = KIND[String(t.ART || t.TYPE || "").toUpperCase()] || (t.NORM ? "Normteil" : t.DICKE ? "Blechteil" : "Zukaufteil");
+      const layerGeom = d.geom.filter(g => g.layer.toUpperCase() === "POS-" + t.POS);
+      const cut = layerGeom.length ? Math.round(layerGeom.reduce((s, g) => s + len(g), 0)) : 0;
+      if (kind === "Blechteil" && !layerGeom.length) warnings.push(`Pos. ${t.POS}: keine Abwicklung auf Layer POS-${t.POS} – Schnittlänge wird aus Umfang und Bohrungen geschätzt.`);
+      items.push({ pos: t.POS, name: t.BENENNUNG || t.NAME || "", qty: parseFloat(String(t.MENGE || t.QTY || "1").replace(",", ".")), kind, grade: t.WERKSTOFF || t.MATERIAL || null, thickness: t.DICKE ? parseFloat(t.DICKE.replace(",", ".")) : null, length: parseFloat(t.LAENGE || 0) || 0, width: parseFloat(t.BREITE || 0) || 0, section: t.PROFIL || null, norm: t.NORM || null, partNo: t.TEILENR || t.PARTNO || null, bends: parseInt(t.BIEGUNGEN || 0, 10) || 0, holes: parseInt(t.BOHRUNGEN || 0, 10) || 0, holeDia: parseFloat(t.BOHR_D || 0) || 0, cutLength: cut });
+    }
+    items.sort((x, y) => parseFloat(x.pos) - parseFloat(y.pos));
+    if (!a.ZEICHNUNGSNR && !a.DWGNO && !a.DRAWING_NO) warnings.push("Kein Schriftfeld mit Attribut ZEICHNUNGSNR gefunden.");
+    if (!items.length) warnings.push("Keine Positionsnummern mit Stücklistenattributen (Attribut POS) gefunden.");
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity; const ext = (x, y) => { if (x < minX) minX = x; if (y < minY) minY = y; if (x > maxX) maxX = x; if (y > maxY) maxY = y; };
+    for (const g of d.geom) { if (g.t === "line") { ext(g.x1, g.y1); ext(g.x2, g.y2); } else if (g.t === "poly") g.pts.forEach(p => ext(p[0], p[1])); else { ext(g.x - g.r, g.y - g.r); ext(g.x + g.r, g.y + g.r); } }
+    return { drawing: { drawingNo: a.ZEICHNUNGSNR || a.DWGNO || a.DRAWING_NO || "", title: a.BENENNUNG || a.TITLE || "", revision: a.REVISION || a.REV || "A", scale: a.MASSSTAB || null, author: a.ERSTELLT || null, finish: a.OBERFLAECHE || "ohne", weldLength: parseFloat(a.NAHTLAENGE || 0) || 0, weldSize: parseFloat(a.NAHTDICKE || 0) || 4, items, source: "DXF", file: fileName || null }, geometry: { geom: d.geom, texts: d.texts, bbox: [minX, minY, maxX, maxY] }, warnings, units: d.header.$INSUNITS === "4" || !d.header.$INSUNITS ? "mm" : "Einheit " + d.header.$INSUNITS };
+  }
+  return { parse, toDrawing, length: len };
 });
 
 </script>
@@ -1387,7 +1726,7 @@ const PROTO_URL = "https://claude.ai/artifact/6p7imWPiPw1T5V3ABFq2Di";
 
 /* ---------- Zustand: Welt = Seed + Befehlsprotokoll (reproduzierbar) ---------- */
 let W, LOG = [], BASE = {};
-const S = { tenant: "elevon", users: { elevon: "u3", novamart: "u3", aventra: "u3" }, mode: "free", live: true, last: null, story: null, admin: false, chat: { elevon: [], novamart: [], aventra: [] }, sel: {}, tab: {}, modal: null, toast: null, pending: null, size: "S" };
+const S = { tenant: "elevon", users: { elevon: "u1", novamart: "u1", aventra: "u1" }, mode: "free", live: true, last: null, story: null, admin: false, chat: { elevon: [], novamart: [], aventra: [] }, sel: {}, tab: {}, modal: null, toast: null, pending: null, size: "S" };
 function saveLog() { try { localStorage.setItem(LS_KEY, JSON.stringify({ size: S.size, log: LOG, tenant: S.tenant, users: S.users, mode: S.mode })); } catch (e) {} }
 function boot() {
   let saved = null; try { saved = JSON.parse(localStorage.getItem(LS_KEY) || "null"); } catch (e) {}
@@ -1986,7 +2325,7 @@ async function gdRestore(fileId) {
 }
 
 /* ---------- Claude als KI-Assistent mit Werkzeugen auf die Engine ---------- */
-const AI_TOOLS = () => [
+let AI_TOOLS = () => [
   { name: "kpis", description: "Aktuelle Kennzahlen eines Unternehmens (elevon, novamart, aventra): Bank, Umsatz, Marge, offene Posten, Bestand, branchenspezifische Werte. Alle Werte aus Belegen berechnet.", inputSchema: { type: "object", properties: { tenant: { type: "string" } }, required: ["tenant"] }, execute: i => { const t = W.tenants[String(i.tenant)]; if (!t) throw new Error("Unbekanntes Unternehmen"); const k = E.kpis(t); delete k.trend; return k; } },
   { name: "guv", description: "Gewinn- und Verlustrechnung einer Periode (Format JJJJ-MM) aus dem Hauptbuch: Umsatz, Materialaufwand, Rohertrag, Personal, Sonstiges, EBIT.", inputSchema: { type: "object", properties: { tenant: { type: "string" }, period: { type: "string" } }, required: ["tenant", "period"] }, execute: i => E.plOf(W.tenants[String(i.tenant)], String(i.period)) },
   { name: "projekte", description: "Aventra-Projekte mit Budget, Ist-Kosten, Prognose (EAC), Erlösen, nicht fakturierten Leistungen und Margenprognose.", execute: () => E.projectMetrics(W.tenants.aventra) },
@@ -2194,7 +2533,7 @@ async function resolveOwner() {
 }
 function myAccount(tid) { const o = ownerId(); return o ? W.tenants[tid].users.find(u => u.account && u.owner === o && u.active !== false) : null; }
 S.accAuto = {};
-function adoptAccounts() { let ch = false; for (const id of E.TENANT_IDS) { const a = myAccount(id); if (a && !S.accAuto[id]) { S.accAuto[id] = true; S.users[id] = a.id; ch = true; } if (!W.tenants[id].users.some(u => u.id === S.users[id])) { S.users[id] = "u3"; ch = true; } } return ch; }
+function adoptAccounts() { let ch = false; for (const id of E.TENANT_IDS) { const a = myAccount(id); if (a && !S.accAuto[id]) { S.accAuto[id] = true; S.users[id] = a.id; ch = true; } if (!W.tenants[id].users.some(u => u.id === S.users[id])) { S.users[id] = "u1"; ch = true; } } return ch; }
 const _replay = replayFromBackend; replayFromBackend = function () { _replay(); if (adoptAccounts()) render(); };
 VIEWS.users = () => {
   const t = T(); const mine = myAccount(t.id); const cur = U(); const roleName = id => (t.roles.find(r => r.id === id) || {}).name || id;
@@ -2215,12 +2554,228 @@ VIEWS.users = () => {
 Object.assign(ACT, {
   goUsers() { S.menu = false; renderLayer(); go("users"); },
   accRole(d) { act("changeAccountRole", { accountId: d.id, role: document.getElementById("accRole").value, owner: ownerId() }); },
-  accClose(d) { act("closeAccount", { accountId: d.id, owner: ownerId() }); S.users[S.tenant] = "u3"; render(); }
+  accClose(d) { act("closeAccount", { accountId: d.id, owner: ownerId() }); S.users[S.tenant] = "u1"; render(); }
 });
 const _setUser = ACT.setUser;
 ACT.setUser = d => { const u = T().users.find(x => x.id === d.id); if (u && u.account && u.owner !== ownerId()) return toast("Fremde Accounts können nicht übernommen werden.", true); if (u && u.active === false) return toast("Dieser Account ist geschlossen.", true); S.menu = false; _setUser(d); };
 ON.regRole = v => { S.sel.regRole = v; const r = T().roles.find(x => x.id === v); const el = document.getElementById("regDesc"); if (el) el.textContent = r ? r.desc || "" : ""; };
 FORMS.register = () => { const name = document.getElementById("regName").value; const r = act("registerAccount", { name, role: document.getElementById("regRole").value, owner: ownerId() }); if (r && r.ok) { S.users[S.tenant] = r.objects[0]; S.accAuto[S.tenant] = true; saveLog(); render(); toast("Account angelegt – du arbeitest jetzt als " + name.trim()); } };
+
+
+const SAMPLE_DXF = "0\nSECTION\n2\nHEADER\n9\n$ACADVER\n1\nAC1009\n9\n$INSUNITS\n70\n4\n0\nENDSEC\n0\nSECTION\n2\nTABLES\n0\nTABLE\n2\nLAYER\n70\n7\n0\nLAYER\n2\nRAHMEN\n70\n0\n62\n7\n6\nCONTINUOUS\n0\nLAYER\n2\nANSICHT\n70\n0\n62\n7\n6\nCONTINUOUS\n0\nLAYER\n2\nTEXT\n70\n0\n62\n7\n6\nCONTINUOUS\n0\nLAYER\n2\nPOSNR\n70\n0\n62\n1\n6\nCONTINUOUS\n0\nLAYER\n2\nPOS-1\n70\n0\n62\n3\n6\nCONTINUOUS\n0\nLAYER\n2\nPOS-2\n70\n0\n62\n5\n6\nCONTINUOUS\n0\nLAYER\n2\nPOS-3\n70\n0\n62\n6\n6\nCONTINUOUS\n0\nENDTAB\n0\nENDSEC\n0\nSECTION\n2\nBLOCKS\n0\nBLOCK\n8\n0\n2\nSCHRIFTFELD\n70\n2\n10\n0\n20\n0\n3\nSCHRIFTFELD\n0\nATTDEF\n8\n0\n10\n4\n20\n-4\n40\n2.5\n1\n\n3\nZEICHNUNGSNR\n2\nZEICHNUNGSNR\n70\n1\n0\nATTDEF\n8\n0\n10\n4\n20\n-8\n40\n2.5\n1\n\n3\nBENENNUNG\n2\nBENENNUNG\n70\n1\n0\nATTDEF\n8\n0\n10\n4\n20\n-12\n40\n2.5\n1\n\n3\nREVISION\n2\nREVISION\n70\n1\n0\nATTDEF\n8\n0\n10\n4\n20\n-16\n40\n2.5\n1\n\n3\nMASSSTAB\n2\nMASSSTAB\n70\n1\n0\nATTDEF\n8\n0\n10\n4\n20\n-20\n40\n2.5\n1\n\n3\nERSTELLT\n2\nERSTELLT\n70\n1\n0\nATTDEF\n8\n0\n10\n4\n20\n-24\n40\n2.5\n1\n\n3\nOBERFLAECHE\n2\nOBERFLAECHE\n70\n1\n0\nATTDEF\n8\n0\n10\n4\n20\n-28\n40\n2.5\n1\n\n3\nNAHTLAENGE\n2\nNAHTLAENGE\n70\n1\n0\nATTDEF\n8\n0\n10\n4\n20\n-32\n40\n2.5\n1\n\n3\nNAHTDICKE\n2\nNAHTDICKE\n70\n1\n0\nENDBLK\n8\n0\n0\nBLOCK\n8\n0\n2\nPOSNR\n70\n2\n10\n0\n20\n0\n3\nPOSNR\n0\nATTDEF\n8\n0\n10\n4\n20\n-4\n40\n2.5\n1\n\n3\nPOS\n2\nPOS\n70\n1\n0\nATTDEF\n8\n0\n10\n4\n20\n-8\n40\n2.5\n1\n\n3\nBENENNUNG\n2\nBENENNUNG\n70\n1\n0\nATTDEF\n8\n0\n10\n4\n20\n-12\n40\n2.5\n1\n\n3\nMENGE\n2\nMENGE\n70\n1\n0\nATTDEF\n8\n0\n10\n4\n20\n-16\n40\n2.5\n1\n\n3\nART\n2\nART\n70\n1\n0\nATTDEF\n8\n0\n10\n4\n20\n-20\n40\n2.5\n1\n\n3\nWERKSTOFF\n2\nWERKSTOFF\n70\n1\n0\nATTDEF\n8\n0\n10\n4\n20\n-24\n40\n2.5\n1\n\n3\nDICKE\n2\nDICKE\n70\n1\n0\nATTDEF\n8\n0\n10\n4\n20\n-28\n40\n2.5\n1\n\n3\nLAENGE\n2\nLAENGE\n70\n1\n0\nATTDEF\n8\n0\n10\n4\n20\n-32\n40\n2.5\n1\n\n3\nBREITE\n2\nBREITE\n70\n1\n0\nATTDEF\n8\n0\n10\n4\n20\n-36\n40\n2.5\n1\n\n3\nBIEGUNGEN\n2\nBIEGUNGEN\n70\n1\n0\nATTDEF\n8\n0\n10\n4\n20\n-40\n40\n2.5\n1\n\n3\nBOHRUNGEN\n2\nBOHRUNGEN\n70\n1\n0\nATTDEF\n8\n0\n10\n4\n20\n-44\n40\n2.5\n1\n\n3\nBOHR_D\n2\nBOHR_D\n70\n1\n0\nATTDEF\n8\n0\n10\n4\n20\n-48\n40\n2.5\n1\n\n3\nNORM\n2\nNORM\n70\n1\n0\nATTDEF\n8\n0\n10\n4\n20\n-52\n40\n2.5\n1\n\n3\nTEILENR\n2\nTEILENR\n70\n1\n0\nENDBLK\n8\n0\n0\nENDSEC\n0\nSECTION\n2\nENTITIES\n0\nLINE\n8\nRAHMEN\n10\n0.000\n20\n0.000\n11\n594.000\n21\n0.000\n0\nLINE\n8\nRAHMEN\n10\n594.000\n20\n0.000\n11\n594.000\n21\n420.000\n0\nLINE\n8\nRAHMEN\n10\n594.000\n20\n420.000\n11\n0.000\n21\n420.000\n0\nLINE\n8\nRAHMEN\n10\n0.000\n20\n420.000\n11\n0.000\n21\n0.000\n0\nLINE\n8\nRAHMEN\n10\n10.000\n20\n10.000\n11\n584.000\n21\n10.000\n0\nLINE\n8\nRAHMEN\n10\n584.000\n20\n10.000\n11\n584.000\n21\n410.000\n0\nLINE\n8\nRAHMEN\n10\n584.000\n20\n410.000\n11\n10.000\n21\n410.000\n0\nLINE\n8\nRAHMEN\n10\n10.000\n20\n410.000\n11\n10.000\n21\n10.000\n0\nLINE\n8\nRAHMEN\n10\n404.000\n20\n10.000\n11\n584.000\n21\n10.000\n0\nLINE\n8\nRAHMEN\n10\n584.000\n20\n10.000\n11\n584.000\n21\n66.000\n0\nLINE\n8\nRAHMEN\n10\n584.000\n20\n66.000\n11\n404.000\n21\n66.000\n0\nLINE\n8\nRAHMEN\n10\n404.000\n20\n66.000\n11\n404.000\n21\n10.000\n0\nLINE\n8\nRAHMEN\n10\n404.000\n20\n24.000\n11\n584.000\n21\n24.000\n0\nLINE\n8\nRAHMEN\n10\n404.000\n20\n38.000\n11\n584.000\n21\n38.000\n0\nLINE\n8\nRAHMEN\n10\n404.000\n20\n52.000\n11\n584.000\n21\n52.000\n0\nTEXT\n8\nTEXT\n10\n408.000\n20\n56.000\n40\n5\n1\nSchachtkonsole F\u00fchrungsschiene\n0\nTEXT\n8\nTEXT\n10\n408.000\n20\n42.000\n40\n3.5\n1\nZeichnungs-Nr. SK-200   Rev. B\n0\nTEXT\n8\nTEXT\n10\n408.000\n20\n28.000\n40\n3\n1\nWerkstoff S235JR \u00b7 Oberfl\u00e4che feuerverzinkt\n0\nTEXT\n8\nTEXT\n10\n408.000\n20\n14.000\n40\n3\n1\nMa\u00dfstab 1:2 \u00b7 erstellt F. Amann \u00b7 ELEVON INDUSTRIES\n0\nINSERT\n8\nTEXT\n66\n1\n2\nSCHRIFTFELD\n10\n404.000\n20\n10.000\n0\nATTRIB\n8\nTEXT\n10\n408.000\n20\n6.000\n40\n2.5\n1\nSK-200\n2\nZEICHNUNGSNR\n70\n0\n0\nATTRIB\n8\nTEXT\n10\n408.000\n20\n2.000\n40\n2.5\n1\nSchachtkonsole F\u00fchrungsschiene\n2\nBENENNUNG\n70\n0\n0\nATTRIB\n8\nTEXT\n10\n408.000\n20\n-2.000\n40\n2.5\n1\nB\n2\nREVISION\n70\n0\n0\nATTRIB\n8\nTEXT\n10\n408.000\n20\n-6.000\n40\n2.5\n1\n1:2\n2\nMASSSTAB\n70\n0\n0\nATTRIB\n8\nTEXT\n10\n408.000\n20\n-10.000\n40\n2.5\n1\nF. Amann\n2\nERSTELLT\n70\n0\n0\nATTRIB\n8\nTEXT\n10\n408.000\n20\n-14.000\n40\n2.5\n1\nFeuerverzinkt\n2\nOBERFLAECHE\n70\n0\n0\nATTRIB\n8\nTEXT\n10\n408.000\n20\n-18.000\n40\n2.5\n1\n640\n2\nNAHTLAENGE\n70\n0\n0\nATTRIB\n8\nTEXT\n10\n408.000\n20\n-22.000\n40\n2.5\n1\n4\n2\nNAHTDICKE\n70\n0\n0\nSEQEND\n8\nTEXT\n0\nLINE\n8\nANSICHT\n10\n40.000\n20\n250.000\n11\n190.000\n21\n250.000\n0\nLINE\n8\nANSICHT\n10\n190.000\n20\n250.000\n11\n190.000\n21\n254.000\n0\nLINE\n8\nANSICHT\n10\n190.000\n20\n254.000\n11\n40.000\n21\n254.000\n0\nLINE\n8\nANSICHT\n10\n40.000\n20\n254.000\n11\n40.000\n21\n250.000\n0\nLINE\n8\nANSICHT\n10\n50.000\n20\n254.000\n11\n52.500\n21\n254.000\n0\nLINE\n8\nANSICHT\n10\n52.500\n20\n254.000\n11\n52.500\n21\n329.000\n0\nLINE\n8\nANSICHT\n10\n52.500\n20\n329.000\n11\n50.000\n21\n329.000\n0\nLINE\n8\nANSICHT\n10\n50.000\n20\n329.000\n11\n50.000\n21\n254.000\n0\nLINE\n8\nANSICHT\n10\n177.500\n20\n254.000\n11\n180.000\n21\n254.000\n0\nLINE\n8\nANSICHT\n10\n180.000\n20\n254.000\n11\n180.000\n21\n329.000\n0\nLINE\n8\nANSICHT\n10\n180.000\n20\n329.000\n11\n177.500\n21\n329.000\n0\nLINE\n8\nANSICHT\n10\n177.500\n20\n329.000\n11\n177.500\n21\n254.000\n0\nLINE\n8\nANSICHT\n10\n52.500\n20\n254.000\n11\n92.500\n21\n254.000\n0\nLINE\n8\nANSICHT\n10\n52.500\n20\n294.000\n11\n92.500\n21\n254.000\n0\nLINE\n8\nANSICHT\n10\n177.500\n20\n254.000\n11\n137.500\n21\n254.000\n0\nLINE\n8\nANSICHT\n10\n177.500\n20\n294.000\n11\n137.500\n21\n254.000\n0\nLINE\n8\nANSICHT\n10\n95.000\n20\n310.000\n11\n135.000\n21\n310.000\n0\nLINE\n8\nANSICHT\n10\n135.000\n20\n310.000\n11\n135.000\n21\n322.000\n0\nLINE\n8\nANSICHT\n10\n135.000\n20\n322.000\n11\n95.000\n21\n322.000\n0\nLINE\n8\nANSICHT\n10\n95.000\n20\n322.000\n11\n95.000\n21\n310.000\n0\nTEXT\n8\nTEXT\n10\n40.000\n20\n238.000\n40\n3.5\n1\nZusammenbau SK-200  M 1:2\n0\nLINE\n8\nPOS-1\n10\n240.000\n20\n240.000\n11\n540.000\n21\n240.000\n0\nLINE\n8\nPOS-1\n10\n540.000\n20\n240.000\n11\n540.000\n21\n440.000\n0\nLINE\n8\nPOS-1\n10\n540.000\n20\n440.000\n11\n240.000\n21\n440.000\n0\nLINE\n8\nPOS-1\n10\n240.000\n20\n440.000\n11\n240.000\n21\n240.000\n0\nCIRCLE\n8\nPOS-1\n10\n265.000\n20\n265.000\n40\n7.000\n0\nCIRCLE\n8\nPOS-1\n10\n515.000\n20\n265.000\n40\n7.000\n0\nCIRCLE\n8\nPOS-1\n10\n265.000\n20\n415.000\n40\n7.000\n0\nCIRCLE\n8\nPOS-1\n10\n515.000\n20\n415.000\n40\n7.000\n0\nLINE\n8\nPOS-2\n10\n240.000\n20\n40.000\n11\n490.000\n21\n40.000\n0\nLINE\n8\nPOS-2\n10\n490.000\n20\n40.000\n11\n490.000\n21\n190.000\n0\nLINE\n8\nPOS-2\n10\n490.000\n20\n190.000\n11\n240.000\n21\n190.000\n0\nLINE\n8\nPOS-2\n10\n240.000\n20\n190.000\n11\n240.000\n21\n40.000\n0\nCIRCLE\n8\nPOS-2\n10\n300.000\n20\n80.000\n40\n9.000\n0\nCIRCLE\n8\nPOS-2\n10\n430.000\n20\n80.000\n40\n9.000\n0\nLINE\n8\nANSICHT\n10\n240.000\n20\n130.000\n11\n490.000\n21\n130.000\n0\nLINE\n8\nPOS-3\n10\n40.000\n20\n60.000\n11\n160.000\n21\n60.000\n0\nLINE\n8\nPOS-3\n10\n160.000\n20\n60.000\n11\n160.000\n21\n75.000\n0\nLINE\n8\nPOS-3\n10\n160.000\n20\n75.000\n11\n55.000\n21\n140.000\n0\nLINE\n8\nPOS-3\n10\n55.000\n20\n140.000\n11\n40.000\n21\n140.000\n0\nLINE\n8\nPOS-3\n10\n40.000\n20\n140.000\n11\n40.000\n21\n60.000\n0\nTEXT\n8\nTEXT\n10\n240.000\n20\n446.000\n40\n3\n1\n\n0\nTEXT\n8\nTEXT\n10\n240.000\n20\n232.000\n40\n3\n1\nPos. 1 Abwicklung\n0\nTEXT\n8\nTEXT\n10\n240.000\n20\n32.000\n40\n3\n1\nPos. 2 Abwicklung (1 Biegung 90\u00b0)\n0\nTEXT\n8\nTEXT\n10\n40.000\n20\n52.000\n40\n3\n1\nPos. 3 Abwicklung\n0\nCIRCLE\n8\nPOSNR\n10\n200.000\n20\n395.000\n40\n5.000\n0\nTEXT\n8\nPOSNR\n10\n198.500\n20\n393.500\n40\n3.5\n1\n1\n0\nINSERT\n8\nPOSNR\n66\n1\n2\nPOSNR\n10\n200.000\n20\n395.000\n0\nATTRIB\n8\nPOSNR\n10\n204.000\n20\n391.000\n40\n2.5\n1\n1\n2\nPOS\n70\n0\n0\nATTRIB\n8\nPOSNR\n10\n204.000\n20\n387.000\n40\n2.5\n1\nGrundplatte\n2\nBENENNUNG\n70\n0\n0\nATTRIB\n8\nPOSNR\n10\n204.000\n20\n383.000\n40\n2.5\n1\n1\n2\nMENGE\n70\n0\n0\nATTRIB\n8\nPOSNR\n10\n204.000\n20\n379.000\n40\n2.5\n1\nBlechteil\n2\nART\n70\n0\n0\nATTRIB\n8\nPOSNR\n10\n204.000\n20\n375.000\n40\n2.5\n1\nS235JR\n2\nWERKSTOFF\n70\n0\n0\nATTRIB\n8\nPOSNR\n10\n204.000\n20\n371.000\n40\n2.5\n1\n8\n2\nDICKE\n70\n0\n0\nATTRIB\n8\nPOSNR\n10\n204.000\n20\n367.000\n40\n2.5\n1\n300\n2\nLAENGE\n70\n0\n0\nATTRIB\n8\nPOSNR\n10\n204.000\n20\n363.000\n40\n2.5\n1\n200\n2\nBREITE\n70\n0\n0\nATTRIB\n8\nPOSNR\n10\n204.000\n20\n359.000\n40\n2.5\n1\n4\n2\nBOHRUNGEN\n70\n0\n0\nATTRIB\n8\nPOSNR\n10\n204.000\n20\n355.000\n40\n2.5\n1\n14\n2\nBOHR_D\n70\n0\n0\nSEQEND\n8\nPOSNR\n0\nCIRCLE\n8\nPOSNR\n10\n214.000\n20\n395.000\n40\n5.000\n0\nTEXT\n8\nPOSNR\n10\n212.500\n20\n393.500\n40\n3.5\n1\n2\n0\nINSERT\n8\nPOSNR\n66\n1\n2\nPOSNR\n10\n214.000\n20\n395.000\n0\nATTRIB\n8\nPOSNR\n10\n218.000\n20\n391.000\n40\n2.5\n1\n2\n2\nPOS\n70\n0\n0\nATTRIB\n8\nPOSNR\n10\n218.000\n20\n387.000\n40\n2.5\n1\nWinkel\n2\nBENENNUNG\n70\n0\n0\nATTRIB\n8\nPOSNR\n10\n218.000\n20\n383.000\n40\n2.5\n1\n2\n2\nMENGE\n70\n0\n0\nATTRIB\n8\nPOSNR\n10\n218.000\n20\n379.000\n40\n2.5\n1\nBlechteil\n2\nART\n70\n0\n0\nATTRIB\n8\nPOSNR\n10\n218.000\n20\n375.000\n40\n2.5\n1\nS235JR\n2\nWERKSTOFF\n70\n0\n0\nATTRIB\n8\nPOSNR\n10\n218.000\n20\n371.000\n40\n2.5\n1\n5\n2\nDICKE\n70\n0\n0\nATTRIB\n8\nPOSNR\n10\n218.000\n20\n367.000\n40\n2.5\n1\n250\n2\nLAENGE\n70\n0\n0\nATTRIB\n8\nPOSNR\n10\n218.000\n20\n363.000\n40\n2.5\n1\n150\n2\nBREITE\n70\n0\n0\nATTRIB\n8\nPOSNR\n10\n218.000\n20\n359.000\n40\n2.5\n1\n1\n2\nBIEGUNGEN\n70\n0\n0\nATTRIB\n8\nPOSNR\n10\n218.000\n20\n355.000\n40\n2.5\n1\n2\n2\nBOHRUNGEN\n70\n0\n0\nATTRIB\n8\nPOSNR\n10\n218.000\n20\n351.000\n40\n2.5\n1\n18\n2\nBOHR_D\n70\n0\n0\nSEQEND\n8\nPOSNR\n0\nCIRCLE\n8\nPOSNR\n10\n228.000\n20\n395.000\n40\n5.000\n0\nTEXT\n8\nPOSNR\n10\n226.500\n20\n393.500\n40\n3.5\n1\n3\n0\nINSERT\n8\nPOSNR\n66\n1\n2\nPOSNR\n10\n228.000\n20\n395.000\n0\nATTRIB\n8\nPOSNR\n10\n232.000\n20\n391.000\n40\n2.5\n1\n3\n2\nPOS\n70\n0\n0\nATTRIB\n8\nPOSNR\n10\n232.000\n20\n387.000\n40\n2.5\n1\nRippe\n2\nBENENNUNG\n70\n0\n0\nATTRIB\n8\nPOSNR\n10\n232.000\n20\n383.000\n40\n2.5\n1\n2\n2\nMENGE\n70\n0\n0\nATTRIB\n8\nPOSNR\n10\n232.000\n20\n379.000\n40\n2.5\n1\nBlechteil\n2\nART\n70\n0\n0\nATTRIB\n8\nPOSNR\n10\n232.000\n20\n375.000\n40\n2.5\n1\nS235JR\n2\nWERKSTOFF\n70\n0\n0\nATTRIB\n8\nPOSNR\n10\n232.000\n20\n371.000\n40\n2.5\n1\n5\n2\nDICKE\n70\n0\n0\nATTRIB\n8\nPOSNR\n10\n232.000\n20\n367.000\n40\n2.5\n1\n120\n2\nLAENGE\n70\n0\n0\nATTRIB\n8\nPOSNR\n10\n232.000\n20\n363.000\n40\n2.5\n1\n80\n2\nBREITE\n70\n0\n0\nSEQEND\n8\nPOSNR\n0\nCIRCLE\n8\nPOSNR\n10\n242.000\n20\n395.000\n40\n5.000\n0\nTEXT\n8\nPOSNR\n10\n240.500\n20\n393.500\n40\n3.5\n1\n4\n0\nINSERT\n8\nPOSNR\n66\n1\n2\nPOSNR\n10\n242.000\n20\n395.000\n0\nATTRIB\n8\nPOSNR\n10\n246.000\n20\n391.000\n40\n2.5\n1\n4\n2\nPOS\n70\n0\n0\nATTRIB\n8\nPOSNR\n10\n246.000\n20\n387.000\n40\n2.5\n1\nSchienenklammer\n2\nBENENNUNG\n70\n0\n0\nATTRIB\n8\nPOSNR\n10\n246.000\n20\n383.000\n40\n2.5\n1\n2\n2\nMENGE\n70\n0\n0\nATTRIB\n8\nPOSNR\n10\n246.000\n20\n379.000\n40\n2.5\n1\nZukaufteil\n2\nART\n70\n0\n0\nATTRIB\n8\nPOSNR\n10\n246.000\n20\n375.000\n40\n2.5\n1\nSK-16\n2\nTEILENR\n70\n0\n0\nSEQEND\n8\nPOSNR\n0\nCIRCLE\n8\nPOSNR\n10\n256.000\n20\n395.000\n40\n5.000\n0\nTEXT\n8\nPOSNR\n10\n254.500\n20\n393.500\n40\n3.5\n1\n5\n0\nINSERT\n8\nPOSNR\n66\n1\n2\nPOSNR\n10\n256.000\n20\n395.000\n0\nATTRIB\n8\nPOSNR\n10\n260.000\n20\n391.000\n40\n2.5\n1\n5\n2\nPOS\n70\n0\n0\nATTRIB\n8\nPOSNR\n10\n260.000\n20\n387.000\n40\n2.5\n1\nSechskantschraube\n2\nBENENNUNG\n70\n0\n0\nATTRIB\n8\nPOSNR\n10\n260.000\n20\n383.000\n40\n2.5\n1\n4\n2\nMENGE\n70\n0\n0\nATTRIB\n8\nPOSNR\n10\n260.000\n20\n379.000\n40\n2.5\n1\nNormteil\n2\nART\n70\n0\n0\nATTRIB\n8\nPOSNR\n10\n260.000\n20\n375.000\n40\n2.5\n1\nDIN 933 M12x40\n2\nNORM\n70\n0\n0\nSEQEND\n8\nPOSNR\n0\nCIRCLE\n8\nPOSNR\n10\n270.000\n20\n395.000\n40\n5.000\n0\nTEXT\n8\nPOSNR\n10\n268.500\n20\n393.500\n40\n3.5\n1\n6\n0\nINSERT\n8\nPOSNR\n66\n1\n2\nPOSNR\n10\n270.000\n20\n395.000\n0\nATTRIB\n8\nPOSNR\n10\n274.000\n20\n391.000\n40\n2.5\n1\n6\n2\nPOS\n70\n0\n0\nATTRIB\n8\nPOSNR\n10\n274.000\n20\n387.000\n40\n2.5\n1\nSechskantmutter\n2\nBENENNUNG\n70\n0\n0\nATTRIB\n8\nPOSNR\n10\n274.000\n20\n383.000\n40\n2.5\n1\n4\n2\nMENGE\n70\n0\n0\nATTRIB\n8\nPOSNR\n10\n274.000\n20\n379.000\n40\n2.5\n1\nNormteil\n2\nART\n70\n0\n0\nATTRIB\n8\nPOSNR\n10\n274.000\n20\n375.000\n40\n2.5\n1\nDIN 934 M12\n2\nNORM\n70\n0\n0\nSEQEND\n8\nPOSNR\n0\nCIRCLE\n8\nPOSNR\n10\n284.000\n20\n395.000\n40\n5.000\n0\nTEXT\n8\nPOSNR\n10\n282.500\n20\n393.500\n40\n3.5\n1\n7\n0\nINSERT\n8\nPOSNR\n66\n1\n2\nPOSNR\n10\n284.000\n20\n395.000\n0\nATTRIB\n8\nPOSNR\n10\n288.000\n20\n391.000\n40\n2.5\n1\n7\n2\nPOS\n70\n0\n0\nATTRIB\n8\nPOSNR\n10\n288.000\n20\n387.000\n40\n2.5\n1\nScheibe\n2\nBENENNUNG\n70\n0\n0\nATTRIB\n8\nPOSNR\n10\n288.000\n20\n383.000\n40\n2.5\n1\n8\n2\nMENGE\n70\n0\n0\nATTRIB\n8\nPOSNR\n10\n288.000\n20\n379.000\n40\n2.5\n1\nNormteil\n2\nART\n70\n0\n0\nATTRIB\n8\nPOSNR\n10\n288.000\n20\n375.000\n40\n2.5\n1\nDIN 125 A13\n2\nNORM\n70\n0\n0\nSEQEND\n8\nPOSNR\n0\nCIRCLE\n8\nPOSNR\n10\n298.000\n20\n395.000\n40\n5.000\n0\nTEXT\n8\nPOSNR\n10\n296.500\n20\n393.500\n40\n3.5\n1\n8\n0\nINSERT\n8\nPOSNR\n66\n1\n2\nPOSNR\n10\n298.000\n20\n395.000\n0\nATTRIB\n8\nPOSNR\n10\n302.000\n20\n391.000\n40\n2.5\n1\n8\n2\nPOS\n70\n0\n0\nATTRIB\n8\nPOSNR\n10\n302.000\n20\n387.000\n40\n2.5\n1\nBolzenanker\n2\nBENENNUNG\n70\n0\n0\nATTRIB\n8\nPOSNR\n10\n302.000\n20\n383.000\n40\n2.5\n1\n4\n2\nMENGE\n70\n0\n0\nATTRIB\n8\nPOSNR\n10\n302.000\n20\n379.000\n40\n2.5\n1\nNormteil\n2\nART\n70\n0\n0\nATTRIB\n8\nPOSNR\n10\n302.000\n20\n375.000\n40\n2.5\n1\nANKER M12x110\n2\nNORM\n70\n0\n0\nSEQEND\n8\nPOSNR\n0\nCIRCLE\n8\nPOSNR\n10\n312.000\n20\n395.000\n40\n5.000\n0\nTEXT\n8\nPOSNR\n10\n310.500\n20\n393.500\n40\n3.5\n1\n9\n0\nINSERT\n8\nPOSNR\n66\n1\n2\nPOSNR\n10\n312.000\n20\n395.000\n0\nATTRIB\n8\nPOSNR\n10\n316.000\n20\n391.000\n40\n2.5\n1\n9\n2\nPOS\n70\n0\n0\nATTRIB\n8\nPOSNR\n10\n316.000\n20\n387.000\n40\n2.5\n1\nElastomerlager\n2\nBENENNUNG\n70\n0\n0\nATTRIB\n8\nPOSNR\n10\n316.000\n20\n383.000\n40\n2.5\n1\n2\n2\nMENGE\n70\n0\n0\nATTRIB\n8\nPOSNR\n10\n316.000\n20\n379.000\n40\n2.5\n1\nZukaufteil\n2\nART\n70\n0\n0\nATTRIB\n8\nPOSNR\n10\n316.000\n20\n375.000\n40\n2.5\n1\nEL-40\n2\nTEILENR\n70\n0\n0\nSEQEND\n8\nPOSNR\n0\nENDSEC\n0\nEOF\n";
+/* ===== v0.6 Oberfläche: Konstruktion (DXF/Bild), Fertigung Baugruppen, Einkauf direkt/indirekt, Recruiting ===== */
+const DX = window.NexoraDXF;
+MODS.engineering = ["Konstruktion", "doc", "live"]; ROUTES.push("engineering");
+TENANT_MODS.elevon = ["sales", "service", "engineering", "production", "supply"]; TENANT_MODS.aventra = ["projects", "supply"];
+Object.assign(ROLE_MODS, { engineer: ["engineering", "production", "processes"] });
+ROLE_MODS.prod = ["engineering", "production", "supply", "processes"]; ROLE_MODS.buy = ["supply", "engineering", "finance", "processes"];
+ROLE_MODS.auditor = ROLE_MODS.auditor.concat(["engineering"]); ROLE_MODS.controller = ROLE_MODS.controller.concat(["supply", "production"]);
+S.eng = { preview: null, busy: null, err: null, sel: null, pos: null };
+const ENG_GEO = {}; // Geometrie je Zeichnung (aus Import oder Ereignis)
+
+/* ---------- Zeichnungsansicht (SVG aus DXF-Geometrie) ---------- */
+function drawingSvg(geo, hiPos, h) {
+  if (!geo || !geo.geom) return `<div class="empty small">Keine Geometrie (Zeichnung wurde aus einem Bild erkannt).</div>`;
+  const [x0, y0, x1, y1] = geo.bbox; const W = x1 - x0 || 1, H = y1 - y0 || 1; const X = x => (x - x0).toFixed(2), Y = y => (y1 - y).toFixed(2);
+  const col = l => { l = l.toUpperCase(); if (hiPos && l === "POS-" + hiPos) return "var(--accent)"; if (l.startsWith("POS-")) return "var(--fg)"; if (l === "POSNR") return "var(--crit)"; if (l === "RAHMEN") return "var(--fg-3)"; return "var(--fg-2)"; };
+  const sw = l => (hiPos && l.toUpperCase() === "POS-" + hiPos) ? 2.4 : l.toUpperCase().startsWith("POS-") ? 1.1 : .7;
+  const el = geo.geom.map(g => {
+    const a = `stroke="${col(g.layer)}" stroke-width="${sw(g.layer)}" fill="none" vector-effect="non-scaling-stroke"`;
+    if (g.t === "line") return `<line x1="${X(g.x1)}" y1="${Y(g.y1)}" x2="${X(g.x2)}" y2="${Y(g.y2)}" ${a}/>`;
+    if (g.t === "circle") return `<circle cx="${X(g.x)}" cy="${Y(g.y)}" r="${g.r}" ${a}/>`;
+    if (g.t === "arc") { const r1 = g.a1 * Math.PI / 180, r2 = g.a2 * Math.PI / 180; const sweep = ((g.a2 - g.a1) % 360 + 360) % 360; return `<path d="M${X(g.x + g.r * Math.cos(r1))} ${Y(g.y + g.r * Math.sin(r1))} A${g.r} ${g.r} 0 ${sweep > 180 ? 1 : 0} 0 ${X(g.x + g.r * Math.cos(r2))} ${Y(g.y + g.r * Math.sin(r2))}" ${a}/>`; }
+    return `<polyline points="${g.pts.map(p => X(p[0]) + "," + Y(p[1])).join(" ")}${g.closed ? " " + X(g.pts[0][0]) + "," + Y(g.pts[0][1]) : ""}" ${a}/>`;
+  }).join("");
+  const tx = (geo.texts || []).filter(t => t.s).map(t => `<text x="${X(t.x)}" y="${Y(t.y)}" font-size="${t.h}" fill="${col(t.layer)}" style="font-family:var(--f-body)">${esc(t.s)}</text>`).join("");
+  return `<svg viewBox="-5 -5 ${(W + 10).toFixed(1)} ${(H + 10).toFixed(1)}" style="width:100%;height:${h || 380}px;background:var(--surface)" role="img" aria-label="Zeichnungsansicht">${el}${tx}</svg>`;
+}
+
+/* ---------- Import: DXF direkt, Bild über Claude ---------- */
+async function readDrawingFile(file) {
+  S.eng.err = null; S.eng.preview = null;
+  const name = file.name || "Zeichnung"; const ext = name.split(".").pop().toLowerCase();
+  if (ext === "dxf") { try { const txt = await file.text(); const r = DX.toDrawing(txt, name); S.eng.preview = Object.assign(r, { kind: "DXF" }); } catch (e) { S.eng.err = e.message; } render(); return; }
+  if (["dwg", "step", "stp", "iges", "igs"].includes(ext)) { S.eng.err = `${ext.toUpperCase()} kann im Browser nicht gelesen werden. Bitte im CAD-System als ASCII-DXF exportieren (Schriftfeld mit Attribut ZEICHNUNGSNR, Positionsnummern mit Attribut POS).`; render(); return; }
+  if (!BK.sample) { S.eng.err = "Bilder und PDFs liest Claude. Claude ist in dieser Ansicht nicht verfügbar – bitte DXF verwenden."; render(); return; }
+  let lim = null; try { lim = await BK.sample.limits(); } catch (e) {}
+  if (!lim || !lim.images) { S.eng.err = "In dieser Ansicht können keine Bilder an Claude gesendet werden – bitte DXF verwenden."; render(); return; }
+  if (!lim.images.mediaTypes.includes(file.type)) { S.eng.err = `Dateityp ${file.type || ext} wird nicht angenommen (möglich: ${lim.images.mediaTypes.join(", ")}). PDF bitte als PNG exportieren oder DXF verwenden.`; render(); return; }
+  S.eng.busy = "Claude liest die Zeichnung …"; render();
+  const prompt = `Du liest eine technische Zeichnung (Baugruppe) für die Stücklistenerstellung. Gib ausschließlich JSON zurück, ohne Erklärung:
+{"drawingNo":"","title":"","revision":"","finish":"Feuerverzinkt|Pulverbeschichtet|ohne","weldLength":0,"weldSize":0,"items":[{"pos":"1","name":"","qty":1,"kind":"Blechteil|Profil|Normteil|Zukaufteil","grade":"S235JR|1.4301|AlMg3|null","thickness":0,"length":0,"width":0,"section":null,"norm":null,"partNo":null,"bends":0,"holes":0,"holeDia":0}],"unsure":["Positionen oder Felder, die du nicht sicher lesen konntest"]}
+Regeln: Nur übernehmen, was auf der Zeichnung steht (Schriftfeld, Stückliste, Positionsnummern, Bemaßung). Nichts erfinden; Unbekanntes als null oder 0 und in "unsure" nennen. Normteile mit Norm und Größe, z. B. "DIN 933 M12x40". Maße in mm.`;
+  try { const j = await BK.sample.json(prompt, { images: [file], modelTier: "complex" }); const unsure = Array.isArray(j.unsure) ? j.unsure : [];
+    S.eng.preview = { kind: "KI", drawing: Object.assign({ source: "Bild (KI-Erkennung)", file: name, aiAssisted: true }, j, { items: (j.items || []).map(i => Object.assign({}, i, { qty: +i.qty || 0 })) }), geometry: null, warnings: ["Von Claude aus dem Bild erkannt – jede Position prüfen, bevor sie übernommen wird."].concat(unsure.map(u => "Unsicher: " + u)) }; }
+  catch (e) { S.eng.err = { not_granted: "Claude ist für diese Seite nicht freigegeben.", images_unavailable: "Bilder können in dieser Ansicht nicht gesendet werden.", image_rejected: "Das Bild wurde nicht angenommen (Typ oder Größe).", invalid_json: "Claude hat keine auswertbare Stückliste geliefert – bitte schärferes Bild oder DXF verwenden.", rate_limited: "Zu viele Anfragen – gleich erneut versuchen." }[e.code] || ("Claude konnte die Zeichnung nicht lesen (" + (e.code || e.message) + ")."); }
+  S.eng.busy = null; render();
+}
+function importPreview() {
+  const pv = S.eng.preview; if (!pv) return; const d = Object.assign({}, pv.drawing);
+  const geoJson = pv.geometry ? JSON.stringify(pv.geometry) : ""; if (geoJson && geoJson.length < 90000) d.geometry = pv.geometry;
+  const r = act("importDrawing", { drawing: d }); if (r && r.ok) { if (pv.geometry) ENG_GEO[d.drawingNo] = pv.geometry; S.eng.preview = null; S.eng.sel = d.drawingNo; render(); }
+}
+function sampleDrawing() { const r = DX.toDrawing(SAMPLE_DXF, "SK-200.dxf"); S.eng.preview = Object.assign(r, { kind: "DXF" }); S.eng.err = null; render(); }
+
+/* ---------- Konstruktion ---------- */
+VIEWS.engineering = () => {
+  const t = T(); if (t.id !== "elevon") return head("Konstruktion", "Konstruktion") + statusNote("plan", "Konstruktion mit Zeichnungsimport ist in dieser Demo bei Elevon umgesetzt.") + `<section class="card card-pad"><button class="btn pri" data-act="tenant" data-id="elevon" data-go="engineering">Zu Elevon wechseln</button></section>`;
+  const pv = S.eng.preview; const drs = t.eng.drawings; const sel = drs.find(d => d.no === S.eng.sel) || drs[drs.length - 1];
+  const kindPill = k => pill(k === "Blechteil" ? "p-acc" : k === "Normteil" ? "p-neu" : k === "Zukaufteil" ? "p-warn" : "p-good", k);
+  let h = head("Konstruktion · Elevon", "Von der Zeichnung zur Fertigung") + statusNote("live", "Zeichnung einlesen → Stückliste, Arbeitsplan mit Arbeitsanweisungen und Bezugsquellen werden aus Geometrie und Stammdaten berechnet → Konstruktionsfreigabe (Vier-Augen) → Fertigungsauftrag → Bedarfsplanung → Bestellungen je Lieferant. DXF wird exakt gelesen; Bilder liest Claude als Vorschlag zur Prüfung.");
+  h += `<section class="card card-pad" style="display:flex;flex-direction:column;gap:12px"><div class="row between"><h3>Zeichnung einlesen</h3><span class="small faint">DXF (ASCII) direkt · PNG/JPG über Claude · DWG/STEP bitte als DXF exportieren</span></div>
+    <div class="row"><label class="btn pri" style="cursor:pointer">Datei wählen<input type="file" id="dwgFile" accept=".dxf,.png,.jpg,.jpeg,.webp,.pdf,.dwg,.step,.stp" style="display:none" data-on="dwgFile"></label><button class="btn" data-act="sampleDwg">Beispiel SK-200 (DXF) laden</button>${S.eng.busy ? `<span class="small muted">${esc(S.eng.busy)}</span>` : ""}</div>
+    ${S.eng.err ? `<div class="note warn small">${esc(S.eng.err)}</div>` : ""}</section>`;
+  if (pv) { const d = pv.drawing;
+    h += `<section class="card"><div class="card-h"><h3>Vorschau: ${esc(d.drawingNo || "ohne Nummer")} Rev. ${esc(d.revision || "–")} · ${esc(d.title || "")}</h3><div class="row"><button class="btn" data-act="dropPreview">Verwerfen</button><button class="btn pri" data-act="importPreview" ${d.items && d.items.length ? "" : "disabled"}>${pv.kind === "KI" ? "Geprüft – übernehmen" : "In NEXORA übernehmen"}</button></div></div>
+      <div class="grid g2" style="padding:14px"><div>${drawingSvg(pv.geometry, S.eng.pos, 340)}</div><div style="display:flex;flex-direction:column;gap:8px"><div class="kv"><span>Quelle</span><span>${esc(pv.kind === "KI" ? "Bild, von Claude erkannt" : "DXF " + (d.file || ""))}</span><span>Oberfläche</span><span>${esc(d.finish || "ohne")}</span><span>Schweißnaht</span><span>${d.weldLength ? d.weldLength + " mm, a=" + (d.weldSize || 4) + " mm" : "–"}</span><span>Ersteller</span><span>${esc(d.author || "–")}</span></div>
+      ${pv.warnings && pv.warnings.length ? `<div class="note ${pv.kind === "KI" ? "acc" : "warn"} small" style="flex-direction:column;gap:2px">${pv.warnings.map(w => `<span>${esc(w)}</span>`).join("")}</div>` : `<div class="note good small">Schriftfeld und ${d.items.length} Positionen gelesen, Schnittlängen aus den Abwicklungen berechnet.</div>`}</div></div>
+      <div class="tbl-wrap"><table><thead><tr><th>Pos.</th><th>Benennung</th><th>Art</th><th class="r">Menge</th><th>Werkstoff / Norm / Teilenr.</th><th class="r">Abmessung</th><th class="r">Schnittlänge</th></tr></thead><tbody>${(d.items || []).map(i => `<tr class="click" data-act="hiPos" data-pos="${esc(i.pos)}" ${S.eng.pos === String(i.pos) ? 'style="background:var(--accent-soft)"' : ""}><td class="num">${esc(i.pos)}</td><td>${esc(i.name)}</td><td>${kindPill(i.kind)}</td><td class="r num">${i.qty}</td><td class="small">${esc([i.grade, i.thickness ? i.thickness + " mm" : null, i.section, i.norm, i.partNo].filter(Boolean).join(" · "))}</td><td class="r num small">${i.length ? i.length + " × " + i.width : "–"}${i.bends ? " · " + i.bends + " Biegung" : ""}${i.holes ? " · " + i.holes + "×Ø" + i.holeDia : ""}</td><td class="r num">${i.cutLength ? num(i.cutLength) + " mm" : "–"}</td></tr>`).join("")}</tbody></table></div></section>`; }
+  if (!drs.length) return h + `<section class="card card-pad"><p class="muted">Noch keine Zeichnung importiert. Lade die Beispielzeichnung SK-200 oder eine eigene DXF.</p></section>`;
+  const geo = ENG_GEO[sel.no] || sel.geometry; const err = sel.issues.filter(i => i[2] === "error"); const prod = sel.product && t.master.products.find(p => p.id === sel.product);
+  h += `<section class="card"><div class="card-h"><div class="row">${drs.length > 1 ? `<select class="input" style="width:auto" data-on="selDwg">${drs.map(d => `<option value="${esc(d.no)}" ${d.no === sel.no ? "selected" : ""}>${esc(d.no)} Rev. ${esc(d.rev)}</option>`).join("")}</select>` : ""}<h3>${esc(sel.no)} Rev. ${esc(sel.rev)} · ${esc(sel.title)}</h3>${stPill(sel.status)}${sel.aiAssisted ? pill("p-acc", "KI-erkannt, geprüft") : ""}</div>
+     <div class="row">${sel.status === "importiert" ? `<button class="btn pri" data-act="run" data-cmd="releaseDesign" data-p='${esc(JSON.stringify({ drawingNo: sel.no }))}' ${err.length ? "disabled" : ""}>Konstruktion freigeben</button>` : ""}${prod ? `<label class="row small" style="gap:6px">Menge<input class="input" id="faQty" type="number" min="1" value="20" style="width:80px"></label><button class="btn pri" data-act="newAssemblyOrder" data-id="${prod.id}">Fertigungsauftrag anlegen</button>` : ""}</div></div>
+    <div class="grid g2" style="padding:14px"><div>${drawingSvg(geo, S.eng.pos, 320)}</div><div style="display:flex;flex-direction:column;gap:10px">
+      <div class="grid g2">${kpiCard("Gewicht je Baugruppe", num(sel.weight) + " kg")}${kpiCard("Plan-Herstellkosten", eur(sel.costing.total, 2), sel.costing.basis)}</div>
+      <div class="kv"><span>Material</span><span class="num">${eur(sel.costing.material, 2)}</span><span>Fertigung</span><span class="num">${eur(sel.costing.labor, 2)}</span><span>Fremdbearbeitung</span><span class="num">${eur(sel.costing.external, 2)}</span><span>Importiert</span><span>${esc(sel.importedByName)} · ${dDe(sel.date)} · ${esc(sel.source)}</span>${sel.releasedBy ? `<span>Freigabe</span><span>${esc(sel.releasedBy)} → Material ${esc(sel.product)}</span>` : ""}</div>
+      ${err.length ? `<div class="note warn small" style="flex-direction:column;gap:6px"><b>Klärung vor Freigabe</b>${err.map(e => `<span>${esc(e[0])}: ${esc(e[1])}</span>`).join("")}${sel.items.filter(i => i.kind === "Zukaufteil" && sel.parts.some(pp => pp.pos === i.pos && !pp.mat)).map(i => `<form class="row" data-form="newPart" data-name="${esc(i.name)}" data-partno="${esc(i.partNo || "")}" style="align-items:flex-end;gap:6px"><span class="small"><b>${esc(i.name)} ${esc(i.partNo || "")}</b> – Bezugsquelle aus Angebot:</span><select class="input" id="npSup" style="width:auto">${t.master.suppliers.filter(s => !s.indirect && !s.link).slice(0, 10).map(s => `<option value="${s.id}" ${s.id === "S-1004" ? "selected" : ""}>${esc(s.name)}</option>`).join("")}</select><input class="input" id="npPrice" type="number" step="0.01" min="0.01" placeholder="€/Stk" value="12.40" style="width:90px"><input class="input" id="npLead" type="number" min="1" value="8" style="width:70px" title="Lieferzeit Tage"><input class="input" id="npQuote" placeholder="Angebotsnr." value="AN-2026-117" style="width:120px"><button class="btn sm pri" type="submit">Anlegen</button></form>`).join("")}</div>` : ""}
+    </div></div>
+    <div class="tabs" role="tablist" style="padding:0 14px">${[["bom", "Stückliste"], ["ops", "Arbeitsplan und Arbeitsanweisungen"], ["src", "Bezugsquellen"], ["parts", "Teile aus Zeichnung"]].map(x => `<button class="tab ${(S.tab.eng || "bom") === x[0] ? "on" : ""}" data-act="engTab" data-t="${x[0]}">${x[1]}</button>`).join("")}</div>`;
+  const tab = S.tab.eng || "bom";
+  if (tab === "bom") h += `<div class="tbl-wrap"><table><thead><tr><th>Material</th><th>Art</th><th class="r">Menge je Baugruppe</th><th class="r">Preis</th><th class="r">Wert</th><th>aus</th></tr></thead><tbody>${sel.bom.map(b => { const m = E.materialOf(t, b.mat); return `<tr><td>${esc(m.name)} <span class="mono small faint">${b.mat}</span></td><td>${esc(m.type)}</td><td class="r num">${num(b.qty)} ${m.unit}</td><td class="r num">${eur(m.price, 2)}/${m.unit}</td><td class="r num">${eur(b.qty * m.price, 2)}</td><td class="small faint">${esc(b.from.join(", "))}</td></tr>`; }).join("")}</tbody></table><p class="small faint" style="padding:10px 16px">Blechbedarf = Rohgewicht × (1 + ${E.WORK_CENTERS ? "15 %" : ""} Verschnitt) · Dichte Stahl 7,85 kg/dm³.</p></div>`;
+  if (tab === "ops") h += `<div class="list">${sel.ops.map(o => `<div class="li"><span class="mono small" style="width:44px">${o.no}</span><div class="grow"><b>${esc(o.text)}</b> <span class="small faint">${esc(o.wcName)}${o.external ? " · " + esc(E.supplierName(t, o.supplier)) : ` · ${o.setup} h Rüsten + ${o.perUnit} h je Stück · ${eur(o.rate)}/h`}</span><div class="small muted" style="margin-top:4px">${esc(o.instr)}</div></div></div>`).join("")}</div>`;
+  if (tab === "src") h += `<div class="tbl-wrap"><table><thead><tr><th>Material</th><th>Lieferant</th><th class="r">Lieferzeit</th><th class="r">Mindestmenge</th><th class="r">Bestand Werk</th></tr></thead><tbody>${sel.bom.map(b => E.materialOf(t, b.mat)).concat(sel.ops.filter(o => o.external).map(o => E.materialOf(t, o.mat))).map(m => `<tr><td>${esc(m.name)}</td><td>${esc(E.supplierName(t, m.supplier))}</td><td class="r num">${m.leadDays} Tage</td><td class="r num">${m.moq ? num(m.moq) + " " + m.unit : "–"}${m.minCharge ? " · min. " + eur(m.minCharge) : ""}</td><td class="r num">${m.type === "Lohnbearbeitung" ? "–" : num(E.avail(t, m.id, "WH1")) + " " + m.unit}</td></tr>`).join("")}</tbody></table></div>`;
+  if (tab === "parts") h += `<div class="tbl-wrap"><table><thead><tr><th>Pos.</th><th>Teil</th><th>Art</th><th class="r">Menge</th><th class="r">Rohgewicht</th><th class="r">Schnittlänge</th><th>Herkunft</th></tr></thead><tbody>${sel.parts.map(p => `<tr class="click" data-act="hiPos" data-pos="${esc(p.pos)}"><td class="num">${esc(p.pos)}</td><td>${esc(p.name)}</td><td>${kindPill(p.kind)}</td><td class="r num">${p.qty}</td><td class="r num">${p.kg ? num(p.kg) + " kg" : "–"}</td><td class="r num">${p.cutLength ? num(p.cutLength) + " mm" : "–"}</td><td class="small">${esc(p.source)}</td></tr>`).join("")}</tbody></table></div>`;
+  return h + `</section>`;
+};
+
+/* ---------- Fertigung: Baugruppen mit Vorgängen ---------- */
+const _prodView = VIEWS.production;
+VIEWS.production = () => {
+  const t = T(); if (t.id !== "elevon") return VIEWS.home(); const tab = S.tab.prod || "bg";
+  const tabs = `<div class="tabs" role="tablist">${[["bg", "Baugruppen aus Konstruktion"], ["e5", "Aufzug E5 (Kundenaufträge)"]].map(x => `<button class="tab ${tab === x[0] ? "on" : ""}" data-act="prodTab" data-t="${x[0]}">${x[1]}</button>`).join("")}</div>`;
+  if (tab === "e5") return tabs + _prodView();
+  const pas = t.prodOrders.filter(p => p.kind === "Baugruppe").slice().reverse();
+  return tabs + head("Manufacturing · Werk Stuttgart", "Fertigung Baugruppen") + statusNote("live", "Fertigungsauftrag aus freigegebenem Arbeitsplan: Bedarfsplanung erzeugt Bedarfsanforderungen je Lieferant (Halbzeug, Normteile, Zukauf, Lohnbearbeitung). Freigabe prüft Verfügbarkeit; die erste Rückmeldung entnimmt das Material; jeder Vorgang bucht Stunden × Arbeitsplatzsatz auf unfertige Erzeugnisse; die Lohnbearbeitung wird über den Wareneingang zurückgemeldet.")
+   + (pas.length ? pas.map(p => { const pr = t.master.products.find(x => x.id === p.product); const cur = p.ops.find(o => o.status !== "erledigt"); const na = asmNext(t, p);
+     return `<section class="card"><div class="card-h"><div><h3>${p.no} · ${p.qty} × ${esc(pr.name)}</h3><span class="small faint">${esc(pr.drawing)} Rev. ${esc(pr.rev)} · WIP ${eur(p.wip, 2)} · Plan ${eur(pr.stdCost * p.qty, 2)}${p.unitCost ? " · Ist " + eur(p.unitCost, 2) + "/Stk" : ""}</span></div><div class="row">${stPill(p.status)}${na ? `<button class="btn pri sm" data-act="run" data-cmd="${na.cmd}" data-p='${esc(JSON.stringify(na.p))}'>${esc(na.label)}</button>` : ""}</div></div>
+      <div class="tbl-wrap"><table><thead><tr><th>Vorgang</th><th>Arbeitsplatz</th><th class="r">Plan</th><th class="r">Ist</th><th>Status</th></tr></thead><tbody>${p.ops.map(o => `<tr ${cur && cur.no === o.no ? 'style="background:var(--accent-soft)"' : ""}><td><b>${o.no}</b> ${esc(o.text)}</td><td>${esc(o.wcName)}${o.external ? " · " + esc(E.supplierName(t, o.supplier)) : ""}</td><td class="r num">${o.external ? num(o.extQty) + " kg" : o.hours + " h"}</td><td class="r num">${o.actual ? o.actual + " h" : o.cost ? eur(o.cost, 2) : ""}</td><td>${stPill(o.status === "erledigt" ? "erledigt" : o.status === "offen" ? "offen" : o.status)}</td></tr>`).join("")}</tbody></table></div>
+      ${cur ? `<div class="note acc small" style="margin:12px"><div><b>Arbeitsanweisung ${cur.no} · ${esc(cur.wcName)}</b><br>${esc(cur.instr)}</div></div>` : ""}
+      <div class="tbl-wrap"><table><thead><tr><th>Komponente</th><th class="r">Bedarf</th><th class="r">entnommen</th><th class="r">verfügbar WH1</th><th>Bedarfsanforderung / Bestellung</th></tr></thead><tbody>${p.components.map(c => { const m = E.materialOf(t, c.mat); const q = t.reqs.find(r => r.prod === p.no && r.mat === c.mat); return `<tr><td>${esc(m.name)}</td><td class="r num">${num(c.qty)} ${m.unit}</td><td class="r num">${num(c.issued)}</td><td class="r num">${num(E.avail(t, c.mat, "WH1"))}</td><td class="small">${q ? `${q.no} · ${num(q.qty)} ${q.unit} bei ${esc(E.supplierName(t, q.supplier))}${q.po ? " → " + q.po : ""}` : p.mrp ? "am Lager" : "–"}</td></tr>`; }).join("")}</tbody></table></div></section>`; }).join("")
+     : `<section class="card card-pad"><p class="muted">Noch kein Baugruppenauftrag. Lege ihn in der <a href="#engineering">Konstruktion</a> aus einer freigegebenen Zeichnung an.</p></section>`);
+};
+function asmNext(t, p) {
+  if (p.status === "abgeschlossen") return null;
+  if (!p.mrp) return { label: "Bedarfsplanung", cmd: "planAssemblyOrder", p: { prodNo: p.no } };
+  const reqs = t.reqs.filter(r => r.prod === p.no); if (reqs.some(r => !r.po)) return { label: "Bestellungen erzeugen", cmd: "convertRequisitions", p: { reqNos: reqs.filter(r => !r.po).map(r => r.no) } };
+  const pos = [...new Set(reqs.map(r => r.po))].map(no => t.purchaseOrders.find(x => x.no === no)).filter(po => po && po.kind !== "Lohnbearbeitung");
+  const open = pos.find(po => !po.grDoc); if (open) return { label: "Wareneingang " + open.no, cmd: "postGoodsReceipt", p: { poNo: open.no } };
+  if (p.status === "eröffnet") return { label: "Freigeben (Verfügbarkeit)", cmd: "releaseProdOrder", p: { prodNo: p.no } };
+  const cur = p.ops.find(o => o.status !== "erledigt");
+  if (!cur) return { label: "Abliefern ins Lager", cmd: "completeAssemblyOrder", p: { prodNo: p.no } };
+  if (cur.external) { if (cur.status === "bereit zum Versand" || cur.status === "offen") return { label: "An Lohnbearbeiter versenden", cmd: "shipToSubcontractor", p: { prodNo: p.no } }; const q = reqs.find(r => r.op === cur.no); return q && q.po ? { label: "Wareneingang Lohnbearbeitung", cmd: "postGoodsReceipt", p: { poNo: q.po } } : null; }
+  return { label: `Rückmelden ${cur.no} ${cur.wcName}`, cmd: "confirmOperation", p: { prodNo: p.no } };
+}
+
+/* ---------- Einkauf: direkt und indirekt ---------- */
+const _supplyView = VIEWS.supply;
+VIEWS.supply = () => {
+  const t = T(); const tab = S.tab.sup || (t.id === "aventra" ? "req" : "stock");
+  const tabs = `<div class="tabs" role="tablist">${(t.id === "aventra" ? [] : [["stock", "Bestand und Bestellungen"]]).concat([["req", "Bedarfsanforderungen"], ["cat", "Katalog und Anforderung"], ["src", "Lieferanten und Bezugsquellen"]]).map(x => `<button class="tab ${tab === x[0] ? "on" : ""}" data-act="supTab" data-t="${x[0]}">${x[1]}</button>`).join("")}</div>`;
+  if (tab === "stock" && t.id !== "aventra") return tabs + _supplyView();
+  const lim = `Bis 1.000 € automatisch · bis 25.000 € Freigabeberechtigte (nicht der Anforderer) · darüber Geschäftsführung`;
+  if (tab === "req") { const rs = t.reqs.slice().reverse(); const fre = rs.filter(r => r.status === "freigegeben" && !r.po);
+    return tabs + head("Einkauf · " + esc(T_NAMES[t.id]), "Bedarfsanforderungen") + statusNote("live", "Direkte Bedarfe entstehen aus der Bedarfsplanung der Fertigung (Material ins Lager, Konto 1300; Lohnbearbeitung auf unfertige Erzeugnisse). Indirekte Bedarfe kommen von allen Mitarbeitenden und werden beim Wareneingang auf Sachkonto und Kostenstelle gebucht. " + lim + ".")
+      + `<section class="card tbl-wrap"><div class="card-h"><h3>${rs.length} Anforderungen</h3><button class="btn pri sm" data-act="run" data-cmd="convertRequisitions" data-p="{}" ${fre.length ? "" : "disabled"}>${fre.length} freigegebene bestellen</button></div><table><thead><tr><th>BANF</th><th>Art</th><th>Bedarf</th><th>Lieferant</th><th class="r">Wert</th><th>Kostenstelle / Ziel</th><th>Status</th><th></th></tr></thead><tbody>${rs.length ? rs.map(q => `<tr><td class="mono small">${q.no}<div class="faint">${esc(q.requesterName)}</div></td><td>${pill(q.type === "indirekt" ? "p-neu" : q.type === "Lohnbearbeitung" ? "p-warn" : "p-acc", q.type)}</td><td>${num(q.qty)} ${esc(q.unit)} · ${esc(q.text)}</td><td class="small">${esc(E.supplierName(t, q.supplier))}</td><td class="r num">${eur(q.net, 2)}</td><td class="small">${q.costCenter ? esc(q.costCenter) + " · " + q.acct + " " + esc(E.COA[q.acct] ? E.COA[q.acct][0] : "") : q.prod ? "Fertigungsauftrag " + q.prod : ""}</td><td>${stPill(q.status === "zur Freigabe" ? "zur Freigabe" : q.status)}${q.level && q.status === "zur Freigabe" ? `<div class="small faint">${q.level === "ceo" ? "Geschäftsführung" : "Freigabeberechtigte"}</div>` : q.approvedBy ? `<div class="small faint">${esc(q.approvedBy)}</div>` : ""}</td><td class="r">${q.status === "zur Freigabe" ? `<button class="btn sm pri" data-act="run" data-cmd="approveRequisition" data-p='${esc(JSON.stringify({ reqNo: q.no }))}'>Freigeben</button> <button class="btn sm" data-act="run" data-cmd="approveRequisition" data-p='${esc(JSON.stringify({ reqNo: q.no, reject: true }))}'>Ablehnen</button>` : q.po ? `<span class="mono small">${q.po}</span>` : ""}</td></tr>`).join("") : `<tr><td colspan="8" class="empty">Keine Bedarfsanforderungen.</td></tr>`}</tbody></table></section>`
+      + poTable(t); }
+  if (tab === "cat") { const cc = t.master.costCenters;
+    return tabs + head("Einkauf indirekt · " + esc(T_NAMES[t.id]), "Katalog und Anforderung") + statusNote("live", "Jede Person kann bestellen: Katalogartikel mit festen Preisen und Lieferanten, Freitext mit Warengruppe und Schätzpreis. " + lim + ".")
+      + `<section class="card card-pad row" style="gap:8px"><label class="small">Kostenstelle</label><select class="input" style="width:auto" id="catCC" data-on="catCC">${cc.map(c => `<option value="${c.id}" ${S.sel.catCC === c.id ? "selected" : ""}>${c.id} · ${esc(c.name)}</option>`).join("")}</select></section>
+      <section class="card tbl-wrap"><table><thead><tr><th>Artikel</th><th>Warengruppe</th><th>Lieferant</th><th class="r">Preis</th><th class="r">Menge</th><th></th></tr></thead><tbody>${t.catalog.map(c => `<tr><td>${esc(c.name)} <span class="mono small faint">${c.id}</span></td><td>${esc(c.category)}</td><td class="small">${esc(E.supplierName(t, c.supplier))}</td><td class="r num">${eur(c.price, 2)}</td><td class="r"><input class="input" type="number" min="1" value="1" id="cq-${c.id}" style="width:70px"></td><td class="r"><button class="btn sm pri" data-act="catReq" data-id="${c.id}">Anfordern</button></td></tr>`).join("")}</tbody></table></section>
+      <section class="card card-pad"><h3 style="margin-bottom:10px">Freitext-Anforderung</h3><form class="grid g4" data-form="freeReq" style="align-items:end"><label class="f">Beschreibung<input class="input" id="frText" placeholder="z. B. Hubarbeitsbühne mieten, 3 Tage"></label><label class="f">Warengruppe<select class="input" id="frCat">${Object.keys(E.CATEGORY_DEFAULT).map(k => `<option>${esc(k)}</option>`).join("")}</select></label><label class="f">Schätzpreis netto €<input class="input" id="frPrice" type="number" min="1" step="0.01" value="1450"></label><button class="btn pri" type="submit">Anfordern</button></form></section>`; }
+  const sups = t.master.suppliers.filter(s => !s.link);
+  return tabs + head("Einkauf · " + esc(T_NAMES[t.id]), "Lieferanten und Bezugsquellen") + `<section class="card tbl-wrap"><table><thead><tr><th>Lieferant</th><th>Ort</th><th>Art</th><th>liefert</th><th class="r">offene Bestellungen</th></tr></thead><tbody>${sups.map(s => { const mats = (t.master.materials || []).filter(m => m.supplier === s.id); const cat = t.catalog.filter(c => c.supplier === s.id); return `<tr><td>${esc(s.name)} <span class="mono small faint">${s.id}</span></td><td>${esc(s.city || "")}</td><td>${s.indirect ? pill("p-neu", "indirekt") : mats.some(m => m.type === "Lohnbearbeitung") ? pill("p-warn", "Lohnbearbeitung") : pill("p-acc", "direkt")}</td><td class="small">${esc(mats.slice(0, 4).map(m => m.name).concat(cat.slice(0, 3).map(c => c.name)).join(", "))}${mats.length + cat.length > 7 ? " …" : ""}</td><td class="r num">${t.purchaseOrders.filter(p => p.supplier === s.id && !["erledigt"].includes(p.status)).length}</td></tr>`; }).join("")}</tbody></table></section>`;
+};
+function poTable(t) { const pos = t.purchaseOrders.filter(p => p.kind).slice().reverse(); if (!pos.length) return "";
+  return `<section class="card tbl-wrap"><div class="card-h"><h3>Bestellungen aus Bedarfsanforderungen</h3></div><table><thead><tr><th>Bestellung</th><th>Art</th><th>Lieferant</th><th class="r">Wert</th><th>Status</th><th></th></tr></thead><tbody>${pos.map(po => { const inv = t.supInvoices.find(i => i.poNo === po.no); const btn = !po.grDoc ? (po.kind === "Lohnbearbeitung" ? "" : `<button class="btn sm" data-act="run" data-cmd="postGoodsReceipt" data-p='${esc(JSON.stringify({ poNo: po.no }))}'>${po.kind === "indirekt" ? "Wareneingang / Leistung" : "Wareneingang"}</button>`) : !inv ? `<button class="btn sm" data-act="run" data-cmd="postSupplierInvoice" data-p='${esc(JSON.stringify({ poNo: po.no }))}'>Rechnung (3-Wege)</button>` : inv.open > 0 ? `<button class="btn sm" data-act="run" data-cmd="payVendor" data-p='${esc(JSON.stringify({ invoiceNo: inv.no }))}'>Zahlen</button>` : "";
+    return `<tr><td class="mono small">${po.no}</td><td>${esc(po.kind)}</td><td>${esc(E.supplierName(t, po.supplier))}<div class="small faint">${esc(po.lines.map(l => l.text || l.mat).join(", ").slice(0, 90))}</div></td><td class="r num">${eur(po.net, 2)}</td><td>${stPill(po.status)}${inv ? " " + stPill(inv.open > 0 ? "offen" : "bezahlt") : ""}</td><td class="r">${btn}</td></tr>`; }).join("")}</tbody></table></section>`; }
+
+/* ---------- HR: Recruiting und Onboarding ---------- */
+const _hrView = VIEWS.hr;
+VIEWS.hr = () => { const t = T(); const H = t.hr; const stages = ["neu", "Interview", "Angebot", "eingestellt", "abgesagt"];
+  return _hrView() + `<section class="card"><div class="card-h"><h3>Recruiting</h3><span class="small faint">${H.positions.filter(p => p.status === "offen").length} offene Stellen · ${H.applicants.filter(a => !["eingestellt", "abgesagt"].includes(a.status)).length} Bewerbungen im Prozess</span></div>
+    ${H.positions.map(p => `<div style="padding:12px 16px;border-bottom:1px solid var(--line)"><div class="row between"><div><b>${esc(p.title)}</b> <span class="mono small faint">${p.id}</span><div class="small faint">${esc(p.role)} · Kostensatz ${eur(p.costRate)}/h · ausgeschrieben ${dDe(p.opened)}</div></div>${stPill(p.status === "besetzt" ? "erledigt" : "offen")}</div>
+      <div class="grid g3" style="margin-top:10px">${H.applicants.filter(a => a.position === p.id).map(a => { const nx = a.status === "neu" ? ["Interview", "Zum Interview"] : a.status === "Interview" ? ["Angebot", "Angebot senden"] : null;
+        return `<div class="card card-pad" style="display:flex;flex-direction:column;gap:6px;box-shadow:none"><div class="row between"><b>${esc(a.name)}</b>${pill(a.status === "eingestellt" ? "p-good" : a.status === "abgesagt" ? "p-neu" : "p-acc", a.status)}</div><span class="small faint">Passung ${a.fit} % · seit ${dDe(a.since)}</span><div class="row">${nx ? `<button class="btn sm" data-act="run" data-cmd="moveApplicant" data-p='${esc(JSON.stringify({ id: a.id, to: nx[0] }))}'>${nx[1]}</button>` : ""}${a.status === "Angebot" ? `<button class="btn sm pri" data-act="run" data-cmd="hireApplicant" data-p='${esc(JSON.stringify({ id: a.id }))}'>Einstellen</button>` : ""}${["neu", "Interview", "Angebot"].includes(a.status) ? `<button class="btn sm" data-act="run" data-cmd="moveApplicant" data-p='${esc(JSON.stringify({ id: a.id, to: "abgesagt" }))}'>Absage</button>` : ""}</div></div>`; }).join("")}</div></div>`).join("")}
+    <form class="row" data-form="position" style="padding:12px 16px;align-items:flex-end"><label class="f" style="flex:1">Neue Stelle<input class="input" id="psTitle" placeholder="Stellenbezeichnung"></label><label class="f" style="width:160px">Rolle<input class="input" id="psRole" value="${t.id === "aventra" ? "Berater" : t.id === "elevon" ? "Servicetechniker" : "Filiale"}"></label><label class="f" style="width:110px">Kostensatz €/h<input class="input" id="psRate" type="number" value="58"></label><button class="btn" type="submit">Ausschreiben</button></form></section>`
+   + (H.onboarding.length ? `<section class="card tbl-wrap"><div class="card-h"><h3>Onboarding</h3></div><table><tbody>${H.onboarding.slice().reverse().map(o => `<tr><td><b>${esc(o.name)}</b><div class="small faint">Start ${dDe(o.start)}</div></td><td>${o.tasks.map(x => `<div class="small">${x[1] ? "✓" : "○"} ${esc(x[0])}</div>`).join("")}</td></tr>`).join("")}</tbody></table></section>` : "");
+};
+
+/* ---------- Prozess-Explorer: nächste Aktionen ---------- */
+const _nextV6 = nextAction;
+nextAction = function (tid, inst) {
+  if (inst.chain === "Design-to-Make") { const t = W.tenants[tid]; const { drawing: dr, pa } = inst.object; if (dr.status === "importiert") return dr.issues.some(i => i[2] === "error") ? null : { label: "Konstruktion freigeben", cmd: "releaseDesign", p: { drawingNo: dr.no } }; return pa ? asmNext(t, pa) : { label: "Fertigungsauftrag 20 Stk", cmd: "createAssemblyOrder", p: { productId: dr.product, qty: 20 } }; }
+  if (inst.chain === "Procure-to-Pay indirekt") { const t = W.tenants[tid]; const q = inst.object; if (q.status === "zur Freigabe") return { label: "Freigeben", cmd: "approveRequisition", p: { reqNo: q.no } }; if (q.status === "freigegeben" && !q.po) return { label: "Bestellen", cmd: "convertRequisitions", p: { reqNos: [q.no] } };
+    const po = q.po && t.purchaseOrders.find(x => x.no === q.po); if (po && !po.grDoc) return { label: "Wareneingang / Leistung", cmd: "postGoodsReceipt", p: { poNo: po.no } }; const inv = po && t.supInvoices.find(i => i.poNo === po.no); if (po && !inv) return { label: "Rechnung (3-Wege)", cmd: "postSupplierInvoice", p: { poNo: po.no } }; if (inv && inv.open > 0) return { label: "Zahlen", cmd: "payVendor", p: { invoiceNo: inv.no } }; return null; }
+  return _nextV6(tid, inst);
+};
+
+/* ---------- Geführte Demos ---------- */
+STORIES.push(
+  { id: "design", tenant: "elevon", cross: [], short: "Zeichnung bis Fertigware", title: "Design-to-Make: Von der CAD-Zeichnung zur fertigen Baugruppe", situation: "Die Konstruktion hat die Schachtkonsole SK-200 gezeichnet: verschweißte Blechteile, Normteile, zwei Zukaufteile, feuerverzinkt. 20 Stück werden für die nächsten Anlagen gebraucht.", problem: "Bisher tippt die Arbeitsvorbereitung Stückliste und Arbeitsplan aus der Zeichnung ab, der Einkauf sucht Lieferanten zusammen – Fehler und Tage Verzug.", value: "Aus einer DXF entstehen in Sekunden Stückliste, Arbeitsplan mit Arbeitsanweisungen, Bezugsquellen und Kalkulation. Bedarfe gehen automatisch an die richtigen Lieferanten, inklusive Lohnbearbeitung, und jede Stunde und jedes Kilo landet nachvollziehbar in den Herstellkosten.", steps: [
+    { t: "Zeichnung SK-200 einlesen", d: "DXF: Schriftfeld, 9 Positionen, Schnittlängen aus den Abwicklungen.", user: "u12", cmd: "importDrawing", p: () => ({ drawing: DX.toDrawing(SAMPLE_DXF, "SK-200.dxf").drawing }), go: "engineering" },
+    { t: "Einkauf ordnet das fehlende Zukaufteil zu", d: "Elastomerlager EL-40 fehlt im Materialstamm – Anlage aus dem Lieferantenangebot.", user: "u5", cmd: "createPurchasedPart", p: () => ({ name: "Elastomerlager", partNo: "EL-40", supplierId: "S-1004", price: 12.4, leadDays: 8, moq: 10, quoteRef: "AN-2026-117" }) },
+    { t: "Konstruktionsfreigabe (Vier-Augen)", d: "Eine zweite Konstrukteurin gibt frei: Material B-SK200 mit Stückliste und Arbeitsplan entsteht.", user: "u13", cmd: "releaseDesign", p: () => ({ drawingNo: "SK-200" }) },
+    { t: "Fertigungsauftrag 20 Stück", d: "Vorgänge mit Planzeiten je Arbeitsplatz – keine Buchung.", user: "u4", cmd: "createAssemblyOrder", p: () => ({ productId: "B-SK200", qty: 20 }), save: "pa", go: "production" },
+    { t: "Bedarfsplanung", d: "Fehlmengen gegen Lagerbestand, Mindestmengen der Lieferanten, Verzinkung als Lohnbearbeitung.", user: "u4", cmd: "planAssemblyOrder", p: c => ({ prodNo: c.pa }) },
+    { t: "Einkauf bestellt je Lieferant", d: "Bleche, Normteile, Zukaufteile und Verzinkung – je Lieferant eine Bestellung.", user: "u5", cmd: "convertRequisitions", p: () => ({}) },
+    { t: "Wareneingang und Rechnungen", d: "Material ins Lager (1300), Drei-Wege-Abgleich je Rechnung.", user: "u6", multi: c => { const t = W.tenants.elevon; const pos = [...new Set(t.reqs.filter(r => r.prod === c.pa && r.type === "direkt").map(r => r.po))]; return pos.flatMap(no => [["postGoodsReceipt", { poNo: no }], ["postSupplierInvoice", { poNo: no }]]); } },
+    { t: "Freigabe und Schneiden, Kanten, Schweißen", d: "Verfügbarkeit geprüft, Material entnommen, drei Vorgänge rückgemeldet.", user: "u4", multi: c => [["releaseProdOrder", { prodNo: c.pa }], ["confirmOperation", { prodNo: c.pa }], ["confirmOperation", { prodNo: c.pa }], ["confirmOperation", { prodNo: c.pa }]] },
+    { t: "Zur Feuerverzinkerei", d: "Versand an den Lohnbearbeiter, dann Wareneingang und Rechnung – Kosten gehen in die unfertigen Erzeugnisse.", user: "u6", multi: c => { const t = W.tenants.elevon; const q = t.reqs.find(r => r.prod === c.pa && r.type === "Lohnbearbeitung"); return [["shipToSubcontractor", { prodNo: c.pa }], ["postGoodsReceipt", { poNo: q.po }], ["postSupplierInvoice", { poNo: q.po }]]; } },
+    { t: "Montage, Endprüfung, Ablieferung", d: "Restliche Vorgänge, dann 20 Konsolen zu Ist-Herstellkosten ins Fertigwarenlager.", user: "u4", multi: c => [["confirmOperation", { prodNo: c.pa }], ["confirmOperation", { prodNo: c.pa }], ["completeAssemblyOrder", { prodNo: c.pa }]] },
+    { t: "Plan gegen Ist", d: "Der Assistent erklärt die Herstellkosten.", ask: "Erkläre die Herstellkosten der Schachtkonsole SK-200: Plan gegen Ist, Material, Fertigung und Verzinkung." }
+  ], outro: "Unter Konstruktion siehst du Stückliste, Arbeitsanweisungen und Bezugsquellen; unter Einkauf die Bedarfsanforderungen je Lieferant." },
+  { id: "p2p", tenant: "novamart", cross: [], short: "Einkauf indirekt", title: "Procure-to-Pay indirekt: Vom Bedarf bis zur Zahlung", situation: "Die Filialleitung braucht Kopierpapier, das Zentrallager eine neue Unterhaltsreinigung.", problem: "Indirekte Ausgaben laufen oft an Einkauf und Budget vorbei.", value: "Jede Person fordert selbst an, kleine Beträge laufen automatisch, größere gehen an die richtige Freigabestufe; Kosten landen auf Sachkonto und Kostenstelle.", steps: [
+    { t: "Filiale fordert Kopierpapier an", d: "10 Kartons, 219 € – unter 1.000 €, automatisch freigegeben.", user: "u7", cmd: "createRequisition", p: () => ({ catalogId: "K-03", qty: 10, costCenter: "KS120" }), go: "supply" },
+    { t: "Lager fordert Reinigung an", d: "2.450 € je Monat – braucht eine Freigabe.", user: "u4", cmd: "createRequisition", p: () => ({ catalogId: "K-08", qty: 1, costCenter: "KS110" }) },
+    { t: "CFO gibt frei", d: "Vier-Augen: Anforderer und Freigeber sind verschiedene Personen.", user: "u2", multi: () => W.tenants.novamart.reqs.filter(q => q.status === "zur Freigabe").map(q => ["approveRequisition", { reqNo: q.no }]) },
+    { t: "Einkauf bestellt", d: "Je Lieferant eine Bestellung.", user: "u5", cmd: "convertRequisitions", p: () => ({}) },
+    { t: "Lieferung und Leistung bestätigen", d: "Aufwand auf Sachkonto und Kostenstelle – kein Lagerbestand.", user: "u4", multi: () => W.tenants.novamart.purchaseOrders.filter(p => p.kind === "indirekt" && !p.grDoc).map(p => ["postGoodsReceipt", { poNo: p.no }]) },
+    { t: "Rechnungen prüfen und zahlen", d: "Drei-Wege-Abgleich, dann Zahlung.", user: "u2", multi: () => { const t = W.tenants.novamart; return t.purchaseOrders.filter(p => p.kind === "indirekt" && p.grDoc && !t.supInvoices.some(i => i.poNo === p.no)).map(p => ["postSupplierInvoice", { poNo: p.no }]); }, then: () => { const t = W.tenants.novamart; for (const i of t.supInvoices.filter(i => i.open > 0 && t.purchaseOrders.some(p => p.no === i.poNo && p.kind === "indirekt"))) act("payVendor", { invoiceNo: i.no }, { tenant: "novamart", user: "u2", auto: true }); } }
+  ], outro: "In Finance siehst du die Kosten auf 6815 und 6835 mit Kostenstelle." },
+  { id: "hire", tenant: "elevon", cross: [], short: "Recruiting bis Onboarding", title: "Hire-to-Onboard: Neue Servicetechnikerin", situation: "Elevon sucht eine Servicetechnikerin. Eine Bewerberin ist im Interview.", problem: "Einstellung, Ausstattung und erster Arbeitstag hängen an verschiedenen Abteilungen.", value: "Mit der Einstellung entsteht der Personalstamm, das Onboarding und automatisch die Bedarfsanforderungen für Notebook und Arbeitsschutz – der Einkauf bestellt, die Kosten landen auf der Kostenstelle.", steps: [
+    { t: "Vertragsangebot senden", d: "Bewerbung wechselt in „Angebot“.", user: "u8", multi: () => { const a = W.tenants.elevon.hr.applicants.find(x => x.position === "ST-1" && x.status === "Interview"); return a ? [["moveApplicant", { id: a.id, to: "Angebot" }]] : []; }, go: "hr" },
+    { t: "Einstellen", d: "Personalstamm, Onboarding-Plan, Ausstattung angefordert.", user: "u8", multi: () => { const a = W.tenants.elevon.hr.applicants.find(x => x.position === "ST-1" && x.status === "Angebot"); return a ? [["hireApplicant", { id: a.id }]] : []; } },
+    { t: "Einkauf bestellt die Ausstattung", d: "Notebook bei IT-Lieferant, Arbeitsschutz bei Ott.", user: "u5", cmd: "convertRequisitions", p: () => ({}) },
+    { t: "Lieferung", d: "GWG-Notebook auf 6830, Arbeitsschutz auf 6815.", user: "u6", multi: () => W.tenants.elevon.purchaseOrders.filter(p => p.kind === "indirekt" && !p.grDoc).map(p => ["postGoodsReceipt", { poNo: p.no }]) }
+  ], outro: "Die neue Technikerin steht sofort in der Technikerplanung zur Verfügung." }
+);
+// Storys mit Navigationsziel je Schritt
+const _storyStep = storyStep;
+storyStep = function () { const st = STORIES.find(s => s.id === S.story.id); const s = st.steps[S.story.i]; _storyStep(); if (s && s.go && route() !== s.go) go(s.go); };
+
+/* ---------- KI-Werkzeuge ---------- */
+const _aiTools = AI_TOOLS;
+AI_TOOLS = () => _aiTools().concat([
+  { name: "konstruktion", description: "Elevon: importierte Zeichnungen mit Status, Stückliste, Arbeitsplan, Plan-Kalkulation und Baugruppen-Fertigungsaufträgen mit Plan/Ist-Kosten je Vorgang.", execute: () => { const t = W.tenants.elevon; return t.eng.drawings.map(d => ({ zeichnung: d.no, rev: d.rev, titel: d.title, status: d.status, gewicht_kg: d.weight, plan: d.costing, stueckliste: d.bom.map(b => ({ material: E.materialOf(t, b.mat).name, menge: b.qty, einheit: E.materialOf(t, b.mat).unit, preis: E.materialOf(t, b.mat).price })), klaerung: d.issues, auftraege: t.prodOrders.filter(p => p.product === d.product).map(p => ({ no: p.no, menge: p.qty, status: p.status, lohn_ist: p.labor, fremd_ist: p.ext, ist_je_stk: p.unitCost, vorgaenge: p.ops.map(o => ({ no: o.no, text: o.text, plan_h: o.hours, ist_h: o.actual || null, kosten_fremd: o.cost || null })) })) })); } },
+  { name: "einkauf", description: "Bedarfsanforderungen (direkt, indirekt, Lohnbearbeitung) mit Status, Freigabestufe, Lieferant, Kostenstelle und Bestellung eines Unternehmens.", inputSchema: { type: "object", properties: { tenant: { type: "string" } }, required: ["tenant"] }, execute: i => (W.tenants[String(i.tenant)].reqs || []).map(q => ({ no: q.no, art: q.type, text: q.text, menge: q.qty, wert: q.net, status: q.status, stufe: q.level, lieferant: E.supplierName(W.tenants[String(i.tenant)], q.supplier), kostenstelle: q.costCenter, bestellung: q.po })) }
+]);
+const r2loc = v => Math.round(v * 100) / 100;
+
+/* ---------- Ereignisse ---------- */
+Object.assign(ACT, {
+  sampleDwg() { sampleDrawing(); }, importPreview() { importPreview(); }, dropPreview() { S.eng.preview = null; render(); },
+  hiPos(d) { S.eng.pos = S.eng.pos === d.pos ? null : String(d.pos); render(); }, engTab(d) { S.tab.eng = d.t; render(); }, prodTab(d) { S.tab.prod = d.t; render(); }, supTab(d) { S.tab.sup = d.t; render(); },
+  newAssemblyOrder(d) { const r = act("createAssemblyOrder", { productId: d.id, qty: +document.getElementById("faQty").value }); if (r && r.ok) { S.tab.prod = "bg"; go("production"); } },
+  catReq(d) { act("createRequisition", { catalogId: d.id, qty: +document.getElementById("cq-" + d.id).value, costCenter: S.sel.catCC || T().master.costCenters[0].id }); }
+});
+Object.assign(ON, { dwgFile(v, el) { if (el.files && el.files[0]) readDrawingFile(el.files[0]); el.value = ""; }, selDwg(v) { S.eng.sel = v; S.eng.pos = null; render(); }, catCC(v) { S.sel.catCC = v; } });
+Object.assign(FORMS, {
+  freeReq() { act("createRequisition", { category: document.getElementById("frCat").value, text: document.getElementById("frText").value, price: +document.getElementById("frPrice").value, costCenter: S.sel.catCC || T().master.costCenters[0].id }); },
+  position() { act("openPosition", { title: document.getElementById("psTitle").value, role: document.getElementById("psRole").value, costRate: +document.getElementById("psRate").value }); }
+});
+// Formular „Zukaufteil anlegen“ (mehrere Formulare je Position möglich)
+document.addEventListener("submit", e => { const f = e.target.closest("[data-form=newPart]"); if (!f) return; e.preventDefault(); e.stopImmediatePropagation();
+  act("createPurchasedPart", { name: f.dataset.name, partNo: f.dataset.partno || null, supplierId: f.querySelector("#npSup").value, price: +f.querySelector("#npPrice").value, leadDays: +f.querySelector("#npLead").value, moq: 10, quoteRef: f.querySelector("#npQuote").value }); }, true);
 
 /* ---------- Start ---------- */
 boot(); adoptAccounts(); render(); startBackend();

@@ -76,11 +76,11 @@ function plOf(t, per) {
 function stockKey(mat, wh) { return mat + "@" + wh; }
 function stk(t, mat, wh) { const k = stockKey(mat, wh); if (!t.stock[k]) t.stock[k] = { mat, wh, qty: 0, res: 0, value: 0 }; return t.stock[k]; }
 function avgCost(s) { return s.qty > 0 ? s.value / s.qty : 0; }
-function moveIn(t, mat, wh, qty, value) { const s = stk(t, mat, wh); s.qty += qty; s.value = r2(s.value + value); t.moves.push({ date: t.date, mat, wh, qty, value: r2(value), type: "Zugang" }); }
+function moveIn(t, mat, wh, qty, value) { const s = stk(t, mat, wh); s.qty = Math.round((s.qty + qty) * 1000) / 1000; s.value = r2(s.value + value); t.moves.push({ date: t.date, mat, wh, qty, value: r2(value), type: "Zugang" }); }
 function moveOut(t, mat, wh, qty, fromReserved) {
   const s = stk(t, mat, wh);
-  if (s.qty < qty) fail("STOCK", `Bestand ${mat} reicht nicht: ${s.qty} vorhanden, ${qty} benötigt.`);
-  const v = r2(avgCost(s) * qty); s.qty -= qty; s.value = r2(s.value - v); if (fromReserved) s.res = Math.max(0, s.res - qty);
+  if (s.qty + 1e-9 < qty) fail("STOCK", `Bestand ${mat} reicht nicht: ${s.qty} vorhanden, ${qty} benötigt.`);
+  const v = r2(avgCost(s) * qty); s.qty = Math.round((s.qty - qty) * 1000) / 1000; s.value = r2(s.value - v); if (fromReserved) s.res = Math.max(0, s.res - qty);
   if (s.qty === 0) s.value = 0;
   t.moves.push({ date: t.date, mat, wh, qty: -qty, value: -v, type: "Abgang" }); return v;
 }
@@ -325,7 +325,8 @@ const ROLE_DESC = {
   resource: "Ressourcenplanung: passende Berater finden und einplanen",
   hr: "Personal: Einstellungen, Abwesenheiten, Personalkosten; genehmigt Abwesenheiten",
   migration: "Migration Manager: Testmigrationen, Freigabe anfordern, Produktivlauf je Objekt",
-  auditor: "Prüfer: liest alles, darf nichts verändern"
+  auditor: "Prüfer: liest alles, darf nichts verändern",
+  engineer: "Konstruktion: Zeichnungen importieren, Stücklisten und Arbeitspläne ableiten, Konstruktion freigeben (Vier-Augen)"
 };
 const EXTRA_ROLES = {
   common: [{ id: "controller", name: "Controller", perms: ["view", "post", "close"] }, { id: "auditor", name: "Prüfer (nur Lesen)", perms: ["view"] }],
@@ -339,8 +340,9 @@ const EXTRA_USERS = {
 };
 function seedRoles(t) {
   t.roles.push(...EXTRA_ROLES.common.concat(EXTRA_ROLES[t.id]).map(r => Object.assign({}, r, { perms: r.perms.slice() })));
-  for (const r of t.roles) r.desc = ROLE_DESC[r.id] || "";
   let n = t.users.length; for (const [name, role] of EXTRA_USERS[t.id]) t.users.push({ id: "u" + (++n), name, role });
+  seedProcurementHR(t); if (t.id === "elevon") seedEngineering(t);
+  for (const r of t.roles) r.desc = ROLE_DESC[r.id] || "";
   return t;
 }
 const SEEDERS = { elevon: seedElevon, novamart: seedNovaMart, aventra: seedAventra };
@@ -513,7 +515,12 @@ const CMD = {
     need(t, ctx, "receive"); const po = find(t.purchaseOrders, "no", p.poNo, "Bestellung"); if (po.status !== "bestellt" && po.status !== "teilgeliefert") fail("STATUS", `Bestellung ${po.no} hat Status „${po.status}“.`);
     const lines = []; let value = 0;
     for (const l of po.lines) { const q = l.qty - l.received; if (q <= 0) continue; const v = r2(q * l.price); value += v; l.received += q;
-      if (l.kind === "Anlage") lines.push({ acct: "0700", dr: v }); else { moveIn(t, l.mat, po.wh, q, v); lines.push({ acct: t.id === "novamart" ? "1310" : "1300", dr: v }); } }
+      if (l.kind === "Anlage") lines.push({ acct: "0700", dr: v });
+      else if (l.kind === "Sachkosten") lines.push({ acct: l.acct || "6800", dr: v, cc: l.costCenter || null });
+      else if (l.kind === "Lohnbearbeitung") { const pa = t.prodOrders.find(x => x.no === l.prod); const op = pa && pa.ops.find(o => o.no === l.op);
+        if (!op || op.status !== "beim Lohnbearbeiter") fail("STATUS", "Wareneingang Lohnbearbeitung erst, wenn die Baugruppen an den Lohnbearbeiter versandt wurden.");
+        lines.push({ acct: "1320", dr: v }); pa.wip = r2(pa.wip + v); pa.ext = r2(pa.ext + v); op.status = "erledigt"; op.cost = v; }
+      else { moveIn(t, l.mat, po.wh, q, v); lines.push({ acct: t.id === "novamart" ? "1310" : "1300", dr: v }); } }
     lines.push({ acct: "1700", cr: r2(value) });
     const d = post(t, { date: t.date, text: "Wareneingang " + po.no, user: ctx.userName, ref: { type: "purchaseOrder", id: po.no }, lines });
     po.status = "geliefert"; po.grDoc = d.no; return { text: `Wareneingang zu ${po.no}: Bestand und WE/RE-Verrechnung ${r2(value)} €`, docs: [d.no] };
@@ -946,7 +953,7 @@ function personnelCost(t) { const by = {}; for (const e of t.master.employees) {
 
 /* ---------- Dispatcher: Berechtigung, Idempotenz, Atomarität, Audit ---------- */
 function dispatch(w, tenantId, cmd, payload, ctx) {
-  const t = w.tenants[tenantId]; if (!t) fail("TENANT", "Unbekannter Mandant."); const fn = CMD[cmd]; if (!fn) fail("CMD", "Unbekannter Befehl " + cmd);
+  const t = w.tenants[tenantId]; if (!t) fail("TENANT", "Unbekannter Mandant."); const fn = Object.prototype.hasOwnProperty.call(CMD, cmd) && !String(cmd).startsWith("_") ? CMD[cmd] : null; if (!fn) fail("CMD", "Unbekannter Befehl " + cmd);
   ctx = Object.assign({}, ctx || {}); const u = (t.users.find(x => x.id === ctx.user) || t.users[0]); ctx.user = u.id; ctx.userName = u.name;
   if (ctx.idem && t.idem[ctx.idem]) return Object.assign({ replay: true }, t.idem[ctx.idem]);
   const snap = JSON.stringify(w.tenants); // Atomarität: bei Fehler alles zurück (auch Nachrichten an andere Mandanten)
@@ -965,6 +972,277 @@ function dispatch(w, tenantId, cmd, payload, ctx) {
     throw e;
   }
 }
+/* =====================================================================
+   v0.6 Konstruktion → Stückliste → Arbeitsplan → Bezugsquellen → Einkauf
+   (direkt und indirekt) → Fertigung mit Vorgängen und Lohnbearbeitung,
+   HR-Recruiting mit Onboarding. Alle Stammdaten synthetisch.
+   ===================================================================== */
+Object.assign(COA, {
+  "6470": ["Instandhaltung und Werkzeuge", "X"], "6815": ["Bürobedarf und Arbeitsschutz", "X"],
+  "6830": ["IT-Ausstattung (GWG) und Software", "X"], "6835": ["Gebäudereinigung und Facility", "X"]
+});
+const DENSITY = { "S235JR": 7.85, "1.4301": 7.9, "AlMg3": 2.66 };
+const LASER_SPEED = { "S235JR": { 3: 4.5, 5: 3.0, 8: 1.8, 10: 1.4 }, "1.4301": { 2: 5.0 }, "AlMg3": { 3: 6.0 } }; // m/min
+const WORK_CENTERS = [
+  { id: "LAS", name: "Laserschneiden", rate: 145 }, { id: "KANT", name: "Abkanten", rate: 92 }, { id: "SAEG", name: "Sägen", rate: 70 },
+  { id: "SCHW", name: "Schweißen (MAG)", rate: 88 }, { id: "MONT", name: "Baugruppenmontage", rate: 78 }, { id: "QS", name: "Endprüfung", rate: 82 }
+];
+const SCRAP = 0.15; // Verschnitt beim Schachteln von Blechteilen
+const APPROVAL_LIMITS = [[1000, null], [25000, "approve"], [Infinity, "ceo"]]; // bis 1.000 € automatisch, bis 25.000 € Freigabeberechtigte, darüber CEO
+const INDIRECT_SUPPLIERS = [{ id: "S-I01", name: "Ott Arbeitsschutz & Büro KG", city: "Heilbronn" }, { id: "S-I02", name: "Lindner IT-Systemhaus GmbH", city: "Mannheim" }, { id: "S-I03", name: "Haas Gebäudeservice GmbH", city: "Karlsruhe" }];
+const CATALOG = [
+  { id: "K-01", name: "Arbeitsschutz-Set (Helm, Brille, Handschuhe)", price: 48.5, supplier: "S-I01", category: "Arbeitsschutz", acct: "6815" },
+  { id: "K-02", name: "Sicherheitsschuhe S3", price: 89, supplier: "S-I01", category: "Arbeitsschutz", acct: "6815" },
+  { id: "K-03", name: "Kopierpapier A4, Karton 2.500 Blatt", price: 21.9, supplier: "S-I01", category: "Büromaterial", acct: "6815" },
+  { id: "K-04", name: "Tonerkartusche Laserdrucker", price: 64, supplier: "S-I01", category: "Büromaterial", acct: "6815" },
+  { id: "K-05", name: "Notebook Standard (GWG bis 800 €)", price: 779, supplier: "S-I02", category: "IT", acct: "6830" },
+  { id: "K-06", name: "Monitor 27 Zoll", price: 219, supplier: "S-I02", category: "IT", acct: "6830" },
+  { id: "K-07", name: "Drehmomentschlüssel 40–200 Nm", price: 189, supplier: "S-I01", category: "Werkzeug", acct: "6470" },
+  { id: "K-08", name: "Unterhaltsreinigung, Monatspauschale", price: 2450, supplier: "S-I03", category: "Facility", acct: "6835" },
+  { id: "K-09", name: "Wartung Druckluftkompressor (Dienstleistung)", price: 1380, supplier: "S-I03", category: "Instandhaltung", acct: "6470" }
+];
+const CATEGORY_DEFAULT = { "Arbeitsschutz": ["S-I01", "6815"], "Büromaterial": ["S-I01", "6815"], "IT": ["S-I02", "6830"], "Werkzeug": ["S-I01", "6470"], "Facility": ["S-I03", "6835"], "Instandhaltung": ["S-I03", "6470"], "Beratung/Dienstleistung": ["S-I03", "6800"] };
+
+function seedProcurementHR(t) {
+  t.master.suppliers = t.master.suppliers || []; t.master.suppliers.push(...INDIRECT_SUPPLIERS.map(s => Object.assign({ indirect: true }, s)));
+  if (!t.master.costCenters) t.master.costCenters = [{ id: "KS100", name: "Zentrale" }, { id: "KS110", name: "Logistik Zentrallager" }, { id: "KS120", name: "Filialen" }, { id: "KS130", name: "E-Commerce" }];
+  t.catalog = CATALOG.map(c => Object.assign({}, c)); t.reqs = [];
+  const rng = mulberry32(t.seed ^ hashStr(t.id + "-hr"));
+  const pos = { elevon: [["Servicetechniker/in Aufzugstechnik", "Servicetechniker", 58], ["Konstrukteur/in Stahlbau", "Konstruktion", 64]], novamart: [["Filialmitarbeiter/in Köln", "Filiale", 22], ["Category Manager/in Elektronik", "Einkauf", 41]], aventra: [["SAP-Berater/in FI/CO", "Berater", 66], ["Projektleiter/in S/4HANA", "Berater", 78]] }[t.id];
+  t.hr = { positions: pos.map(([title, role, rate], i) => ({ id: "ST-" + (i + 1), title, role, costRate: rate, status: "offen", opened: addDays(START_DATE, -int(rng, 10, 40)) })), applicants: [], onboarding: [] };
+  let k = 0; for (const p of t.hr.positions) for (let j = 0; j < 3; j++) t.hr.applicants.push({ id: "BW-" + (++k), name: person(rng), position: p.id, status: j === 0 ? "Interview" : "neu", fit: int(rng, 55, 95), since: addDays(START_DATE, -int(rng, 2, 20)) });
+  return t;
+}
+function seedEngineering(t) {
+  t.master.suppliers.push({ id: "S-2001", name: "Brandl Normteile GmbH", city: "Heilbronn" }, { id: "S-2002", name: "Feuerverzinkerei Kocher GmbH", city: "Schwäbisch Hall" }, { id: "S-2003", name: "Blechcenter Neckar GmbH", city: "Neckarsulm" });
+  const M = (id, name, price, supplier, leadDays, type, extra) => t.master.materials.push(Object.assign({ id, name, price, supplier, leadDays, type, unit: "Stk", moq: 1 }, extra || {}));
+  for (const [id, th, grade, price] of [["M-2001", 3, "S235JR", 1.38], ["M-2002", 5, "S235JR", 1.32], ["M-2003", 8, "S235JR", 1.29], ["M-2004", 10, "S235JR", 1.29], ["M-2005", 2, "1.4301", 4.85], ["M-2006", 3, "AlMg3", 5.4]])
+    M(id, `Blech ${grade} ${th} mm`, price, "S-2003", 5, "Halbzeug", { unit: "kg", moq: 100, form: "Blech", grade, thickness: th });
+  M("M-2007", "Flachstahl S235JR 40×8", 1.45, "S-1004", 7, "Halbzeug", { unit: "kg", moq: 50, form: "Flach", grade: "S235JR", section: "40x8", kgPerM: 2.51 });
+  M("M-2008", "Quadratrohr S235JR 40×40×3", 1.62, "S-1004", 7, "Halbzeug", { unit: "kg", moq: 50, form: "Rohr", grade: "S235JR", section: "40x40x3", kgPerM: 3.30 });
+  for (const [id, name, price, norm] of [["M-2101", "Sechskantschraube DIN 933 M12×40 8.8 verzinkt", 0.21, "DIN 933 M12x40"], ["M-2102", "Sechskantschraube DIN 933 M10×30 8.8 verzinkt", 0.12, "DIN 933 M10x30"], ["M-2103", "Sechskantmutter DIN 934 M12 verzinkt", 0.06, "DIN 934 M12"], ["M-2104", "Sechskantmutter DIN 934 M10 verzinkt", 0.04, "DIN 934 M10"], ["M-2105", "Scheibe DIN 125 A13 verzinkt", 0.03, "DIN 125 A13"], ["M-2106", "Scheibe DIN 125 A10,5 verzinkt", 0.02, "DIN 125 A10.5"], ["M-2107", "Bolzenanker M12×110", 1.85, "ANKER M12x110"]])
+    M(id, name, price, "S-2001", 3, "Normteil", { moq: 100, norm });
+  M("M-2201", "Schienenklammer SK-16", 6.8, "S-1004", 10, "Zukaufteil", { moq: 20, partNo: "SK-16" });
+  M("M-2301", "Feuerverzinken nach DIN EN ISO 1461 (je kg)", 0.95, "S-2002", 5, "Lohnbearbeitung", { unit: "kg", moq: 0, minCharge: 45 });
+  // Anfangsbestand Halbzeuge und Normteile, als Bestandsübernahme gebucht (Bilanz, keine GuV-Wirkung)
+  const open = [["M-2002", 120], ["M-2003", 60], ["M-2101", 200], ["M-2103", 150], ["M-2105", 40], ["M-2201", 10]]; let v = 0;
+  for (const [m, q] of open) { const val = r2(q * materialOf(t, m).price); moveIn(t, m, "WH1", q, val); v = r2(v + val); }
+  t.moves = []; postHist(t, { date: "2026-10-31", text: "Bestandsübernahme Halbzeuge und Normteile Werk Stuttgart", lines: [{ acct: "1300", dr: v }, { acct: "1100", cr: v }] });
+  t.workCenters = WORK_CENTERS.map(w => Object.assign({}, w));
+  t.eng = { drawings: [] };
+  t.roles.push({ id: "engineer", name: "Konstruktion", perms: ["view", "engineer"] });
+  let n = t.users.length; t.users.push({ id: "u" + (++n), name: "Felix Amann", role: "engineer" }, { id: "u" + (++n), name: "Selin Kaya", role: "engineer" });
+  return t;
+}
+
+/* --- Ableitung aus einer normalisierten Zeichnung: Stückliste, Arbeitsplan, Bezugsquellen, Kalkulation --- */
+const KINDS = ["Blechteil", "Profil", "Normteil", "Zukaufteil"];
+function deriveDrawing(t, d) {
+  const issues = [], bom = [], ops = [], parts = []; let weight = 0;
+  const findSheet = (grade, th) => t.master.materials.find(m => m.form === "Blech" && m.grade === grade && m.thickness === th);
+  const findSection = (grade, sec) => t.master.materials.find(m => (m.form === "Flach" || m.form === "Rohr") && m.grade === grade && m.section === sec);
+  const normKey = s => String(s || "").toUpperCase().replace(/[×X]/g, "X").replace(/,/g, ".").replace(/\s+/g, " ").trim();
+  const addBom = (mat, qty, src) => { const b = bom.find(x => x.mat === mat); if (b) { b.qty = r2(b.qty + qty); b.from.push(src); } else bom.push({ mat, qty: r2(qty), from: [src] }); };
+  let laserH = 0, kantH = 0, saegH = 0, montMin = 0, lasParts = 0, kantParts = 0, saegParts = 0;
+  for (const it of d.items) {
+    const tag = "Pos. " + it.pos;
+    if (!KINDS.includes(it.kind)) { issues.push([tag, `Teileart „${it.kind}“ unbekannt`, "error"]); continue; }
+    if (!(it.qty > 0) || Math.round(it.qty) !== it.qty) { issues.push([tag, "Menge muss eine ganze Zahl > 0 sein", "error"]); continue; }
+    if (it.kind === "Blechteil") {
+      const m = findSheet(it.grade, +it.thickness); if (!m) { issues.push([tag, `Kein Materialstamm für Blech ${it.grade} ${it.thickness} mm`, "error"]); continue; }
+      if (!(it.length > 0 && it.width > 0)) { issues.push([tag, "Abmessungen fehlen", "error"]); continue; }
+      const kg = r2(it.length / 100 * it.width / 100 * it.thickness / 100 * (DENSITY[it.grade] || 7.85)); weight = r2(weight + kg * it.qty);
+      const cut = it.cutLength > 0 ? it.cutLength : 2 * (it.length + it.width) + (it.holes || 0) * Math.PI * (it.holeDia || 13);
+      const speed = (LASER_SPEED[it.grade] || {})[+it.thickness] || 2;
+      const perPiece = cut / 1000 / speed / 60 + ((it.holes || 0) + 1) * 2 / 3600;
+      laserH += perPiece * it.qty; lasParts++;
+      if (it.bends > 0) { kantH += it.bends * 0.6 / 60 * it.qty; kantParts++; }
+      addBom(m.id, r2(kg * it.qty * (1 + SCRAP)), tag);
+      parts.push({ pos: it.pos, name: it.name, kind: it.kind, qty: it.qty, mat: m.id, kg, cutLength: Math.round(cut), bends: it.bends || 0, source: "Eigenfertigung" });
+    } else if (it.kind === "Profil") {
+      const m = findSection(it.grade, it.section); if (!m) { issues.push([tag, `Kein Materialstamm für Profil ${it.grade} ${it.section}`, "error"]); continue; }
+      const kg = r2(it.length / 1000 * m.kgPerM); weight = r2(weight + kg * it.qty); saegH += 2 / 60 * it.qty; saegParts++;
+      addBom(m.id, r2(kg * it.qty * 1.05), tag); parts.push({ pos: it.pos, name: it.name, kind: it.kind, qty: it.qty, mat: m.id, kg, source: "Eigenfertigung" });
+    } else if (it.kind === "Normteil") {
+      const m = t.master.materials.find(x => x.type === "Normteil" && normKey(x.norm) === normKey(it.norm)); if (!m) { issues.push([tag, `Normteil „${it.norm}“ nicht im Materialstamm`, "error"]); continue; }
+      montMin += 0.5 * it.qty; addBom(m.id, it.qty, tag); parts.push({ pos: it.pos, name: m.name, kind: it.kind, qty: it.qty, mat: m.id, source: "Katalog " + supplierName(t, m.supplier) });
+    } else {
+      const m = it.mat ? materialOf(t, it.mat) : t.master.materials.find(x => (it.partNo && x.partNo === it.partNo) || x.name.toLowerCase() === String(it.name).toLowerCase());
+      if (!m) { issues.push([tag, `Zukaufteil „${it.name}${it.partNo ? " " + it.partNo : ""}“ ohne Materialstamm und Bezugsquelle – Einkauf muss eine Quelle zuordnen`, "error"]); parts.push({ pos: it.pos, name: it.name, kind: it.kind, qty: it.qty, mat: null, source: "offen" }); continue; }
+      montMin += 3 * it.qty; addBom(m.id, it.qty, tag); parts.push({ pos: it.pos, name: m.name, kind: it.kind, qty: it.qty, mat: m.id, source: supplierName(t, m.supplier) });
+    }
+  }
+  const pcs = 1; // Zeiten je Baugruppe; Rüstzeiten getrennt
+  const op = (wc, text, setup, perUnit, instr) => { if (perUnit <= 0 && !setup) return; const w = t.workCenters.find(x => x.id === wc); ops.push({ no: String((ops.length + 1) * 10).padStart(4, "0"), wc, wcName: w.name, rate: w.rate, text, setup: r2(setup), perUnit: Math.round(perUnit * 1000) / 1000, instr }); };
+  if (lasParts) op("LAS", "Blechteile schneiden", 0.25, laserH, `Zuschnitt aller Blechteile nach Zeichnung ${d.drawingNo} Rev. ${d.revision}. Teile entgraten und mit Positionsnummer kennzeichnen. Schnittlänge gesamt je Baugruppe: ${Math.round(parts.filter(p => p.kind === "Blechteil").reduce((a, p) => a + p.cutLength * p.qty, 0))} mm.`);
+  if (kantParts) op("KANT", "Blechteile abkanten", 0.3, kantH, `Biegungen gemäß Zeichnung, Innenradius = Blechdicke, Winkeltoleranz ±1°. Erstteil messen und dokumentieren.`);
+  if (saegParts) op("SAEG", "Profile sägen", 0.15, saegH, `Profile auf Länge sägen, Toleranz ±1 mm, entgraten.`);
+  if (d.weldLength > 0) op("SCHW", "Baugruppe heften und schweißen", 0.3, d.weldLength / 1000 * 0.35, `Teile in Vorrichtung ausrichten, heften, Maßkontrolle. Kehlnähte a=${d.weldSize || 4} mm umlaufend nach Zeichnung (MAG, ISO 5817 C). Nahtlänge je Baugruppe ${d.weldLength} mm.`);
+  if (d.finish === "Feuerverzinkt") ops.push({ no: String((ops.length + 1) * 10).padStart(4, "0"), wc: "EXT", wcName: "Fremdbearbeitung", text: "Feuerverzinken (Lohnbearbeitung)", external: true, mat: "M-2301", supplier: "S-2002", instr: `Baugruppen zur Feuerverzinkerei senden. Verzinkung nach DIN EN ISO 1461, Gewinde vor Verzinkung schützen. Rückmeldung über Wareneingang.` });
+  if (montMin > 0) op("MONT", "Normteile und Zukaufteile montieren", 0.2, montMin / 60, `Normteile und Zukaufteile nach Stückliste beilegen bzw. montieren. Schrauben M12 mit 79 Nm anziehen (8.8, verzinkt, μ=0,14).`);
+  op("QS", "Endprüfung und Kennzeichnung", 0.1, 0.1, `Hauptmaße, Schweißnähte (Sichtprüfung) und Oberfläche prüfen. Typenschild mit Zeichnungsnummer und Auftragsnummer anbringen.`);
+  const matCost = r2(bom.reduce((a, b) => a + b.qty * materialOf(t, b.mat).price, 0));
+  const labor = r2(ops.filter(o => !o.external).reduce((a, o) => a + (o.perUnit + o.setup / 10) * o.rate, 0)); // Rüstzeit auf Losgröße 10 umgelegt
+  const ext = d.finish === "Feuerverzinkt" ? r2(weight * materialOf(t, "M-2301").price) : 0;
+  return { bom, ops, parts, issues, weight, costing: { material: matCost, labor, external: ext, total: r2(matCost + labor + ext), basis: "Losgröße 10 für Rüstzeiten" } };
+}
+function newReq(t, r, ctx, auto) {
+    const net = r2(r.qty * r.price); const lvl = auto ? null : reqApprovalLevel(net);
+    const q = Object.assign({ no: nextNo(t, "BANF"), date: t.date, requester: ctx.user, requesterName: ctx.userName, net, status: lvl ? "zur Freigabe" : "freigegeben", level: lvl, approvedBy: auto ? "Bedarfsplanung (Fertigungsauftrag)" : (lvl ? null : "automatisch bis 1.000 €"), po: null }, r);
+    t.reqs.push(q); return q;
+}
+function prodOfDrawing(t, no) { return t.master.products.find(p => p.drawing === no); }
+function reqApprovalLevel(net) { for (const [lim, lvl] of APPROVAL_LIMITS) if (net <= lim) return lvl; return "ceo"; }
+
+Object.assign(CMD, {
+  /* Konstruktion */
+  importDrawing(w, t, p, ctx) {
+    need(t, ctx, "engineer"); if (t.id !== "elevon") fail("TENANT", "Konstruktion gibt es in dieser Demo bei Elevon.");
+    const d = p.drawing || {}; const no = String(d.drawingNo || "").trim(); if (!no) fail("DRAWING", "Zeichnungsnummer fehlt im Schriftfeld.");
+    if (!Array.isArray(d.items) || !d.items.length) fail("DRAWING", "Keine Stücklistenpositionen in der Zeichnung gefunden.");
+    const rev = String(d.revision || "A"); const ex = t.eng.drawings.find(x => x.no === no && x.rev === rev); if (ex) fail("DUPLICATE", `Zeichnung ${no} Rev. ${rev} ist bereits importiert.`);
+    const items = d.items.map(i => ({ pos: String(i.pos), name: String(i.name || "").slice(0, 80), qty: +i.qty, kind: i.kind, grade: i.grade || null, thickness: i.thickness != null ? +i.thickness : null, length: +i.length || 0, width: +i.width || 0, section: i.section || null, norm: i.norm || null, partNo: i.partNo || null, bends: +i.bends || 0, holes: +i.holes || 0, holeDia: +i.holeDia || 0, cutLength: +i.cutLength || 0, mat: i.mat || null }));
+    const dr = { no, rev, title: String(d.title || no).slice(0, 80), source: d.source || "DXF", file: d.file || null, finish: d.finish || "ohne", weldLength: +d.weldLength || 0, weldSize: +d.weldSize || 4, scale: d.scale || null, author: d.author || null, items, aiAssisted: !!d.aiAssisted, importedBy: ctx.user, importedByName: ctx.userName, date: t.date, status: "importiert", geometry: d.geometry || null };
+    Object.assign(dr, deriveDrawing(t, Object.assign({ drawingNo: no, revision: rev }, dr))); t.eng.drawings.push(dr);
+    const err = dr.issues.filter(i => i[2] === "error").length;
+    return { text: `Zeichnung ${no} Rev. ${rev} importiert: ${items.length} Positionen, ${dr.bom.length} Stücklistenmaterialien, ${dr.ops.length} Arbeitsgänge, Gewicht ${dr.weight} kg${err ? ` – ${err} Klärungspunkt(e)` : ""} – keine Buchung`, objects: [no] };
+  },
+  createPurchasedPart(w, t, p, ctx) {
+    need(t, ctx, "buy"); const sup = find(t.master.suppliers, "id", p.supplierId, "Lieferant"); const name = String(p.name || "").trim(); if (name.length < 3) fail("NAME", "Bezeichnung fehlt.");
+    if (!(p.price > 0)) fail("PRICE", "Preis aus dem Lieferantenangebot fehlt."); const dup = t.master.materials.find(m => m.name.toLowerCase() === name.toLowerCase() || (p.partNo && m.partNo === p.partNo)); if (dup) fail("DUPLICATE", `Material existiert bereits: ${dup.id} ${dup.name}.`);
+    const id = "M-" + (2400 + t.master.materials.filter(m => m.id.startsWith("M-24")).length + 1);
+    t.master.materials.push({ id, name, price: r2(p.price), supplier: sup.id, leadDays: +p.leadDays || 10, type: "Zukaufteil", unit: "Stk", moq: +p.moq || 1, partNo: p.partNo || null, quote: p.quoteRef || null });
+    for (const dr of t.eng.drawings.filter(x => x.status === "importiert")) { for (const it of dr.items) if (it.kind === "Zukaufteil" && !it.mat && (it.name.toLowerCase() === name.toLowerCase() || (p.partNo && it.partNo === p.partNo))) it.mat = id; Object.assign(dr, deriveDrawing(t, Object.assign({ drawingNo: dr.no, revision: dr.rev }, dr))); }
+    return { text: `Zukaufteil ${id} „${name}“ angelegt: ${sup.name}, ${r2(p.price)} €/Stk, ${+p.leadDays || 10} Tage Lieferzeit`, objects: [id] };
+  },
+  releaseDesign(w, t, p, ctx) {
+    need(t, ctx, "engineer"); const dr = find(t.eng.drawings, "no", p.drawingNo, "Zeichnung"); if (dr.status !== "importiert") fail("STATUS", `Zeichnung hat Status „${dr.status}“.`);
+    if (dr.importedBy === ctx.user) fail("FOUR_EYES", "Vier-Augen-Prinzip: Die Konstruktionsfreigabe muss eine andere Person erteilen als die, die importiert hat.");
+    const err = dr.issues.filter(i => i[2] === "error"); if (err.length) fail("ISSUES", `Freigabe nicht möglich: ${err.length} offene Klärungspunkte (${err.map(e => e[0]).join(", ")}).`);
+    const id = "B-" + dr.no.replace(/[^A-Za-z0-9]/g, ""); const prod = { id, name: dr.title, drawing: dr.no, rev: dr.rev, type: "Baugruppe", bom: dr.bom.map(b => [b.mat, b.qty]), ops: dr.ops.map(o => Object.assign({}, o)), weight: dr.weight, stdCost: dr.costing.total, released: t.date, releasedBy: ctx.userName };
+    const i = t.master.products.findIndex(x => x.id === id); if (i >= 0) t.master.products[i] = prod; else t.master.products.push(prod);
+    dr.status = "freigegeben"; dr.releasedBy = ctx.userName; dr.product = id;
+    return { text: `Konstruktionsfreigabe ${dr.no} Rev. ${dr.rev} durch ${ctx.userName}: Material ${id} mit Stückliste (${prod.bom.length} Positionen) und Arbeitsplan (${prod.ops.length} Vorgänge), Plan-Herstellkosten ${prod.stdCost} €/Stk`, objects: [id] };
+  },
+
+  /* Fertigung Baugruppen */
+  createAssemblyOrder(w, t, p, ctx) {
+    need(t, ctx, "produce"); const pr = find(t.master.products, "id", p.productId, "Baugruppe"); if (pr.type !== "Baugruppe") fail("TYPE", "Nur freigegebene Baugruppen.");
+    const qty = +p.qty; if (!(qty > 0) || Math.round(qty) !== qty) fail("QTY", "Menge muss eine ganze Zahl > 0 sein.");
+    const comps = pr.bom.map(([mat, per]) => ({ mat, qty: Math.round(per * qty * 10) / 10, issued: 0 }));
+    const ops = pr.ops.map(o => Object.assign({}, o, { hours: o.external ? 0 : r2(o.setup + o.perUnit * qty), status: "offen", extQty: o.external ? Math.ceil(pr.weight * qty) : 0 }));
+    const pa = { no: nextNo(t, "PA"), kind: "Baugruppe", product: pr.id, qty, status: "eröffnet", components: comps, ops, labor: 0, ext: 0, docs: [], wip: 0, so: null, date: t.date, mrp: null };
+    t.prodOrders.push(pa); return { text: `Fertigungsauftrag ${pa.no}: ${qty} × ${pr.name}, ${ops.length} Vorgänge, ${r2(ops.reduce((a, o) => a + o.hours, 0))} h geplant – keine Buchung`, objects: [pa.no] };
+  },
+  planAssemblyOrder(w, t, p, ctx) {
+    need(t, ctx, "produce"); const pa = find(t.prodOrders, "no", p.prodNo, "Fertigungsauftrag"); if (pa.kind !== "Baugruppe") fail("TYPE", "Nur Baugruppenaufträge."); if (pa.mrp) fail("DONE", "Bedarfsplanung bereits erfolgt.");
+    const reqs = [];
+    for (const c of pa.components) { const m = materialOf(t, c.mat); const short = r2(c.qty - avail(t, c.mat, "WH1")); if (short <= 0) continue;
+      const qty = m.unit === "kg" ? Math.max(Math.ceil(short), m.moq || 0) : Math.max(Math.ceil(short), m.moq || 1);
+      reqs.push(newReq(t, { type: "direkt", mat: m.id, text: m.name, qty, unit: m.unit, price: m.price, supplier: m.supplier, prod: pa.no, acct: "1300" }, ctx, true)); }
+    for (const o of pa.ops.filter(x => x.external)) { const m = materialOf(t, o.mat); const net = Math.max(r2(o.extQty * m.price), m.minCharge || 0); const price = r2(net / o.extQty);
+      reqs.push(newReq(t, { type: "Lohnbearbeitung", mat: m.id, text: `${o.text} ${pa.no}`, qty: o.extQty, unit: "kg", price, supplier: o.supplier, prod: pa.no, op: o.no, acct: "1320" }, ctx, true)); }
+    pa.mrp = { date: t.date, reqs: reqs.map(r => r.no) };
+    return { text: `Bedarfsplanung ${pa.no}: ${reqs.length} Bedarfsanforderung(en) – ${reqs.map(r => `${r.text} ${r.qty} ${r.unit} bei ${supplierName(t, r.supplier)}`).join("; ") || "alles am Lager"}`, objects: reqs.map(r => r.no) };
+  },
+  confirmOperation(w, t, p, ctx) {
+    need(t, ctx, "produce"); const pa = find(t.prodOrders, "no", p.prodNo, "Fertigungsauftrag"); if (pa.kind !== "Baugruppe") fail("TYPE", "Nur Baugruppenaufträge.");
+    if (!["freigegeben", "in Fertigung"].includes(pa.status)) fail("STATUS", "Fertigungsauftrag muss freigegeben sein.");
+    const op = pa.ops.find(o => o.status !== "erledigt"); if (!op) fail("DONE", "Alle Vorgänge sind rückgemeldet."); if (op.external) fail("EXTERNAL", `Vorgang ${op.no} ist Fremdbearbeitung: Rückmeldung über den Wareneingang der Lohnbearbeitung.`);
+    const docs = [];
+    if (pa.status === "freigegeben") { let v = 0; for (const c of pa.components) { const q = r2(c.qty - c.issued); if (q > 0) { v += moveOut(t, c.mat, "WH1", q, true); c.issued = r2(c.issued + q); } }
+      const d = post(t, { date: t.date, text: "Materialentnahme " + pa.no, user: ctx.userName, ref: { type: "prodOrder", id: pa.no }, lines: [{ acct: "1320", dr: r2(v) }, { acct: "1300", cr: r2(v) }] }); pa.wip = r2(pa.wip + v); pa.docs.push(d.no); docs.push(d.no); pa.status = "in Fertigung"; }
+    const h = p.hours > 0 ? +p.hours : op.hours; const v = r2(h * op.rate);
+    const d = post(t, { date: t.date, text: `Rückmeldung ${pa.no} Vorgang ${op.no} ${op.wcName}: ${h} h`, user: ctx.userName, ref: { type: "prodOrder", id: pa.no }, lines: [{ acct: "1320", dr: v }, { acct: "6990", cr: v }] });
+    op.status = "erledigt"; op.actual = h; pa.labor = r2(pa.labor + v); pa.wip = r2(pa.wip + v); pa.docs.push(d.no); docs.push(d.no);
+    const next = pa.ops.find(o => o.status !== "erledigt"); if (next && next.external) next.status = "bereit zum Versand";
+    return { text: `Vorgang ${op.no} ${op.wcName} rückgemeldet: ${h} h × ${op.rate} € = ${v} €${next ? " · nächster Vorgang: " + next.text : " · alle Vorgänge erledigt"}`, docs };
+  },
+  completeAssemblyOrder(w, t, p, ctx) {
+    need(t, ctx, "produce"); const pa = find(t.prodOrders, "no", p.prodNo, "Fertigungsauftrag"); if (pa.kind !== "Baugruppe") fail("TYPE", "Nur Baugruppenaufträge.");
+    if (pa.ops.some(o => o.status !== "erledigt")) fail("STATUS", "Erst alle Vorgänge rückmelden (inkl. Fremdbearbeitung).");
+    const v = pa.wip; moveIn(t, pa.product, "WH2", pa.qty, v);
+    const d = post(t, { date: t.date, text: `Ablieferung ${pa.no}: ${pa.qty} × ${pa.product}`, user: ctx.userName, ref: { type: "prodOrder", id: pa.no }, lines: [{ acct: "1330", dr: v }, { acct: "1320", cr: v }] });
+    pa.docs.push(d.no); pa.status = "abgeschlossen"; pa.wip = 0; pa.unitCost = r2(v / pa.qty); const pr = t.master.products.find(x => x.id === pa.product);
+    return { text: `${pa.qty} × ${pr.name} ins Fertigwarenlager, Ist-Herstellkosten ${pa.unitCost} €/Stk (Plan ${pr.stdCost} €)`, docs: [d.no] };
+  },
+
+  /* Einkauf: Bedarfsanforderungen direkt und indirekt */
+  createRequisition(w, t, p, ctx) {
+    need(t, ctx, "view"); let r;
+    if (p.catalogId) { const c = find(t.catalog, "id", p.catalogId, "Katalogartikel"); const qty = +p.qty || 1; if (!(qty > 0) || Math.round(qty) !== qty) fail("QTY", "Menge muss eine ganze Zahl sein.");
+      r = { type: "indirekt", text: c.name, catalog: c.id, qty, unit: "Stk", price: c.price, supplier: c.supplier, acct: c.acct, category: c.category }; }
+    else { const cat = CATEGORY_DEFAULT[p.category]; if (!cat) fail("CATEGORY", "Warengruppe wählen."); const text = String(p.text || "").trim(); if (text.length < 3) fail("TEXT", "Beschreibung fehlt.");
+      if (!(p.price > 0)) fail("PRICE", "Geschätzter Preis fehlt."); r = { type: "indirekt", text, qty: +p.qty || 1, unit: p.unit || "Stk", price: r2(p.price), supplier: p.supplierId || cat[0], acct: cat[1], category: p.category, freeText: true }; }
+    const cc = p.costCenter || (t.master.costCenters[0] || {}).id; if (!t.master.costCenters.find(c => c.id === cc)) fail("CC", "Kostenstelle unbekannt."); r.costCenter = cc; if (p.forEmployee) r.forEmployee = p.forEmployee;
+    const q = newReq(t, r, ctx, false);
+    return { text: `Bedarfsanforderung ${q.no}: ${q.qty} × ${q.text}, ${q.net} € netto, Kostenstelle ${cc} – ${q.status === "freigegeben" ? "automatisch freigegeben (bis 1.000 €)" : q.level === "ceo" ? "Freigabe durch Geschäftsführung nötig (über 25.000 €)" : "Freigabe nötig (über 1.000 €)"}`, objects: [q.no] };
+  },
+  approveRequisition(w, t, p, ctx) {
+    const q = find(t.reqs, "no", p.reqNo, "Bedarfsanforderung"); if (q.status !== "zur Freigabe") fail("STATUS", `Status „${q.status}“.`);
+    const u = need(t, ctx, "approve"); if (q.level === "ceo" && u.role !== "ceo") fail("FORBIDDEN", "Über 25.000 € gibt nur die Geschäftsführung frei.");
+    if (q.requester === ctx.user) fail("FOUR_EYES", "Vier-Augen-Prinzip: Eigene Anforderungen kann man nicht selbst freigeben.");
+    if (p.reject) { q.status = "abgelehnt"; q.approvedBy = ctx.userName; return { text: `Bedarfsanforderung ${q.no} abgelehnt (${ctx.userName})` }; }
+    q.status = "freigegeben"; q.approvedBy = ctx.userName; return { text: `Bedarfsanforderung ${q.no} über ${q.net} € freigegeben (${ctx.userName})` };
+  },
+  convertRequisitions(w, t, p, ctx) {
+    need(t, ctx, "buy"); const open = t.reqs.filter(q => q.status === "freigegeben" && !q.po && (!p.reqNos || p.reqNos.includes(q.no))); if (!open.length) fail("NONE", "Keine freigegebenen Bedarfsanforderungen.");
+    const by = {}; for (const q of open) (by[q.supplier] = by[q.supplier] || []).push(q);
+    const nos = []; for (const [sup, qs] of Object.entries(by)) {
+      const lines = qs.map(q => ({ mat: q.mat || q.catalog || q.no, qty: q.qty, price: q.price, kind: q.type === "indirekt" ? "Sachkosten" : q.type === "Lohnbearbeitung" ? "Lohnbearbeitung" : "Material" }));
+      const r = CMD.createPO(w, t, { supplierId: sup, lines }, ctx); const po = t.purchaseOrders.find(x => x.no === r.objects[0]);
+      po.lines.forEach((l, i) => { const q = qs[i]; l.req = q.no; l.acct = q.acct; l.costCenter = q.costCenter || null; l.prod = q.prod || null; l.op = q.op || null; l.text = q.text; q.po = po.no; q.status = "bestellt"; });
+      po.kind = qs.every(q => q.type === "indirekt") ? "indirekt" : qs.some(q => q.type === "Lohnbearbeitung") ? "Lohnbearbeitung" : "direkt"; nos.push(po.no); }
+    return { text: `${nos.length} Bestellung(en) aus ${open.length} Bedarfsanforderungen: ${nos.join(", ")} – keine Buchung`, objects: nos };
+  },
+  shipToSubcontractor(w, t, p, ctx) {
+    need(t, ctx, "ship"); const pa = find(t.prodOrders, "no", p.prodNo, "Fertigungsauftrag"); const op = pa.ops.find(o => o.external && o.status === "bereit zum Versand");
+    if (!op) fail("STATUS", "Kein Vorgang bereit zur Fremdbearbeitung (vorherige Vorgänge zuerst rückmelden)."); const q = t.reqs.find(r => r.prod === pa.no && r.op === op.no);
+    if (!q || !q.po) fail("ORDER", "Für die Lohnbearbeitung gibt es noch keine Bestellung."); op.status = "beim Lohnbearbeiter"; op.shipped = t.date;
+    return { text: `${pa.qty} Baugruppen (${op.extQty} kg) an ${supplierName(t, op.supplier)} versandt – Lieferschein zu ${q.po}, keine Buchung` };
+  },
+
+  /* HR: Recruiting und Onboarding */
+  openPosition(w, t, p, ctx) { need(t, ctx, "hr"); const title = String(p.title || "").trim(); if (title.length < 3) fail("TITLE", "Stellenbezeichnung fehlt."); if (!(p.costRate > 0)) fail("RATE", "Kostensatz fehlt.");
+    const s = { id: "ST-" + (t.hr.positions.length + 1), title, role: p.role || "Mitarbeiter", costRate: r2(p.costRate), status: "offen", opened: t.date }; t.hr.positions.push(s); return { text: `Stelle ${s.id} „${title}“ ausgeschrieben`, objects: [s.id] }; },
+  moveApplicant(w, t, p, ctx) { need(t, ctx, "hr"); const a = find(t.hr.applicants, "id", p.id, "Bewerbung"); const flow = ["neu", "Interview", "Angebot"]; if (p.to === "abgesagt") { a.status = "abgesagt"; return { text: `${a.name}: Absage versandt` }; }
+    if (!flow.includes(a.status) || flow.indexOf(p.to) !== flow.indexOf(a.status) + 1) fail("STATUS", `Von „${a.status}“ nicht nach „${p.to}“.`); a.status = p.to; return { text: `${a.name}: ${p.to === "Interview" ? "zum Interview eingeladen" : "Vertragsangebot versandt"}` }; },
+  hireApplicant(w, t, p, ctx) {
+    need(t, ctx, "hr"); const a = find(t.hr.applicants, "id", p.id, "Bewerbung"); if (a.status !== "Angebot") fail("STATUS", "Einstellung erst nach angenommenem Angebot."); const s = find(t.hr.positions, "id", a.position, "Stelle");
+    const r = CMD.hireEmployee(w, t, { name: a.name, role: s.role, skill: s.role, costRate: s.costRate }, ctx); const empId = r.objects[0]; a.status = "eingestellt"; s.status = "besetzt";
+    const start = addDays(t.date, 14); const cc = (t.master.costCenters[0] || {}).id; const reqs = [];
+    reqs.push(newReq(t, { type: "indirekt", text: "Notebook Standard (GWG bis 800 €) für " + a.name, catalog: "K-05", qty: 1, unit: "Stk", price: 779, supplier: "S-I02", acct: "6830", category: "IT", costCenter: cc, forEmployee: empId }, ctx, false));
+    if (/techniker|konstruktion|filiale|monteur/i.test(s.role)) reqs.push(newReq(t, { type: "indirekt", text: "Arbeitsschutz-Set für " + a.name, catalog: "K-01", qty: 1, unit: "Stk", price: 48.5, supplier: "S-I01", acct: "6815", category: "Arbeitsschutz", costCenter: cc, forEmployee: empId }, ctx, false));
+    t.hr.onboarding.push({ employee: empId, name: a.name, start, tasks: [["Arbeitsvertrag erstellt", true], ["Personalstamm angelegt", true], ...reqs.map(q => ["Ausstattung angefordert: " + q.text.split(" für ")[0] + " (" + q.no + ")", true]), ["Erster Arbeitstag " + start, false], ["Einweisung Arbeitssicherheit", false]] });
+    return { text: `${a.name} eingestellt (${s.title}), Start ${start}; Onboarding mit ${reqs.length} Bedarfsanforderung(en) für die Ausstattung angelegt`, objects: [empId] };
+  }
+});
+
+/* Prozessinstanzen: Konstruktion bis Fertigware und Procure-to-Pay indirekt */
+const _piV05 = processInstances;
+processInstances = function (t) {
+  const out = _piV05(t).filter(i => !(i.object && i.object.kind === "Baugruppe"));
+  if (t.eng) for (const dr of t.eng.drawings) {
+    const pas = t.prodOrders.filter(p => p.product === dr.product); const pa = pas[pas.length - 1];
+    const reqs = pa ? t.reqs.filter(r => r.prod === pa.no) : []; const pos = [...new Set(reqs.map(r => r.po).filter(Boolean))].map(no => t.purchaseOrders.find(x => x.no === no));
+    const ext = pa && pa.ops.find(o => o.external); const intDone = pa ? pa.ops.filter(o => !o.external && o.status === "erledigt").length : 0, intAll = pa ? pa.ops.filter(o => !o.external).length : 0;
+    const err = dr.issues.filter(i => i[2] === "error");
+    const s = [stepOf("Zeichnung importiert", "Konstruktion", "done", [dr.no + " Rev. " + dr.rev]), stepOf("Stückliste und Arbeitsplan abgeleitet", "System", "done", [dr.bom.length + " Materialien", dr.ops.length + " Vorgänge"]),
+      stepOf("Bezugsquellen geklärt", "Einkauf", err.length ? "error" : "done", [], err.length ? err.map(e => e[1]).join("; ") : null), stepOf("Konstruktionsfreigabe", "Konstruktion (Vier-Augen)", dr.status === "freigegeben" ? "done" : err.length ? "open" : "active", dr.product ? [dr.product] : []),
+      stepOf("Fertigungsauftrag", "Arbeitsvorbereitung", pa ? "done" : dr.status === "freigegeben" ? "active" : "open", pa ? [pa.no] : []), stepOf("Bedarfsplanung", "Arbeitsvorbereitung", pa && pa.mrp ? "done" : pa ? "active" : "open", reqs.map(r => r.no)),
+      stepOf("Bestellungen", "Einkauf", reqs.length && reqs.every(r => r.po) ? "done" : pa && pa.mrp ? "active" : "open", pos.map(p => p.no)), stepOf("Wareneingang", "Lager", pos.length && pos.filter(p => p.kind !== "Lohnbearbeitung").every(p => p.grDoc) ? "done" : reqs.length && reqs.every(r => r.po) ? "active" : "open", pos.filter(p => p.grDoc && p.kind !== "Lohnbearbeitung").map(p => p.grDoc)),
+      stepOf("Fertigung (Vorgänge)", "Fertigung", pa && intDone === intAll ? "done" : pa && ["freigegeben", "in Fertigung"].includes(pa.status) ? "active" : pa && pa.status === "eröffnet" && pa.mrp && pos.filter(p => p.kind !== "Lohnbearbeitung").every(p => p.grDoc) ? "active" : "open", pa ? [intDone + "/" + intAll + " Vorgänge"] : []),
+      stepOf("Lohnbearbeitung", "Lager / Einkauf", !ext ? "skipped" : ext.status === "erledigt" ? "done" : ["bereit zum Versand", "beim Lohnbearbeiter"].includes(ext.status) ? "active" : "open", ext && ext.status !== "offen" ? [ext.status] : []),
+      stepOf("Ablieferung ins Lager", "Fertigung", pa && pa.status === "abgeschlossen" ? "done" : "open", pa && pa.unitCost ? [pa.unitCost + " €/Stk"] : [])];
+    out.push({ id: dr.no, chain: "Design-to-Make", title: `${dr.no} · ${dr.title}${pa ? " · " + pa.qty + " Stk" : ""}`, steps: s, object: { drawing: dr, pa } });
+  }
+  for (const q of (t.reqs || []).filter(r => r.type === "indirekt")) { const po = q.po && t.purchaseOrders.find(x => x.no === q.po); const inv = po && t.supInvoices.find(i => i.poNo === po.no);
+    const s = [stepOf("Bedarfsanforderung", q.requesterName, "done", [q.no]), stepOf("Freigabe", q.level === "ceo" ? "CEO" : q.level ? "Freigabeberechtigte" : "automatisch", q.status === "abgelehnt" ? "error" : q.status === "zur Freigabe" ? "active" : "done", q.approvedBy ? [q.approvedBy] : []),
+      stepOf("Bestellung", "Einkauf", po ? "done" : q.status === "freigegeben" ? "active" : "open", po ? [po.no] : []), stepOf("Wareneingang / Leistung", "Anforderer / Lager", po && po.grDoc ? "done" : po ? "active" : "open", po && po.grDoc ? [po.grDoc] : []),
+      stepOf("Rechnung", "Kreditoren", inv ? "done" : po && po.grDoc ? "active" : "open", inv ? [inv.no] : []), stepOf("Zahlung", "CFO", inv && inv.open === 0 ? "done" : inv ? "active" : "open", [])];
+    out.push({ id: q.no, chain: "Procure-to-Pay indirekt", title: `${q.no} · ${q.qty} × ${q.text} · ${q.net} €`, steps: s, object: q }); }
+  return out;
+};
 const QUERY_ONLY = { findStaff: true };
 /* --- Accounts: jede Person kann sich je Unternehmen einen Account mit Rolle anlegen --- */
 Object.assign(CMD, {
@@ -987,5 +1265,5 @@ Object.assign(CMD, {
   }
 });
 
-return { ROLE_DESC, dueMaintenance, returnRate, personnelCost, cutoverStatus, legacyData, MIG_OBJECTS, MIG_LABEL, isAbsent, absHoursInPeriod, SERVICE_RATE, VERSION, START_DATE, TENANT_IDS, COA, SIZES, E5, createWorld, resetTenant, resetAll, dispatch, kpis, plOf, trialBalance, balance, projectMetrics, replenishmentProposals, processInstances, tenantHash, costing, avail, periodOf, customerName, supplierName, articleName, materialOf, QUERY_ONLY, _internal: { HIST, crossHistory } };
+return { WORK_CENTERS, CATALOG, CATEGORY_DEFAULT, deriveDrawing, ROLE_DESC, dueMaintenance, returnRate, personnelCost, cutoverStatus, legacyData, MIG_OBJECTS, MIG_LABEL, isAbsent, absHoursInPeriod, SERVICE_RATE, VERSION, START_DATE, TENANT_IDS, COA, SIZES, E5, createWorld, resetTenant, resetAll, dispatch, kpis, plOf, trialBalance, balance, projectMetrics, replenishmentProposals, processInstances, tenantHash, costing, avail, periodOf, customerName, supplierName, articleName, materialOf, QUERY_ONLY, _internal: { HIST, crossHistory } };
 });

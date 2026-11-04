@@ -12,14 +12,14 @@ async def main():
     await pg.set_content(html); await pg.wait_for_timeout(400)
     await pg.screenshot(path=SP+"s_home.png")
     report=[]
-    for sid in ["industrial","retail","services","crosslift","service","omni","migration"]:
+    for sid in ["industrial","retail","services","crosslift","service","omni","migration","design","p2p","hire"]:
       await pg.evaluate(f"ACT.startStory({{id:'{sid}',reset:1}})"); await pg.wait_for_timeout(100)
       n=await pg.evaluate(f"STORIES.find(s=>s.id==='{sid}').steps.length")
       for i in range(n):
         await pg.click("[data-act=storyStep]"); await pg.wait_for_timeout(60)
       st=await pg.evaluate("S.story && S.story.i"); last=await pg.evaluate("S.last && S.last.ok")
       report.append((sid,n,st,last))
-      if sid in ("service","omni","migration"): await pg.screenshot(path=SP+"s_"+sid+".png")
+      if sid in ("service","omni","migration","design","p2p","hire"): await pg.screenshot(path=SP+"s_"+sid+".png")
       if sid=="industrial": await pg.screenshot(path=SP+"s_ind.png")
     print(report)
     # Konsistenzprüfung nach allen Storys
@@ -27,7 +27,7 @@ async def main():
     print(json.dumps(chk,ensure_ascii=False))
     for r in ["processes","finance","analytics","sales","supply","production","inbox","admin","ai","hr","service","assets","migrations","cutover"]:
       await pg.evaluate(f"location.hash='{r}'"); await pg.wait_for_timeout(80)
-    for tn,rs in [("elevon",["service","assets","migrations","cutover","hr"]),("novamart",["sales","hr","assets","migrations"]),("aventra",["hr","migrations"])]:
+    for tn,rs in [("elevon",["service","assets","migrations","cutover","hr","engineering","production","supply"]),("novamart",["sales","hr","assets","migrations"]),("aventra",["hr","migrations","supply"])]:
       await pg.evaluate(f"ACT.tenant({{id:'{tn}'}})")
       for r in rs:
         await pg.evaluate(f"location.hash='{r}'"); await pg.wait_for_timeout(80); await pg.screenshot(path=SP+f"v_{tn}_{r}.png")

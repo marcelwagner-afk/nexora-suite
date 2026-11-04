@@ -6,7 +6,7 @@ const PROTO_URL = "https://claude.ai/artifact/6p7imWPiPw1T5V3ABFq2Di";
 
 /* ---------- Zustand: Welt = Seed + Befehlsprotokoll (reproduzierbar) ---------- */
 let W, LOG = [], BASE = {};
-const S = { tenant: "elevon", users: { elevon: "u3", novamart: "u3", aventra: "u3" }, mode: "free", live: true, last: null, story: null, admin: false, chat: { elevon: [], novamart: [], aventra: [] }, sel: {}, tab: {}, modal: null, toast: null, pending: null, size: "S" };
+const S = { tenant: "elevon", users: { elevon: "u1", novamart: "u1", aventra: "u1" }, mode: "free", live: true, last: null, story: null, admin: false, chat: { elevon: [], novamart: [], aventra: [] }, sel: {}, tab: {}, modal: null, toast: null, pending: null, size: "S" };
 function saveLog() { try { localStorage.setItem(LS_KEY, JSON.stringify({ size: S.size, log: LOG, tenant: S.tenant, users: S.users, mode: S.mode })); } catch (e) {} }
 function boot() {
   let saved = null; try { saved = JSON.parse(localStorage.getItem(LS_KEY) || "null"); } catch (e) {}

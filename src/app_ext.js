@@ -68,7 +68,7 @@ async function gdRestore(fileId) {
 }
 
 /* ---------- Claude als KI-Assistent mit Werkzeugen auf die Engine ---------- */
-const AI_TOOLS = () => [
+let AI_TOOLS = () => [
   { name: "kpis", description: "Aktuelle Kennzahlen eines Unternehmens (elevon, novamart, aventra): Bank, Umsatz, Marge, offene Posten, Bestand, branchenspezifische Werte. Alle Werte aus Belegen berechnet.", inputSchema: { type: "object", properties: { tenant: { type: "string" } }, required: ["tenant"] }, execute: i => { const t = W.tenants[String(i.tenant)]; if (!t) throw new Error("Unbekanntes Unternehmen"); const k = E.kpis(t); delete k.trend; return k; } },
   { name: "guv", description: "Gewinn- und Verlustrechnung einer Periode (Format JJJJ-MM) aus dem Hauptbuch: Umsatz, Materialaufwand, Rohertrag, Personal, Sonstiges, EBIT.", inputSchema: { type: "object", properties: { tenant: { type: "string" }, period: { type: "string" } }, required: ["tenant", "period"] }, execute: i => E.plOf(W.tenants[String(i.tenant)], String(i.period)) },
   { name: "projekte", description: "Aventra-Projekte mit Budget, Ist-Kosten, Prognose (EAC), Erlösen, nicht fakturierten Leistungen und Margenprognose.", execute: () => E.projectMetrics(W.tenants.aventra) },
@@ -276,7 +276,7 @@ async function resolveOwner() {
 }
 function myAccount(tid) { const o = ownerId(); return o ? W.tenants[tid].users.find(u => u.account && u.owner === o && u.active !== false) : null; }
 S.accAuto = {};
-function adoptAccounts() { let ch = false; for (const id of E.TENANT_IDS) { const a = myAccount(id); if (a && !S.accAuto[id]) { S.accAuto[id] = true; S.users[id] = a.id; ch = true; } if (!W.tenants[id].users.some(u => u.id === S.users[id])) { S.users[id] = "u3"; ch = true; } } return ch; }
+function adoptAccounts() { let ch = false; for (const id of E.TENANT_IDS) { const a = myAccount(id); if (a && !S.accAuto[id]) { S.accAuto[id] = true; S.users[id] = a.id; ch = true; } if (!W.tenants[id].users.some(u => u.id === S.users[id])) { S.users[id] = "u1"; ch = true; } } return ch; }
 const _replay = replayFromBackend; replayFromBackend = function () { _replay(); if (adoptAccounts()) render(); };
 VIEWS.users = () => {
   const t = T(); const mine = myAccount(t.id); const cur = U(); const roleName = id => (t.roles.find(r => r.id === id) || {}).name || id;
@@ -297,13 +297,10 @@ VIEWS.users = () => {
 Object.assign(ACT, {
   goUsers() { S.menu = false; renderLayer(); go("users"); },
   accRole(d) { act("changeAccountRole", { accountId: d.id, role: document.getElementById("accRole").value, owner: ownerId() }); },
-  accClose(d) { act("closeAccount", { accountId: d.id, owner: ownerId() }); S.users[S.tenant] = "u3"; render(); }
+  accClose(d) { act("closeAccount", { accountId: d.id, owner: ownerId() }); S.users[S.tenant] = "u1"; render(); }
 });
 const _setUser = ACT.setUser;
 ACT.setUser = d => { const u = T().users.find(x => x.id === d.id); if (u && u.account && u.owner !== ownerId()) return toast("Fremde Accounts können nicht übernommen werden.", true); if (u && u.active === false) return toast("Dieser Account ist geschlossen.", true); S.menu = false; _setUser(d); };
 ON.regRole = v => { S.sel.regRole = v; const r = T().roles.find(x => x.id === v); const el = document.getElementById("regDesc"); if (el) el.textContent = r ? r.desc || "" : ""; };
 FORMS.register = () => { const name = document.getElementById("regName").value; const r = act("registerAccount", { name, role: document.getElementById("regRole").value, owner: ownerId() }); if (r && r.ok) { S.users[S.tenant] = r.objects[0]; S.accAuto[S.tenant] = true; saveLog(); render(); toast("Account angelegt – du arbeitest jetzt als " + name.trim()); } };
 
-/* ---------- Start ---------- */
-boot(); adoptAccounts(); render(); startBackend();
-if (!(window.claude && window.claude.use)) resolveOwner().then(() => { adoptAccounts(); render(); });

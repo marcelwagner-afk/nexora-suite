@@ -16,7 +16,7 @@ function consistency(w) {
     eq(E.balance(t, "1200"), t.custInvoices.reduce((a, i) => a + i.open, 0), `${id} Debitoren-Nebenbuch = Konto 1200`);
     eq(-E.balance(t, "1600"), t.supInvoices.reduce((a, i) => a + i.open, 0), `${id} Kreditoren-Nebenbuch = Konto 1600`);
     const sv = acctPrefix => Object.values(t.stock).filter(s => acctPrefix(s.mat)).reduce((a, s) => a + s.value, 0);
-    if (id === "elevon") { eq(E.balance(t, "1300"), sv(m => m.startsWith("M-")), "Elevon Rohstoffbestand = Konto 1300"); eq(E.balance(t, "1330"), sv(m => m === "P-E5"), "Elevon Fertigware = Konto 1330"); eq(E.balance(t, "1320"), t.prodOrders.reduce((a, p) => a + p.wip, 0), "Elevon WIP = Konto 1320"); }
+    if (id === "elevon") { eq(E.balance(t, "1300"), sv(m => m.startsWith("M-")), "Elevon Rohstoffbestand = Konto 1300"); eq(E.balance(t, "1330"), sv(m => m === "P-E5" || m.startsWith("B-")), "Elevon Fertigware = Konto 1330"); eq(E.balance(t, "1320"), t.prodOrders.reduce((a, p) => a + p.wip, 0), "Elevon WIP = Konto 1320"); }
     if (id === "novamart") eq(E.balance(t, "1310"), sv(() => true), "NovaMart Warenbestand = Konto 1310");
     for (const s of Object.values(t.stock)) { ok(s.qty >= 0, `${id} Bestand ${s.mat} nicht negativ`); ok(s.res <= s.qty, `${id} Reservierung ${s.mat} ≤ Bestand`); }
   }
@@ -212,6 +212,67 @@ test("Accounts: anlegen, nutzen, Rolle wechseln, schließen – reproduzierbar",
   ok(E.dispatch(w, "novamart", "closePeriod", {}, { user: id }).code !== "FORBIDDEN", "als CFO berechtigt");
   run(w, "novamart", "closeAccount", { accountId: id, owner: "o-1" }); const x = E.dispatch(w, "novamart", "placeWebOrder", { articleId: "A-10001", qty: 1 }, { user: id }); ok(!x.ok && x.code === "INACTIVE", "geschlossener Account gesperrt");
   E.resetTenant(w, "novamart"); ok(E.tenantHash(w.tenants.novamart) === h0 && !w.tenants.novamart.users.some(u => u.account), "Reset entfernt Accounts");
+});
+
+/* --- v0.6 Konstruktion bis Fertigware, Einkauf direkt/indirekt, Recruiting --- */
+const DXF = require("../src/dxf.js"); const SK = () => DXF.toDrawing(require("fs").readFileSync(__dirname + "/../samples/SK-200.dxf", "utf8"), "SK-200.dxf");
+function skChain(w, qty) {
+  const e = (cmd, p, user) => { const r = E.dispatch(w, "elevon", cmd, p, { user }); if (!r.ok) throw new Error(cmd + ": " + r.text); return r; };
+  e("importDrawing", { drawing: SK().drawing }, "u12");
+  e("createPurchasedPart", { name: "Elastomerlager", partNo: "EL-40", supplierId: "S-1004", price: 12.4, leadDays: 8, moq: 10, quoteRef: "AN-2026-117" }, "u5");
+  e("releaseDesign", { drawingNo: "SK-200" }, "u13");
+  const pa = e("createAssemblyOrder", { productId: "B-SK200", qty }, "u4").objects[0];
+  e("planAssemblyOrder", { prodNo: pa }, "u4"); const pos = e("convertRequisitions", {}, "u5").objects;
+  const t = w.tenants.elevon;
+  for (const no of pos) { const po = t.purchaseOrders.find(x => x.no === no); if (po.kind !== "Lohnbearbeitung") { e("postGoodsReceipt", { poNo: no }, "u6"); e("postSupplierInvoice", { poNo: no }, "u2"); } }
+  e("releaseProdOrder", { prodNo: pa }, "u4"); e("confirmOperation", { prodNo: pa }, "u4"); e("confirmOperation", { prodNo: pa }, "u4"); e("confirmOperation", { prodNo: pa }, "u4");
+  e("shipToSubcontractor", { prodNo: pa }, "u6"); const sub = pos.find(no => t.purchaseOrders.find(x => x.no === no).kind === "Lohnbearbeitung"); e("postGoodsReceipt", { poNo: sub }, "u6"); e("postSupplierInvoice", { poNo: sub }, "u2");
+  e("confirmOperation", { prodNo: pa }, "u4"); e("confirmOperation", { prodNo: pa }, "u4"); e("completeAssemblyOrder", { prodNo: pa }, "u4");
+  return pa;
+}
+test("DXF: Schriftfeld, 9 Positionen und Schnittlängen aus der Abwicklung", () => {
+  const r = SK(); ok(r.drawing.drawingNo === "SK-200" && r.drawing.revision === "B" && r.drawing.items.length === 9, "Kopfdaten und Positionen");
+  eq(r.drawing.items[0].cutLength, Math.round(1000 + 4 * Math.PI * 14), "Schnittlänge Grundplatte = Umfang + 4 Bohrungen Ø14");
+});
+test("Konstruktion: offene Bezugsquelle blockiert Freigabe; Vier-Augen bei Konstruktionsfreigabe", () => {
+  const w = E.createWorld(); ok(E.dispatch(w, "elevon", "importDrawing", { drawing: SK().drawing }, { user: "u12" }).ok, "Import");
+  const r1 = E.dispatch(w, "elevon", "releaseDesign", { drawingNo: "SK-200" }, { user: "u13" }); ok(!r1.ok && r1.code === "ISSUES", "Zukaufteil ohne Quelle blockiert");
+  run(w, "elevon", "createPurchasedPart", { name: "Elastomerlager", partNo: "EL-40", supplierId: "S-1004", price: 12.4 });
+  const r2 = E.dispatch(w, "elevon", "releaseDesign", { drawingNo: "SK-200" }, { user: "u12" }); ok(!r2.ok && r2.code === "FOUR_EYES", "Importeur darf nicht freigeben");
+  ok(E.dispatch(w, "elevon", "releaseDesign", { drawingNo: "SK-200" }, { user: "u13" }).ok, "andere Person gibt frei");
+  const pr = w.tenants.elevon.master.products.find(p => p.id === "B-SK200"); ok(pr && pr.bom.length === 8 && pr.ops.some(o => o.external), "Stückliste und Arbeitsplan mit Lohnbearbeitung");
+  ok(w.tenants.elevon.docs.length === E.createWorld().tenants.elevon.docs.length, "Konstruktion bucht nichts");
+});
+test("Zeichnung bis Fertigware: Bedarf → BANF → Bestellungen je Lieferant → WE → Fertigung → Lohnbearbeitung → Lager", () => {
+  const w = E.createWorld(); const pa = skChain(w, 20); const t = w.tenants.elevon; const o = t.prodOrders.find(x => x.no === pa);
+  ok(o.status === "abgeschlossen" && E.avail(t, "B-SK200", "WH2") === 20, "20 Konsolen im Fertigwarenlager");
+  const sups = new Set(t.purchaseOrders.filter(p => t.reqs.some(r => r.po === p.no)).map(p => p.supplier)); ok(sups.has("S-2003") && sups.has("S-2001") && sups.has("S-2002"), "Bleche, Normteile und Verzinkung bei den richtigen Lieferanten");
+  eq(Math.round(o.unitCost * 20), Math.round(E.balance(t, "1330") - E.createWorld().tenants.elevon.docs.reduce((a, d) => a + d.lines.filter(l => l.acct === "1330").reduce((x, l) => x + l.dr - l.cr, 0), 0)), "Fertigwarenzugang = Herstellkosten");
+  eq(E.balance(t, "1320"), E.createWorld().tenants.elevon.docs.reduce((a, d) => a + d.lines.filter(l => l.acct === "1320").reduce((x, l) => x + l.dr - l.cr, 0), 0), "WIP nach Abschluss wieder auf Ausgangswert");
+  consistency(w);
+});
+test("Lohnbearbeitung: Wareneingang vor Versand an Lohnbearbeiter abgelehnt", () => {
+  const w = E.createWorld(); const e = (c, p, u) => E.dispatch(w, "elevon", c, p, { user: u });
+  e("importDrawing", { drawing: SK().drawing }, "u12"); e("createPurchasedPart", { name: "Elastomerlager", partNo: "EL-40", supplierId: "S-1004", price: 12.4 }, "u5"); e("releaseDesign", { drawingNo: "SK-200" }, "u13");
+  const pa = e("createAssemblyOrder", { productId: "B-SK200", qty: 5 }, "u4").objects[0]; e("planAssemblyOrder", { prodNo: pa }, "u4"); const pos = e("convertRequisitions", {}, "u5").objects;
+  const sub = pos.find(no => w.tenants.elevon.purchaseOrders.find(x => x.no === no).kind === "Lohnbearbeitung"); const r = e("postGoodsReceipt", { poNo: sub }, "u6"); ok(!r.ok && r.code === "STATUS", "abgelehnt");
+});
+test("Einkauf indirekt: Freigabegrenzen, Vier-Augen, Kostenstelle, Sachkonto beim Wareneingang", () => {
+  const w = E.createWorld(); const t = w.tenants.novamart;
+  const a = E.dispatch(w, "novamart", "createRequisition", { catalogId: "K-03", qty: 10, costCenter: "KS120" }, { user: "u7" }); ok(a.ok && t.reqs[0].status === "freigegeben", "bis 1.000 € automatisch");
+  const b = E.dispatch(w, "novamart", "createRequisition", { catalogId: "K-08", qty: 1, costCenter: "KS110" }, { user: "u4" }); ok(t.reqs[1].status === "zur Freigabe", "Reinigung 2.450 € braucht Freigabe");
+  ok(E.dispatch(w, "novamart", "createRequisition", { category: "Beratung/Dienstleistung", text: "Ladenbau Filiale Köln", price: 38000, costCenter: "KS120" }, { user: "u2" }).ok && t.reqs[2].level === "ceo", "über 25.000 € nur CEO");
+  ok(E.dispatch(w, "novamart", "approveRequisition", { reqNo: t.reqs[2].no }, { user: "u2" }).code === "FORBIDDEN", "CFO darf über 25.000 € nicht");
+  ok(E.dispatch(w, "novamart", "approveRequisition", { reqNo: t.reqs[1].no }, { user: "u2" }).ok, "CFO gibt Reinigung frei");
+  const po = run(w, "novamart", "convertRequisitions", {}).objects; ok(po.length === 2, "zwei Lieferanten");
+  const before = E.balance(t, "6835"); for (const no of po) { run(w, "novamart", "postGoodsReceipt", { poNo: no }); run(w, "novamart", "postSupplierInvoice", { poNo: no }); }
+  eq(E.balance(t, "6835") - before, 2450, "Reinigung auf Sachkonto 6835"); ok(t.docs.some(d => d.lines.some(l => l.cc === "KS110")), "Kostenstelle am Beleg"); consistency(w);
+});
+test("Recruiting: Bewerbung bis Einstellung erzeugt Onboarding mit Ausstattungs-Anforderungen", () => {
+  const w = E.createWorld(); const t = w.tenants.elevon; const ap = t.hr.applicants.find(a => a.position === "ST-1" && a.status === "Interview");
+  run(w, "elevon", "moveApplicant", { id: ap.id, to: "Angebot" }); const n = t.master.employees.length; run(w, "elevon", "hireApplicant", { id: ap.id });
+  ok(t.master.employees.length === n + 1 && t.hr.onboarding.length === 1 && t.reqs.length === 2, "Mitarbeiter, Onboarding, Notebook und Arbeitsschutz angefordert");
+  ok(t.hr.positions[0].status === "besetzt", "Stelle besetzt");
 });
 
 for (const [s, n] of results) console.log((s === "ok" ? "  ✓ " : "  ✗ ") + n);
