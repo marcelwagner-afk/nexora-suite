@@ -47,7 +47,7 @@
       const layerGeom = d.geom.filter(g => g.layer.toUpperCase() === "POS-" + t.POS);
       const cut = layerGeom.length ? Math.round(layerGeom.reduce((s, g) => s + len(g), 0)) : 0;
       if (kind === "Blechteil" && !layerGeom.length) warnings.push(`Pos. ${t.POS}: keine Abwicklung auf Layer POS-${t.POS} – Schnittlänge wird aus Umfang und Bohrungen geschätzt.`);
-      items.push({ pos: t.POS, name: t.BENENNUNG || t.NAME || "", qty: parseFloat(String(t.MENGE || t.QTY || "1").replace(",", ".")), kind, grade: t.WERKSTOFF || t.MATERIAL || null, thickness: t.DICKE ? parseFloat(t.DICKE.replace(",", ".")) : null, length: parseFloat(t.LAENGE || 0) || 0, width: parseFloat(t.BREITE || 0) || 0, section: t.PROFIL || null, norm: t.NORM || null, partNo: t.TEILENR || t.PARTNO || null, bends: parseInt(t.BIEGUNGEN || 0, 10) || 0, holes: parseInt(t.BOHRUNGEN || 0, 10) || 0, holeDia: parseFloat(t.BOHR_D || 0) || 0, cutLength: cut });
+      items.push({ pos: t.POS, name: t.BENENNUNG || t.NAME || "", qty: parseFloat(String(t.MENGE || t.QTY || "1").replace(",", ".")), kind, grade: t.WERKSTOFF || t.MATERIAL || null, thickness: t.DICKE ? parseFloat(t.DICKE.replace(",", ".")) : null, length: parseFloat(t.LAENGE || 0) || 0, width: parseFloat(t.BREITE || 0) || 0, section: t.PROFIL || null, norm: t.NORM || null, partNo: t.TEILENR || t.PARTNO || null, bends: parseInt(t.BIEGUNGEN || 0, 10) || 0, holes: parseInt(t.BOHRUNGEN || 0, 10) || 0, holeDia: parseFloat(t.BOHR_D || 0) || 0, threads: parseInt(t.GEWINDE || 0, 10) || 0, miter: parseInt(t.GEHRUNG || 0, 10) || 0, cutLength: cut });
     }
     items.sort((x, y) => parseFloat(x.pos) - parseFloat(y.pos));
     if (!a.ZEICHNUNGSNR && !a.DWGNO && !a.DRAWING_NO) warnings.push("Kein Schriftfeld mit Attribut ZEICHNUNGSNR gefunden.");

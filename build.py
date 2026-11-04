@@ -19,7 +19,7 @@ html=f'''<title>NEXORA AI Suite</title>
 {(d/'icons.js').read_text()}
 {(d/"app.js").read_text()}
 {(d/"app_ext.js").read_text()}
-const SAMPLE_DXF = {json.dumps((d.parent/'samples'/'SK-200.dxf').read_text())};
+const SAMPLES = {json.dumps({k: (d.parent/'samples'/(k + '.dxf')).read_text() for k in ('MR-1200', 'SK-200')})};
 {(d/"app_v6.js").read_text()}
 {(d/"app_boot.js").read_text()}
 </script>

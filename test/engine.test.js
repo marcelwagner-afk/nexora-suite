@@ -275,6 +275,20 @@ test("Recruiting: Bewerbung bis Einstellung erzeugt Onboarding mit Ausstattungs-
   ok(t.hr.positions[0].status === "besetzt", "Stelle besetzt");
 });
 
+test("MR-1200 (2 Blätter, 15 Pos.): Profile mit Bohrungen/Gewinden, Pulverbeschichtung nach m², volle Kette", () => {
+  const r = DXF.toDrawing(require("fs").readFileSync(__dirname + "/../samples/MR-1200.dxf", "utf8"), "MR-1200.dxf"); ok(r.drawing.items.length === 15 && r.drawing.revision === "C" && !r.warnings.length, "15 Positionen, Index C");
+  const w = E.createWorld(); const t = w.tenants.elevon; const e = (c, p, u) => { const x = E.dispatch(w, "elevon", c, p, { user: u }); if (!x.ok) throw new Error(c + ": " + x.text); return x; };
+  e("importDrawing", { drawing: r.drawing }, "u12"); const dr = t.eng.drawings[0]; ok(dr.issues.length === 1 && /KV-25/.test(dr.issues[0][1]), "nur KV-25 offen");
+  ok(dr.ops.some(o => o.wc === "BOHR") && dr.ops.some(o => o.extUnit === "m²"), "Bohren und Beschichtung im Arbeitsplan");
+  e("createPurchasedPart", { name: "Kabelverschraubung M25, Satz", partNo: "KV-25", supplierId: "S-1003", price: 7.9, leadDays: 5, moq: 10 }, "u5"); e("releaseDesign", { drawingNo: "MR-1200" }, "u13");
+  const pa = e("createAssemblyOrder", { productId: "B-MR1200", qty: 10 }, "u4").objects[0]; e("planAssemblyOrder", { prodNo: pa }, "u4"); const pos = e("convertRequisitions", {}, "u5").objects;
+  for (const no of pos) { const po = t.purchaseOrders.find(x => x.no === no); if (po.kind !== "Lohnbearbeitung") { e("postGoodsReceipt", { poNo: no }, "u6"); e("postSupplierInvoice", { poNo: no }, "u2"); } }
+  e("releaseProdOrder", { prodNo: pa }, "u4"); const o = t.prodOrders.find(x => x.no === pa); while (!o.ops.find(x => x.status !== "erledigt").external) e("confirmOperation", { prodNo: pa }, "u4");
+  e("shipToSubcontractor", { prodNo: pa }, "u6"); const sub = pos.find(no => t.purchaseOrders.find(x => x.no === no).kind === "Lohnbearbeitung"); ok(t.purchaseOrders.find(x => x.no === sub).supplier === "S-2005", "Beschichter"); e("postGoodsReceipt", { poNo: sub }, "u6");
+  while (o.ops.some(x => x.status !== "erledigt")) e("confirmOperation", { prodNo: pa }, "u4"); e("completeAssemblyOrder", { prodNo: pa }, "u4");
+  ok(E.avail(t, "B-MR1200", "WH2") === 10, "10 Rahmen im Lager"); consistency(w);
+});
+
 for (const [s, n] of results) console.log((s === "ok" ? "  ✓ " : "  ✗ ") + n);
 console.log(`\n${pass} bestanden, ${failN} fehlgeschlagen`);
 process.exit(failN ? 1 : 0);

@@ -14,10 +14,11 @@ Alle Daten sind synthetisch und werden reproduzierbar erzeugt (Seed 20261102). E
 |---|---|
 | `src/engine.js` | Business-Engine (UMD, ohne Abhängigkeiten). Sie umfasst: doppelte Buchführung mit Perioden und Belegnummern; Nebenbücher, die mit dem Hauptbuch abgestimmt sind; Rollen und Berechtigungen; Idempotenz; atomare Befehle; den Nachrichtenaustausch zwischen den Unternehmen; die Rücksetzung je Mandant. |
 | `src/app.js`, `src/app_ext.js` | Oberfläche, geführte Demos, Live-Änderungen und Backend-Anbindung |
-| `test/engine.test.js` | 46 Akzeptanztests: Buchungslogik, Reproduzierbarkeit, alle E2E-Prozesse |
+| `test/engine.test.js` | 47 Akzeptanztests: Buchungslogik, Reproduzierbarkeit, alle E2E-Prozesse |
 | `test/e2e.py` | Playwright-Browsertest. Er spielt alle 10 Demo-Storys durch, prüft Konsistenz und Reset und erzeugt Screenshots. |
 | `src/dxf.js` | DXF-Leser: Schriftfeld- und Positionsattribute, Geometrie, Schnittlängen aus Abwicklungen |
-| `samples/SK-200.dxf` | Synthetische Beispielzeichnung Schachtkonsole (erzeugt mit `samples/make_sk200.py`) |
+| `samples/MR-1200.dxf` | Synthetische Werkstattzeichnung Maschinenrahmen, 2 Blätter A1, 15 Positionen (`samples/make_mr1200.py`) |
+| `samples/SK-200.dxf` | Einfache Beispielzeichnung Schachtkonsole (`samples/make_sk200.py`) |
 | `build.py` | Erzeugt die Einzeldatei `dist/nexora-suite.html` |
 
 ## Prozesse

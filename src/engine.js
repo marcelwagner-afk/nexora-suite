@@ -982,9 +982,9 @@ Object.assign(COA, {
   "6830": ["IT-Ausstattung (GWG) und Software", "X"], "6835": ["Gebäudereinigung und Facility", "X"]
 });
 const DENSITY = { "S235JR": 7.85, "1.4301": 7.9, "AlMg3": 2.66 };
-const LASER_SPEED = { "S235JR": { 3: 4.5, 5: 3.0, 8: 1.8, 10: 1.4 }, "1.4301": { 2: 5.0 }, "AlMg3": { 3: 6.0 } }; // m/min
+const LASER_SPEED = { "S235JR": { 3: 4.5, 5: 3.0, 8: 1.8, 10: 1.4, 12: 1.1, 15: 0.9 }, "1.4301": { 2: 5.0 }, "AlMg3": { 3: 6.0 } }; // m/min
 const WORK_CENTERS = [
-  { id: "LAS", name: "Laserschneiden", rate: 145 }, { id: "KANT", name: "Abkanten", rate: 92 }, { id: "SAEG", name: "Sägen", rate: 70 },
+  { id: "LAS", name: "Laserschneiden", rate: 145 }, { id: "KANT", name: "Abkanten", rate: 92 }, { id: "SAEG", name: "Sägen", rate: 70 }, { id: "BOHR", name: "Bohren und Gewinde", rate: 75 },
   { id: "SCHW", name: "Schweißen (MAG)", rate: 88 }, { id: "MONT", name: "Baugruppenmontage", rate: 78 }, { id: "QS", name: "Endprüfung", rate: 82 }
 ];
 const SCRAP = 0.15; // Verschnitt beim Schachteln von Blechteilen
@@ -1014,7 +1014,7 @@ function seedProcurementHR(t) {
   return t;
 }
 function seedEngineering(t) {
-  t.master.suppliers.push({ id: "S-2001", name: "Brandl Normteile GmbH", city: "Heilbronn" }, { id: "S-2002", name: "Feuerverzinkerei Kocher GmbH", city: "Schwäbisch Hall" }, { id: "S-2003", name: "Blechcenter Neckar GmbH", city: "Neckarsulm" });
+  t.master.suppliers.push({ id: "S-2001", name: "Brandl Normteile GmbH", city: "Heilbronn" }, { id: "S-2002", name: "Feuerverzinkerei Kocher GmbH", city: "Schwäbisch Hall" }, { id: "S-2003", name: "Blechcenter Neckar GmbH", city: "Neckarsulm" }, { id: "S-2004", name: "Lenz Antivibration GmbH", city: "Pforzheim" }, { id: "S-2005", name: "Ruf Beschichtungstechnik GmbH", city: "Bietigheim" });
   const M = (id, name, price, supplier, leadDays, type, extra) => t.master.materials.push(Object.assign({ id, name, price, supplier, leadDays, type, unit: "Stk", moq: 1 }, extra || {}));
   for (const [id, th, grade, price] of [["M-2001", 3, "S235JR", 1.38], ["M-2002", 5, "S235JR", 1.32], ["M-2003", 8, "S235JR", 1.29], ["M-2004", 10, "S235JR", 1.29], ["M-2005", 2, "1.4301", 4.85], ["M-2006", 3, "AlMg3", 5.4]])
     M(id, `Blech ${grade} ${th} mm`, price, "S-2003", 5, "Halbzeug", { unit: "kg", moq: 100, form: "Blech", grade, thickness: th });
@@ -1022,7 +1022,13 @@ function seedEngineering(t) {
   M("M-2008", "Quadratrohr S235JR 40×40×3", 1.62, "S-1004", 7, "Halbzeug", { unit: "kg", moq: 50, form: "Rohr", grade: "S235JR", section: "40x40x3", kgPerM: 3.30 });
   for (const [id, name, price, norm] of [["M-2101", "Sechskantschraube DIN 933 M12×40 8.8 verzinkt", 0.21, "DIN 933 M12x40"], ["M-2102", "Sechskantschraube DIN 933 M10×30 8.8 verzinkt", 0.12, "DIN 933 M10x30"], ["M-2103", "Sechskantmutter DIN 934 M12 verzinkt", 0.06, "DIN 934 M12"], ["M-2104", "Sechskantmutter DIN 934 M10 verzinkt", 0.04, "DIN 934 M10"], ["M-2105", "Scheibe DIN 125 A13 verzinkt", 0.03, "DIN 125 A13"], ["M-2106", "Scheibe DIN 125 A10,5 verzinkt", 0.02, "DIN 125 A10.5"], ["M-2107", "Bolzenanker M12×110", 1.85, "ANKER M12x110"]])
     M(id, name, price, "S-2001", 3, "Normteil", { moq: 100, norm });
+  M("M-2009", "Quadratrohr S235JR 60×60×4", 1.58, "S-1004", 7, "Halbzeug", { unit: "kg", moq: 100, form: "Rohr", grade: "S235JR", section: "60x60x4", kgPerM: 7.03 });
+  for (const [id, th, price] of [["M-2011", 15, 1.31], ["M-2012", 12, 1.29]]) M(id, `Blech S235JR ${th} mm`, price, "S-2003", 5, "Halbzeug", { unit: "kg", moq: 100, form: "Blech", grade: "S235JR", thickness: th });
+  for (const [id, name, price, norm] of [["M-2108", "Ringschraube DIN 580 M16", 3.9, "DIN 580 M16"], ["M-2109", "Sechskantschraube DIN 933 M16×60 8.8 verzinkt", 0.48, "DIN 933 M16x60"], ["M-2110", "Sechskantmutter DIN 934 M16 verzinkt", 0.14, "DIN 934 M16"], ["M-2111", "Scheibe DIN 125 A17 verzinkt", 0.06, "DIN 125 A17"]])
+    M(id, name, price, "S-2001", 3, "Normteil", { moq: 50, norm });
   M("M-2201", "Schienenklammer SK-16", 6.8, "S-1004", 10, "Zukaufteil", { moq: 20, partNo: "SK-16" });
+  M("M-2202", "Schwingungsdämpfer SD-80", 38.5, "S-2004", 12, "Zukaufteil", { moq: 4, partNo: "SD-80" });
+  M("M-2302", "Pulverbeschichten RAL 7035, 80 µm (je m²)", 9.8, "S-2005", 6, "Lohnbearbeitung", { unit: "m²", moq: 0, minCharge: 60 });
   M("M-2301", "Feuerverzinken nach DIN EN ISO 1461 (je kg)", 0.95, "S-2002", 5, "Lohnbearbeitung", { unit: "kg", moq: 0, minCharge: 45 });
   // Anfangsbestand Halbzeuge und Normteile, als Bestandsübernahme gebucht (Bilanz, keine GuV-Wirkung)
   const open = [["M-2002", 120], ["M-2003", 60], ["M-2101", 200], ["M-2103", 150], ["M-2105", 40], ["M-2201", 10]]; let v = 0;
@@ -1038,12 +1044,13 @@ function seedEngineering(t) {
 /* --- Ableitung aus einer normalisierten Zeichnung: Stückliste, Arbeitsplan, Bezugsquellen, Kalkulation --- */
 const KINDS = ["Blechteil", "Profil", "Normteil", "Zukaufteil"];
 function deriveDrawing(t, d) {
-  const issues = [], bom = [], ops = [], parts = []; let weight = 0;
+  const issues = [], bom = [], ops = [], parts = []; let weight = 0, area = 0, drillMin = 0;
   const findSheet = (grade, th) => t.master.materials.find(m => m.form === "Blech" && m.grade === grade && m.thickness === th);
   const findSection = (grade, sec) => t.master.materials.find(m => (m.form === "Flach" || m.form === "Rohr") && m.grade === grade && m.section === sec);
   const normKey = s => String(s || "").toUpperCase().replace(/[×X]/g, "X").replace(/,/g, ".").replace(/\s+/g, " ").trim();
   const addBom = (mat, qty, src) => { const b = bom.find(x => x.mat === mat); if (b) { b.qty = r2(b.qty + qty); b.from.push(src); } else bom.push({ mat, qty: r2(qty), from: [src] }); };
   let laserH = 0, kantH = 0, saegH = 0, montMin = 0, lasParts = 0, kantParts = 0, saegParts = 0;
+  const perimeter = sec => { const n = String(sec || "").split(/x/i).map(Number); return n.length === 3 ? 2 * (n[0] + n[1]) : n.length === 2 ? 2 * (n[0] + n[1]) : 0; };
   for (const it of d.items) {
     const tag = "Pos. " + it.pos;
     if (!KINDS.includes(it.kind)) { issues.push([tag, `Teileart „${it.kind}“ unbekannt`, "error"]); continue; }
@@ -1051,7 +1058,7 @@ function deriveDrawing(t, d) {
     if (it.kind === "Blechteil") {
       const m = findSheet(it.grade, +it.thickness); if (!m) { issues.push([tag, `Kein Materialstamm für Blech ${it.grade} ${it.thickness} mm`, "error"]); continue; }
       if (!(it.length > 0 && it.width > 0)) { issues.push([tag, "Abmessungen fehlen", "error"]); continue; }
-      const kg = r2(it.length / 100 * it.width / 100 * it.thickness / 100 * (DENSITY[it.grade] || 7.85)); weight = r2(weight + kg * it.qty);
+      const kg = r2(it.length / 100 * it.width / 100 * it.thickness / 100 * (DENSITY[it.grade] || 7.85)); weight = r2(weight + kg * it.qty); area += 2 * it.length * it.width / 1e6 * it.qty;
       const cut = it.cutLength > 0 ? it.cutLength : 2 * (it.length + it.width) + (it.holes || 0) * Math.PI * (it.holeDia || 13);
       const speed = (LASER_SPEED[it.grade] || {})[+it.thickness] || 2;
       const perPiece = cut / 1000 / speed / 60 + ((it.holes || 0) + 1) * 2 / 3600;
@@ -1061,7 +1068,8 @@ function deriveDrawing(t, d) {
       parts.push({ pos: it.pos, name: it.name, kind: it.kind, qty: it.qty, mat: m.id, kg, cutLength: Math.round(cut), bends: it.bends || 0, source: "Eigenfertigung" });
     } else if (it.kind === "Profil") {
       const m = findSection(it.grade, it.section); if (!m) { issues.push([tag, `Kein Materialstamm für Profil ${it.grade} ${it.section}`, "error"]); continue; }
-      const kg = r2(it.length / 1000 * m.kgPerM); weight = r2(weight + kg * it.qty); saegH += 2 / 60 * it.qty; saegParts++;
+      const kg = r2(it.length / 1000 * m.kgPerM); weight = r2(weight + kg * it.qty); saegH += (it.miter > 0 ? 2 + 1.5 * it.miter : 2) / 60 * it.qty; saegParts++;
+      area += perimeter(it.section) * it.length / 1e6 * it.qty; drillMin += ((it.holes || 0) * 1.2 + (it.threads || 0) * 0.8) * it.qty;
       addBom(m.id, r2(kg * it.qty * 1.05), tag); parts.push({ pos: it.pos, name: it.name, kind: it.kind, qty: it.qty, mat: m.id, kg, source: "Eigenfertigung" });
     } else if (it.kind === "Normteil") {
       const m = t.master.materials.find(x => x.type === "Normteil" && normKey(x.norm) === normKey(it.norm)); if (!m) { issues.push([tag, `Normteil „${it.norm}“ nicht im Materialstamm`, "error"]); continue; }
@@ -1076,15 +1084,17 @@ function deriveDrawing(t, d) {
   const op = (wc, text, setup, perUnit, instr) => { if (perUnit <= 0 && !setup) return; const w = t.workCenters.find(x => x.id === wc); ops.push({ no: String((ops.length + 1) * 10).padStart(4, "0"), wc, wcName: w.name, rate: w.rate, text, setup: r2(setup), perUnit: Math.round(perUnit * 1000) / 1000, instr }); };
   if (lasParts) op("LAS", "Blechteile schneiden", 0.25, laserH, `Zuschnitt aller Blechteile nach Zeichnung ${d.drawingNo} Rev. ${d.revision}. Teile entgraten und mit Positionsnummer kennzeichnen. Schnittlänge gesamt je Baugruppe: ${Math.round(parts.filter(p => p.kind === "Blechteil").reduce((a, p) => a + p.cutLength * p.qty, 0))} mm.`);
   if (kantParts) op("KANT", "Blechteile abkanten", 0.3, kantH, `Biegungen gemäß Zeichnung, Innenradius = Blechdicke, Winkeltoleranz ±1°. Erstteil messen und dokumentieren.`);
-  if (saegParts) op("SAEG", "Profile sägen", 0.15, saegH, `Profile auf Länge sägen, Toleranz ±1 mm, entgraten.`);
+  if (saegParts) op("SAEG", "Profile sägen", 0.15, saegH, `Profile auf Länge sägen${d.items.some(i => i.miter > 0) ? ", Gehrungsschnitte nach Zeichnung" : ""}, Toleranz ±1 mm, entgraten, mit Positionsnummer kennzeichnen.`);
+  if (drillMin > 0) op("BOHR", "Profile bohren und Gewinde schneiden", 0.2, drillMin / 60, `Bohrungen an Profilen nach Zeichnung anreißen und bohren (Positionstoleranz ±0,5 mm), entgraten. ${d.items.some(i => i.kind === "Profil" && i.threads) ? "Gewinde schneiden: " + d.items.filter(i => i.kind === "Profil" && i.threads).map(i => `Pos. ${i.pos} (${i.threads}× je Teil)`).join(", ") + "; alle Gewinde mit Lehrdorn prüfen." : ""}`.trim());
   if (d.weldLength > 0) op("SCHW", "Baugruppe heften und schweißen", 0.3, d.weldLength / 1000 * 0.35, `Teile in Vorrichtung ausrichten, heften, Maßkontrolle. Kehlnähte a=${d.weldSize || 4} mm umlaufend nach Zeichnung (MAG, ISO 5817 C). Nahtlänge je Baugruppe ${d.weldLength} mm.`);
-  if (d.finish === "Feuerverzinkt") ops.push({ no: String((ops.length + 1) * 10).padStart(4, "0"), wc: "EXT", wcName: "Fremdbearbeitung", text: "Feuerverzinken (Lohnbearbeitung)", external: true, mat: "M-2301", supplier: "S-2002", instr: `Baugruppen zur Feuerverzinkerei senden. Verzinkung nach DIN EN ISO 1461, Gewinde vor Verzinkung schützen. Rückmeldung über Wareneingang.` });
-  if (montMin > 0) op("MONT", "Normteile und Zukaufteile montieren", 0.2, montMin / 60, `Normteile und Zukaufteile nach Stückliste beilegen bzw. montieren. Schrauben M12 mit 79 Nm anziehen (8.8, verzinkt, μ=0,14).`);
+  if (d.finish === "Feuerverzinkt") ops.push({ no: String((ops.length + 1) * 10).padStart(4, "0"), wc: "EXT", wcName: "Fremdbearbeitung", text: "Feuerverzinken (Lohnbearbeitung)", external: true, mat: "M-2301", supplier: "S-2002", extPer: weight, extUnit: "kg", instr: `Baugruppen zur Feuerverzinkerei senden. Verzinkung nach DIN EN ISO 1461, Gewinde vor Verzinkung schützen. Rückmeldung über Wareneingang.` });
+  if (d.finish === "Pulverbeschichtet") ops.push({ no: String((ops.length + 1) * 10).padStart(4, "0"), wc: "EXT", wcName: "Fremdbearbeitung", text: "Pulverbeschichten (Lohnbearbeitung)", external: true, mat: "M-2302", supplier: "S-2005", extPer: Math.round(area * 100) / 100, extUnit: "m²", instr: `Baugruppen zum Beschichter senden: Strahlen Sa 2½, Pulverbeschichtung RAL 7035, Schichtdicke 80 µm. Gewinde und Auflageflächen abdecken. Beschichtete Fläche je Baugruppe ${Math.round(area * 100) / 100} m². Rückmeldung über Wareneingang.` });
+  if (montMin > 0) op("MONT", "Normteile und Zukaufteile montieren", 0.2, montMin / 60, `Normteile und Zukaufteile nach Stückliste beilegen bzw. montieren.${(() => { const TQ = { M10: 49, M12: 86, M16: 210 }; const sz = [...new Set(d.items.filter(i => i.kind === "Normteil" && /DIN 933/i.test(i.norm || "")).map(i => (String(i.norm).match(/M(\d+)/i) || [])[0]).filter(Boolean).map(x => x.toUpperCase()))]; return sz.length ? " Anzugsmomente Festigkeitsklasse 8.8, μges 0,14: " + sz.map(x => `${x} ${TQ[x] || "nach VDI 2230"}${TQ[x] ? " Nm" : ""}`).join(", ") + "." : ""; })()}`);
   op("QS", "Endprüfung und Kennzeichnung", 0.1, 0.1, `Hauptmaße, Schweißnähte (Sichtprüfung) und Oberfläche prüfen. Typenschild mit Zeichnungsnummer und Auftragsnummer anbringen.`);
   const matCost = r2(bom.reduce((a, b) => a + b.qty * materialOf(t, b.mat).price, 0));
   const labor = r2(ops.filter(o => !o.external).reduce((a, o) => a + (o.perUnit + o.setup / 10) * o.rate, 0)); // Rüstzeit auf Losgröße 10 umgelegt
-  const ext = d.finish === "Feuerverzinkt" ? r2(weight * materialOf(t, "M-2301").price) : 0;
-  return { bom, ops, parts, issues, weight, costing: { material: matCost, labor, external: ext, total: r2(matCost + labor + ext), basis: "Losgröße 10 für Rüstzeiten" } };
+  const eo = ops.find(o => o.external); const ext = eo ? r2(eo.extPer * materialOf(t, eo.mat).price) : 0;
+  return { area: Math.round(area * 100) / 100, bom, ops, parts, issues, weight, costing: { material: matCost, labor, external: ext, total: r2(matCost + labor + ext), basis: "Losgröße 10 für Rüstzeiten" } };
 }
 function newReq(t, r, ctx, auto) {
     const net = r2(r.qty * r.price); const lvl = auto ? null : reqApprovalLevel(net);
@@ -1101,7 +1111,7 @@ Object.assign(CMD, {
     const d = p.drawing || {}; const no = String(d.drawingNo || "").trim(); if (!no) fail("DRAWING", "Zeichnungsnummer fehlt im Schriftfeld.");
     if (!Array.isArray(d.items) || !d.items.length) fail("DRAWING", "Keine Stücklistenpositionen in der Zeichnung gefunden.");
     const rev = String(d.revision || "A"); const ex = t.eng.drawings.find(x => x.no === no && x.rev === rev); if (ex) fail("DUPLICATE", `Zeichnung ${no} Rev. ${rev} ist bereits importiert.`);
-    const items = d.items.map(i => ({ pos: String(i.pos), name: String(i.name || "").slice(0, 80), qty: +i.qty, kind: i.kind, grade: i.grade || null, thickness: i.thickness != null ? +i.thickness : null, length: +i.length || 0, width: +i.width || 0, section: i.section || null, norm: i.norm || null, partNo: i.partNo || null, bends: +i.bends || 0, holes: +i.holes || 0, holeDia: +i.holeDia || 0, cutLength: +i.cutLength || 0, mat: i.mat || null }));
+    const items = d.items.map(i => ({ pos: String(i.pos), name: String(i.name || "").slice(0, 80), qty: +i.qty, kind: i.kind, grade: i.grade || null, thickness: i.thickness != null ? +i.thickness : null, length: +i.length || 0, width: +i.width || 0, section: i.section || null, norm: i.norm || null, partNo: i.partNo || null, bends: +i.bends || 0, holes: +i.holes || 0, holeDia: +i.holeDia || 0, threads: +i.threads || 0, miter: +i.miter || 0, cutLength: +i.cutLength || 0, mat: i.mat || null }));
     const dr = { no, rev, title: String(d.title || no).slice(0, 80), source: d.source || "DXF", file: d.file || null, finish: d.finish || "ohne", weldLength: +d.weldLength || 0, weldSize: +d.weldSize || 4, scale: d.scale || null, author: d.author || null, items, aiAssisted: !!d.aiAssisted, importedBy: ctx.user, importedByName: ctx.userName, date: t.date, status: "importiert", geometry: d.geometry || null };
     Object.assign(dr, deriveDrawing(t, Object.assign({ drawingNo: no, revision: rev }, dr))); t.eng.drawings.push(dr);
     const err = dr.issues.filter(i => i[2] === "error").length;
@@ -1130,7 +1140,7 @@ Object.assign(CMD, {
     need(t, ctx, "produce"); const pr = find(t.master.products, "id", p.productId, "Baugruppe"); if (pr.type !== "Baugruppe") fail("TYPE", "Nur freigegebene Baugruppen.");
     const qty = +p.qty; if (!(qty > 0) || Math.round(qty) !== qty) fail("QTY", "Menge muss eine ganze Zahl > 0 sein.");
     const comps = pr.bom.map(([mat, per]) => ({ mat, qty: Math.round(per * qty * 10) / 10, issued: 0 }));
-    const ops = pr.ops.map(o => Object.assign({}, o, { hours: o.external ? 0 : r2(o.setup + o.perUnit * qty), status: "offen", extQty: o.external ? Math.ceil(pr.weight * qty) : 0 }));
+    const ops = pr.ops.map(o => Object.assign({}, o, { hours: o.external ? 0 : r2(o.setup + o.perUnit * qty), status: "offen", extQty: o.external ? Math.ceil((o.extPer != null ? o.extPer : pr.weight) * qty) : 0, extUnit: o.extUnit || "kg" }));
     const pa = { no: nextNo(t, "PA"), kind: "Baugruppe", product: pr.id, qty, status: "eröffnet", components: comps, ops, labor: 0, ext: 0, docs: [], wip: 0, so: null, date: t.date, mrp: null };
     t.prodOrders.push(pa); return { text: `Fertigungsauftrag ${pa.no}: ${qty} × ${pr.name}, ${ops.length} Vorgänge, ${r2(ops.reduce((a, o) => a + o.hours, 0))} h geplant – keine Buchung`, objects: [pa.no] };
   },
@@ -1141,7 +1151,7 @@ Object.assign(CMD, {
       const qty = m.unit === "kg" ? Math.max(Math.ceil(short), m.moq || 0) : Math.max(Math.ceil(short), m.moq || 1);
       reqs.push(newReq(t, { type: "direkt", mat: m.id, text: m.name, qty, unit: m.unit, price: m.price, supplier: m.supplier, prod: pa.no, acct: "1300" }, ctx, true)); }
     for (const o of pa.ops.filter(x => x.external)) { const m = materialOf(t, o.mat); const net = Math.max(r2(o.extQty * m.price), m.minCharge || 0); const price = r2(net / o.extQty);
-      reqs.push(newReq(t, { type: "Lohnbearbeitung", mat: m.id, text: `${o.text} ${pa.no}`, qty: o.extQty, unit: "kg", price, supplier: o.supplier, prod: pa.no, op: o.no, acct: "1320" }, ctx, true)); }
+      reqs.push(newReq(t, { type: "Lohnbearbeitung", mat: m.id, text: `${o.text} ${pa.no}`, qty: o.extQty, unit: o.extUnit || "kg", price, supplier: o.supplier, prod: pa.no, op: o.no, acct: "1320" }, ctx, true)); }
     pa.mrp = { date: t.date, reqs: reqs.map(r => r.no) };
     return { text: `Bedarfsplanung ${pa.no}: ${reqs.length} Bedarfsanforderung(en) – ${reqs.map(r => `${r.text} ${r.qty} ${r.unit} bei ${supplierName(t, r.supplier)}`).join("; ") || "alles am Lager"}`, objects: reqs.map(r => r.no) };
   },
@@ -1199,7 +1209,7 @@ Object.assign(CMD, {
     need(t, ctx, "ship"); const pa = find(t.prodOrders, "no", p.prodNo, "Fertigungsauftrag"); const op = pa.ops.find(o => o.external && o.status === "bereit zum Versand");
     if (!op) fail("STATUS", "Kein Vorgang bereit zur Fremdbearbeitung (vorherige Vorgänge zuerst rückmelden)."); const q = t.reqs.find(r => r.prod === pa.no && r.op === op.no);
     if (!q || !q.po) fail("ORDER", "Für die Lohnbearbeitung gibt es noch keine Bestellung."); op.status = "beim Lohnbearbeiter"; op.shipped = t.date;
-    return { text: `${pa.qty} Baugruppen (${op.extQty} kg) an ${supplierName(t, op.supplier)} versandt – Lieferschein zu ${q.po}, keine Buchung` };
+    return { text: `${pa.qty} Baugruppen (${op.extQty} ${op.extUnit || "kg"}) an ${supplierName(t, op.supplier)} versandt – Lieferschein zu ${q.po}, keine Buchung` };
   },
 
   /* HR: Recruiting und Onboarding */
