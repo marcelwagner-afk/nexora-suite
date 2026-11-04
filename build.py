@@ -33,3 +33,15 @@ root = d.parent  # GitHub Pages (Branch main, Ordner /) liefert index.html und p
 for target in (out, root):
     (target/'index.html').write_text(skel + html + '</body></html>')
     (target/'prototyp.html').write_text(skel + (d/'prototyp.html').read_text() + '</body></html>')
+
+# TRUESCALE-Vertriebsseite im NEXORA-Design, Demos aus den echten Suite-Storys
+import re
+src = "".join((d/f).read_text() for f in ("app.js", "app_ext.js", "app_v6.js"))
+stories = []
+for m in re.finditer(r'\{ id: "([a-z0-9]+)", tenant: "([a-z]+)", cross: \[([^\]]*)\], short: "([^"]*)", title: "([^"]*)", situation: "([^"]*)"', src):
+    body = src[m.end():]; body = body[:body.index("], outro")]
+    stories.append({"id": m[1], "tenant": m[2], "cross": re.findall(r'"([a-z]+)"', m[3]), "short": m[4], "title": m[5], "situation": m[6], "steps": len(re.findall(r'\{ t: "', body))})
+ts = (d/'truescale.html').read_text().replace("/*CSS*/", (d/'base.css').read_text()).replace("/*ICONS*/", (d/'icons.js').read_text()).replace("/*STORIES*/", "const STORY_LIST = " + json.dumps(stories, ensure_ascii=False) + ";")
+for target in (out, root):
+    (target/'truescale.html').write_text(skel + ts + '</body></html>')
+print(len(stories), "Storys auf der TRUESCALE-Seite")

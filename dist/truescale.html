@@ -1,0 +1,473 @@
+<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"></head><body style="margin:0"><title>TRUESCALE · NEXORA AI</title>
+<meta name="description" content="TRUESCALE – die NEXORA AI Enterprise Suite: Business Case, Live-Demos und Weg in die eigene ERP-Plattform.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: dunkle Navigationsleiste links, helle Arbeitsfläche mit weichen Karten; Startseite zweispaltig mit Assistent rechts; Telefon: Navigation als dunkle Leiste oben */
+:root{
+  --bg:#f7f6fc; --surface:#ffffff; --sunk:#f1effa; --line:#e7e4f2; --line-strong:#d3cfe6;
+  --fg:#16142b; --fg-2:#4e4b66; --fg-3:#85829c;
+  --accent:#6a45f0; --accent-2:#8b6cff; --accent-ink:#ffffff; --accent-soft:#efeafe; --accent-line:#cfc2fb;
+  --nav-bg:#17153a; --nav-bg-2:#211d52; --nav-fg:#c9c6e6; --nav-fg-strong:#ffffff; --nav-on:#3a2f8f; --nav-line:#2c2860;
+  --good:#16834a; --good-soft:#e3f5ea; --warn:#b26a00; --warn-soft:#fdf1dc; --crit:#c62a3a; --crit-soft:#fde6e8;
+  --demo:#6a45f0; --demo-soft:#efeafe;
+  --shadow:0 1px 2px rgba(35,28,90,.04),0 4px 16px rgba(35,28,90,.06);
+  --f-display:"Plus Jakarta Sans","Segoe UI",system-ui,sans-serif;
+  --f-body:"Plus Jakarta Sans","Segoe UI",system-ui,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,"SFMono-Regular",Consolas,monospace;
+  --r:14px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#100f22; --surface:#191733; --sunk:#221f42; --line:#2b2850; --line-strong:#3c3870;
+  --fg:#ecebf8; --fg-2:#b4b1d0; --fg-3:#8784a8;
+  --accent:#9b80ff; --accent-2:#b6a2ff; --accent-ink:#140f33; --accent-soft:#2a2358; --accent-line:#4b3fa0;
+  --nav-bg:#0b0a1c; --nav-bg-2:#14123a; --nav-fg:#b6b3d8; --nav-fg-strong:#ffffff; --nav-on:#2f2775; --nav-line:#221f4a;
+  --good:#5fd38f; --good-soft:#163527; --warn:#f0b05a; --warn-soft:#3a2c14; --crit:#ff8a94; --crit-soft:#3d1a22;
+  --demo:#b6a2ff; --demo-soft:#2a2358; --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 16px rgba(0,0,0,.25); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#100f22; --surface:#191733; --sunk:#221f42; --line:#2b2850; --line-strong:#3c3870;
+  --fg:#ecebf8; --fg-2:#b4b1d0; --fg-3:#8784a8;
+  --accent:#9b80ff; --accent-2:#b6a2ff; --accent-ink:#140f33; --accent-soft:#2a2358; --accent-line:#4b3fa0;
+  --nav-bg:#0b0a1c; --nav-bg-2:#14123a; --nav-fg:#b6b3d8; --nav-fg-strong:#ffffff; --nav-on:#2f2775; --nav-line:#221f4a;
+  --good:#5fd38f; --good-soft:#163527; --warn:#f0b05a; --warn-soft:#3a2c14; --crit:#ff8a94; --crit-soft:#3d1a22;
+  --demo:#b6a2ff; --demo-soft:#2a2358; --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 16px rgba(0,0,0,.25); color-scheme:dark}
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:14px;line-height:1.5}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--nav-bg)}
+*{box-sizing:border-box}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.num,.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.num{font-size:.92em}
+h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:-.015em}
+h1{font-size:26px;font-weight:800} h2{font-size:18px;font-weight:750} h3{font-size:15px;font-weight:700}
+p{margin:0}
+.muted{color:var(--fg-2)} .faint{color:var(--fg-3)} .small{font-size:12.5px}
+.eyebrow{font-size:11.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--fg-3);font-weight:700}
+.ic{flex:none}
+
+/* Shell */
+.app{display:grid;grid-template-columns:248px minmax(0,1fr);height:100%}
+.app.with-ai{grid-template-columns:248px minmax(0,1fr) 380px}
+.side{background:linear-gradient(180deg,var(--nav-bg) 0%,var(--nav-bg-2) 100%);color:var(--nav-fg);display:flex;flex-direction:column;gap:2px;padding:18px 12px 12px;overflow:auto}
+.brand{display:flex;align-items:center;gap:10px;padding:2px 10px 22px;color:var(--nav-fg-strong);text-decoration:none}
+.brand b{font-family:var(--f-display);font-size:19px;font-weight:800;letter-spacing:.01em;display:block;line-height:1.1}
+.brand small{display:block;font-size:10.5px;color:var(--nav-fg);font-weight:500}
+.nav a,.nav button.nv{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:10px;color:var(--nav-fg);text-decoration:none;font-weight:550;border:none;background:none;width:100%;text-align:left;cursor:pointer}
+.nav a:hover,.nav button.nv:hover{background:rgba(255,255,255,.06);color:var(--nav-fg-strong)}
+.nav a.on{background:linear-gradient(90deg,var(--nav-on),rgba(106,69,240,.55));color:var(--nav-fg-strong)}
+.nav a .cnt{margin-left:auto;font-size:11px;background:var(--accent-2);color:#fff;border-radius:10px;padding:0 7px;font-weight:700}
+.nav-sep{height:1px;background:var(--nav-line);margin:12px 10px}
+.nav-label{padding:4px 14px 8px;font-size:12px;color:var(--nav-fg);font-weight:600}
+.app-ic{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;color:#fff;flex:none}
+.app-ic.m{background:linear-gradient(135deg,#7b5cff,#5434d6)} .app-ic.t{background:linear-gradient(135deg,#1f9c8b,#13685f)} .app-ic.i{background:linear-gradient(135deg,#9a5cf0,#5c2db8)}
+.nav a.appl{padding:7px 10px;gap:12px;color:var(--nav-fg-strong)}
+.tenant{margin-top:auto;display:flex;align-items:center;gap:10px;padding:12px;border-radius:12px;border:none;background:rgba(255,255,255,.05);color:var(--nav-fg-strong);cursor:pointer;text-align:left;width:100%}
+.tenant:hover{background:rgba(255,255,255,.09)}
+.tenant .av{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.1);display:grid;place-items:center;flex:none}
+.tenant small{display:block;color:var(--nav-fg);font-size:11.5px}
+.main{display:flex;flex-direction:column;min-width:0;overflow:auto}
+.top{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(8px);display:grid;grid-template-columns:minmax(0,1fr) minmax(0,560px) minmax(0,1fr);align-items:center;gap:12px;padding:12px max(24px,env(safe-area-inset-right,0px)) 12px 24px}
+.top .right{display:flex;align-items:center;justify-content:flex-end;gap:6px}
+.search{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--accent-line);border-radius:12px;padding:9px 14px;color:var(--fg-2);cursor:pointer;text-align:left;box-shadow:var(--shadow);min-width:0;width:100%}
+.search .ic{color:var(--accent)}
+.search span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.search kbd{margin-left:auto;font-family:var(--f-mono);font-size:11px;background:var(--sunk);border-radius:6px;padding:2px 7px;color:var(--fg-2)}
+.round{width:40px;height:40px;border-radius:50%;border:none;background:transparent;display:grid;place-items:center;cursor:pointer;color:var(--fg);position:relative}
+.round:hover{background:var(--sunk)}
+.round .dot{position:absolute;top:8px;right:9px;width:9px;height:9px;border-radius:50%;background:var(--accent);border:2px solid var(--bg)}
+.avatar{display:flex;align-items:center;gap:6px;border:none;background:none;cursor:pointer;padding:2px;border-radius:24px;color:var(--fg)}
+.avatar .face{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#ffb38a,#e0668f);color:#fff;font-weight:700;display:grid;place-items:center;font-size:13.5px}
+.avatar .face.u1{background:linear-gradient(135deg,#8b6cff,#4a2fd0)} .avatar .face.u2{background:linear-gradient(135deg,#3cc3a8,#1d7d6d)}
+.page{padding:8px 24px 32px;display:flex;flex-direction:column;gap:20px;max-width:1320px;width:100%}
+.page-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;padding-top:12px}
+
+/* Elements */
+.btn{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line-strong);background:var(--surface);border-radius:10px;padding:8px 14px;font-weight:600;cursor:pointer;white-space:nowrap;color:var(--fg)}
+.btn:hover{border-color:var(--accent-line);background:var(--accent-soft)}
+.btn.pri{background:linear-gradient(135deg,var(--accent-2),var(--accent));border-color:transparent;color:#fff;box-shadow:0 4px 12px rgba(106,69,240,.25)}
+:root[data-theme="dark"] .btn.pri{color:var(--accent-ink)}
+.btn.pri:hover{filter:brightness(1.06);background:linear-gradient(135deg,var(--accent-2),var(--accent))}
+.btn.ghost{border-color:transparent;background:transparent;color:var(--accent)}
+.btn.ghost:hover{background:var(--accent-soft)}
+.btn.sm{padding:5px 10px;font-size:12.5px;border-radius:8px}
+.btn.danger{color:var(--crit);border-color:var(--crit)}
+.btn.danger:hover{background:var(--crit-soft)}
+.btn[disabled]{opacity:.45;cursor:not-allowed;filter:none;box-shadow:none}
+.icon-btn{border:1px solid var(--line);background:var(--surface);border-radius:10px;width:34px;height:34px;display:grid;place-items:center;cursor:pointer;color:var(--fg-2)}
+.icon-btn:hover{color:var(--fg);border-color:var(--accent-line)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow)}
+.card-pad{padding:18px}
+.card-h{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px 18px;border-bottom:1px solid var(--line)}
+.grid{display:grid;gap:16px}
+.g2{grid-template-columns:repeat(2,minmax(0,1fr))} .g3{grid-template-columns:repeat(3,minmax(0,1fr))} .g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.kpi{padding:16px 18px;display:flex;flex-direction:column;gap:2px}
+.kpi .v{font-family:var(--f-display);font-size:24px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:650;border-radius:8px;padding:3px 9px;white-space:nowrap}
+.pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.p-good{background:var(--good-soft);color:var(--good)} .p-warn{background:var(--warn-soft);color:var(--warn)} .p-crit{background:var(--crit-soft);color:var(--crit)} .p-neu{background:var(--sunk);color:var(--fg-2)} .p-acc{background:var(--accent-soft);color:var(--accent)} .p-demo{background:var(--demo-soft);color:var(--demo)}
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;font-size:12px;color:var(--fg-3);font-weight:600;padding:10px 14px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:12px 14px;border-bottom:1px solid var(--line);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr.click{cursor:pointer} tr.click:hover td{background:var(--sunk)}
+td.r,th.r{text-align:right}
+.bar{height:8px;background:var(--sunk);border-radius:6px;overflow:hidden;display:flex}
+.bar i{display:block;height:100%}
+.bar.acc i{background:linear-gradient(90deg,var(--accent-2),var(--accent))}
+.list{display:flex;flex-direction:column}
+.li{display:flex;align-items:flex-start;gap:12px;padding:12px 18px;border-bottom:1px solid var(--line)}
+.li:last-child{border-bottom:none}
+.li .grow{flex:1;min-width:0}
+.sev{width:3px;align-self:stretch;border-radius:2px;flex:none}
+.input,select.input,textarea.input{width:100%;background:var(--surface);border:1px solid var(--line-strong);border-radius:10px;padding:8px 11px}
+textarea.input{resize:vertical;min-height:72px}
+label.f{display:flex;flex-direction:column;gap:6px;font-weight:600;font-size:13px}
+.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.between{justify-content:space-between}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line-strong);border-radius:20px;padding:3px 11px;font-size:12.5px;background:var(--surface)}
+.chip.src{border-style:dashed;color:var(--fg-2)}
+.note{border-radius:10px;padding:11px 13px;font-size:13px;display:flex;gap:10px;align-items:flex-start}
+.note.demo{background:var(--demo-soft);color:var(--fg)}
+.note.warn{background:var(--warn-soft)} .note.crit{background:var(--crit-soft)} .note.good{background:var(--good-soft)} .note.acc{background:var(--accent-soft)}
+.empty{padding:28px 16px;text-align:center;color:var(--fg-3)}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);overflow-x:auto}
+.tab{padding:9px 13px;border:none;background:none;cursor:pointer;color:var(--fg-2);font-weight:600;border-bottom:2px solid transparent;white-space:nowrap}
+.tab.on{color:var(--accent);border-bottom-color:var(--accent)}
+.seg{display:inline-flex;gap:8px;flex-wrap:wrap}
+.seg button{border:1px solid var(--line);background:var(--surface);border-radius:20px;padding:5px 12px;cursor:pointer;font-weight:600;color:var(--fg-2);display:inline-flex;gap:8px;align-items:center}
+.seg button b{font-size:11.5px;background:var(--sunk);border-radius:10px;padding:0 7px;font-weight:700}
+.seg button.on{background:var(--accent-soft);border-color:var(--accent-line);color:var(--accent)}
+.seg button.on b{background:var(--surface)}
+
+/* Startseite */
+.home{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:20px;align-items:start}
+.home-main{display:flex;flex-direction:column;gap:18px;min-width:0}
+.home-side{display:flex;flex-direction:column;gap:18px;position:sticky;top:76px}
+.hero{position:relative;padding:22px 2px 8px;display:flex;flex-direction:column;gap:16px;isolation:isolate}
+.hero-wave{position:absolute;right:-24px;top:-70px;width:min(520px,70%);height:220px;z-index:-1;pointer-events:none}
+.hero h1{font-size:36px;font-weight:800;letter-spacing:-.025em}
+.hero .sub{font-size:16px;color:var(--fg-2)}
+.ask{display:flex;gap:8px;background:var(--surface);border:1.5px solid var(--accent-line);border-radius:16px;padding:7px 7px 7px 16px;align-items:center;box-shadow:0 6px 24px rgba(106,69,240,.10)}
+.ask .ic{color:var(--accent)}
+.ask input{flex:1;border:none;background:transparent;outline:none;padding:10px 0;min-width:0;font-size:15.5px}
+.ask.big{max-width:880px;width:100%;align-self:center}
+.send{width:48px;height:38px;border:none;border-radius:12px;background:linear-gradient(135deg,var(--accent-2),var(--accent));color:#fff;display:grid;place-items:center;cursor:pointer;flex:none}
+.quick{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.quick button{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--surface);border-radius:20px;padding:7px 15px;cursor:pointer;font-weight:550;box-shadow:var(--shadow);color:var(--fg)}
+.quick button .ic{color:var(--accent)}
+.quick button:hover{border-color:var(--accent-line)}
+.sugg{border:1px solid var(--line);background:var(--surface);border-radius:20px;padding:5px 12px;font-size:13px;cursor:pointer;color:var(--fg-2)}
+.sugg:hover{border-color:var(--accent);color:var(--fg)}
+.stat{display:flex;align-items:center;gap:14px;padding:16px 18px}
+.stat .si{color:var(--accent);flex:none}
+.stat .v{font-family:var(--f-display);font-size:21px;font-weight:800;line-height:1.1}
+.stat .l{font-size:12.5px;color:var(--fg-2)}
+.stat .d{margin-left:auto;font-size:12px;font-weight:700;align-self:flex-start;white-space:nowrap}
+.promo{display:grid;grid-template-columns:minmax(0,240px) minmax(0,1fr) minmax(0,220px);gap:22px;align-items:center;padding:18px 22px;background:linear-gradient(120deg,var(--accent-soft) 0%,var(--surface) 48%)}
+.promo .art{display:grid;place-items:center}
+.promo h2{font-size:22px;font-weight:800}
+.promo .kick{font-size:13px;font-weight:700;color:var(--accent)}
+.checks{display:flex;flex-direction:column;gap:9px;border-left:1px solid var(--line);padding-left:20px}
+.checks span{display:flex;gap:10px;align-items:center;font-size:13.5px}
+.checks .ic{color:var(--good)}
+.ms{display:flex;gap:10px;align-items:center}
+.ms .ic{color:var(--fg-3)}
+.dots{border:none;background:none;cursor:pointer;color:var(--fg-3);padding:4px 6px;border-radius:6px}
+.dots:hover{background:var(--sunk);color:var(--fg)}
+.proj-ic{width:38px;height:38px;border-radius:10px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;flex:none}
+.aic{padding:18px;display:flex;flex-direction:column;gap:14px}
+.aic-h{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.aic-h h2{display:flex;gap:10px;align-items:center}
+.aic-h h2 .ic{color:var(--accent)}
+.model{border:1px solid var(--line);background:var(--sunk);border-radius:8px;padding:4px 8px;font-size:12.5px;font-weight:600}
+.aic .hi{font-family:var(--f-display);font-size:21px;font-weight:800}
+.qcard{display:flex;gap:14px;align-items:center;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:11px 14px;cursor:pointer;box-shadow:var(--shadow);color:var(--fg);width:100%}
+.qcard .ic{color:var(--accent)}
+.qcard:hover{border-color:var(--accent-line)}
+.composer{border:1px solid var(--line-strong);border-radius:12px;padding:10px 10px 8px 12px;display:flex;flex-direction:column;gap:8px;background:var(--surface)}
+.composer input{border:none;outline:none;background:transparent;padding:4px 2px;font-style:italic}
+.composer .tools{display:flex;align-items:center;gap:4px}
+.composer .tools .tb{width:30px;height:30px;border-radius:50%;border:1px solid var(--line);background:none;display:grid;place-items:center;cursor:pointer;color:var(--fg-2)}
+.composer .send{margin-left:auto;width:38px;height:34px;border-radius:10px}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.tile{display:flex;flex-direction:column;align-items:center;gap:8px;padding:18px 8px;border:1px solid var(--line);border-radius:12px;background:var(--surface);cursor:pointer;font-weight:650;color:var(--fg)}
+.tile .ic{color:var(--fg)}
+.tile:hover,.tile.on{background:var(--accent-soft);border-color:var(--accent-line)}
+.tile.on .ic{color:var(--accent)}
+.home-chat{display:flex;flex-direction:column;gap:12px;max-height:420px;overflow:auto}
+
+/* Wizard */
+.steps{display:flex;gap:0;overflow-x:auto;padding-bottom:2px}
+.step{flex:1;min-width:104px;display:flex;flex-direction:column;gap:6px;padding:0 6px 0 0;cursor:pointer;background:none;border:none;text-align:left}
+.step .ln{height:5px;border-radius:3px;background:var(--line)}
+.step.done .ln{background:var(--accent)} .step.cur .ln{background:var(--accent-2);opacity:.6}
+.step .t{font-size:12px;color:var(--fg-3);font-weight:600}
+.step.cur .t,.step.done .t{color:var(--fg)}
+.step[disabled]{cursor:default}
+.what{font-size:13px;color:var(--fg-2);background:var(--accent-soft);border-radius:10px;padding:9px 13px}
+.map-grid{display:grid;grid-template-columns:220px minmax(0,1fr);gap:16px}
+.srcf{display:flex;flex-direction:column;gap:6px}
+.srcf .chip{cursor:grab;justify-content:space-between;border-radius:8px}
+.maprow{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1.2fr) auto;gap:10px;align-items:center;padding:10px 14px;border-bottom:1px solid var(--line)}
+.maprow.drop{background:var(--accent-soft)}
+.maprow.sugg-row .input{border-style:dashed;border-color:var(--accent-line)}
+.maprow:last-child{border-bottom:none}
+.why{font-size:12px;color:var(--fg-3)}
+.prog{height:10px;background:var(--sunk);border-radius:6px;overflow:hidden}
+.prog i{display:block;height:100%;background:linear-gradient(90deg,var(--accent-2),var(--accent));transition:width .15s}
+
+/* Gantt */
+.gantt{display:flex;flex-direction:column;gap:0;min-width:640px}
+.g-row{display:grid;grid-template-columns:220px minmax(0,1fr) 70px;gap:10px;align-items:center;padding:7px 14px;border-bottom:1px solid var(--line)}
+.g-track{position:relative;height:20px;background:repeating-linear-gradient(90deg,transparent 0,transparent calc(10% - 1px),var(--line) calc(10% - 1px),var(--line) 10%)}
+.g-bar{position:absolute;top:3px;height:14px;border-radius:5px;background:var(--line-strong)}
+.g-bar.crit{background:linear-gradient(90deg,var(--accent-2),var(--accent))}
+.g-bar.delay{background:var(--warn)}
+.g-win{position:absolute;top:-4px;bottom:-4px;border-left:2px dashed var(--crit)}
+
+/* Assistent */
+.ai{border-left:1px solid var(--line);background:var(--surface);display:flex;flex-direction:column;min-width:0;height:100%}
+.ai-h{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--line)}
+.ai-h .ic{color:var(--accent)}
+.ai-body{flex:1;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:14px}
+.msg{display:flex;flex-direction:column;gap:8px;max-width:100%}
+.msg.u{align-self:flex-end;background:var(--accent-soft);border-radius:12px 12px 3px 12px;padding:8px 12px;max-width:88%}
+.msg.a{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px}
+.msg.a table td,.msg.a table th{padding:6px 8px;font-size:12.5px}
+.ai-f{padding:12px;border-top:1px solid var(--line)}
+.page-ai{max-width:860px}
+.page-ai .ai-body{min-height:360px}
+
+/* Dialoge */
+.scrim{position:fixed;inset:0;background:rgba(18,14,50,.35);z-index:40;display:flex;align-items:flex-start;justify-content:center;padding:max(64px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) 16px max(16px,env(safe-area-inset-left,0px))}
+.dlg{background:var(--surface);border:1px solid var(--line);border-radius:16px;width:100%;max-width:560px;max-height:80vh;overflow:auto;box-shadow:0 24px 60px rgba(20,14,70,.25)}
+.menu-pop{position:fixed;top:calc(64px + env(safe-area-inset-top,0px));right:max(20px,env(safe-area-inset-right,0px));z-index:45;background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:0 18px 48px rgba(20,14,70,.2);width:300px;max-width:calc(100% - 32px);padding:8px}
+.pal-item{display:flex;align-items:center;gap:10px;padding:10px 16px;cursor:pointer;border:none;background:none;width:100%;text-align:left;border-radius:8px;color:var(--fg)}
+.pal-item:hover,.pal-item.on{background:var(--sunk)}
+.pal-item .ic{color:var(--accent)}
+.toast{position:fixed;right:max(20px,env(safe-area-inset-right,0px));bottom:max(20px,env(safe-area-inset-bottom,0px));background:var(--nav-bg);color:#fff;border-radius:10px;padding:11px 15px;z-index:50;font-weight:600;max-width:360px;box-shadow:0 10px 30px rgba(20,14,70,.3)}
+
+/* Anmeldung */
+.login{min-height:100%;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.login-l{background:radial-gradient(120% 80% at 90% 10%,rgba(139,108,255,.45),transparent 60%),linear-gradient(160deg,var(--nav-bg),var(--nav-bg-2));color:#fff;padding:48px;display:flex;flex-direction:column;justify-content:space-between;gap:32px}
+.login-l h1{font-size:36px;max-width:15ch;line-height:1.12}
+.login-r{display:grid;place-items:center;padding:32px max(16px,env(safe-area-inset-right,0px)) 32px max(16px,env(safe-area-inset-left,0px))}
+.login-box{width:100%;max-width:370px;display:flex;flex-direction:column;gap:14px}
+
+.bpmn-wrap{overflow-x:auto;background:var(--bg);border-radius:10px;border:1px solid var(--line)}
+.bpmn-wrap svg text{font-family:var(--f-body)}
+
+@media (max-width:1280px){.home{grid-template-columns:minmax(0,1fr)} .home-side{position:static;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr)} .promo{grid-template-columns:minmax(0,200px) minmax(0,1fr)} .checks{grid-column:1/-1;border-left:none;padding-left:0;flex-direction:row;flex-wrap:wrap;gap:8px 18px}}
+@media (max-width:1100px){.app.with-ai{grid-template-columns:248px minmax(0,1fr)} .app.with-ai .ai{position:fixed;right:0;top:0;bottom:0;width:min(400px,100%);z-index:30;box-shadow:-8px 0 24px rgba(0,0,0,.15);padding-top:env(safe-area-inset-top,0px)} .g4{grid-template-columns:repeat(2,minmax(0,1fr))} .top{grid-template-columns:minmax(0,1fr) auto} .top .spacer{display:none}}
+@media (max-width:820px){
+  .app,.app.with-ai{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr)}
+  .side{flex-direction:row;align-items:center;padding:8px max(16px,env(safe-area-inset-right,0px)) 8px max(16px,env(safe-area-inset-left,0px));overflow-x:auto;gap:2px}
+  .brand{padding:0 8px 0 0} .brand span{display:none}
+  .nav-sep,.nav-label,.tenant,.nav a.appl{display:none}
+  .nav a,.nav button.nv{white-space:nowrap;padding:7px 11px;width:auto}
+  .top{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+  .page{padding:8px max(16px,env(safe-area-inset-right,0px)) 24px max(16px,env(safe-area-inset-left,0px))}
+  .g2,.g3,.g4{grid-template-columns:minmax(0,1fr)}
+  .home-side{grid-template-columns:minmax(0,1fr)}
+  .promo{grid-template-columns:minmax(0,1fr)} .promo .art{display:none}
+  .hero h1{font-size:26px} .hero-wave{display:none}
+  .map-grid{grid-template-columns:minmax(0,1fr)}
+  .maprow{grid-template-columns:minmax(0,1fr)}
+  .login{grid-template-columns:minmax(0,1fr)} .login-l{padding:28px 20px}
+  .search kbd{display:none}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* TRUESCALE-Seite im NEXORA-Design: dunkle Markenleiste, helle Fläche, weiche Karten, Violett als Akzent */
+a.btn{text-decoration:none}
+html{scroll-behavior:smooth;height:auto}body{height:auto;min-height:100%}
+.ts-top{position:sticky;top:0;z-index:20;background:linear-gradient(110deg,var(--nav-bg),var(--nav-bg-2));color:var(--nav-fg);padding-top:env(safe-area-inset-top,0px)}
+.ts-top .in{max-width:1240px;margin:auto;display:flex;align-items:center;gap:22px;padding:12px max(24px,env(safe-area-inset-right,0px)) 12px max(24px,env(safe-area-inset-left,0px))}
+.ts-brand{display:flex;align-items:center;gap:10px;color:var(--nav-fg-strong);text-decoration:none}.ts-brand b{font-family:var(--f-display);font-size:18px;font-weight:800;letter-spacing:.06em;display:block;line-height:1.1}.ts-brand small{display:block;font-size:10.5px;color:var(--nav-fg);font-weight:500;letter-spacing:.02em}
+.ts-nav{display:flex;gap:4px;margin-left:auto}.ts-nav a{color:var(--nav-fg);text-decoration:none;padding:8px 12px;border-radius:10px;font-weight:550}.ts-nav a:hover{background:rgba(255,255,255,.07);color:var(--nav-fg-strong)}
+.ts-top .btn{background:rgba(255,255,255,.08);color:#fff;border-color:rgba(255,255,255,.25)}.ts-top .btn.pri{background:linear-gradient(135deg,var(--accent-2),var(--accent));border-color:transparent}
+.wrap{max-width:1240px;margin:auto;padding:0 max(24px,env(safe-area-inset-right,0px)) 0 max(24px,env(safe-area-inset-left,0px))}
+section.s{padding:44px 0;display:flex;flex-direction:column;gap:18px}
+.s-title{font-size:30px;font-weight:800;letter-spacing:-.015em}.s-sub{color:var(--fg-2);font-size:15.5px;max-width:820px}
+.ts-hero{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:36px;align-items:center;padding:56px 0 30px;position:relative;isolation:isolate}
+.ts-hero h1{font-size:clamp(38px,5vw,64px);line-height:1.06;letter-spacing:-.03em;font-weight:800;margin:14px 0 16px}.ts-hero h1 span{background:linear-gradient(90deg,var(--accent-2),var(--accent));-webkit-background-clip:text;background-clip:text;color:transparent}
+.ts-hero .lead{font-size:17px;color:var(--fg-2);max-width:640px}
+.hero-card{padding:26px;background:linear-gradient(145deg,var(--surface),var(--accent-soft));display:flex;flex-direction:column;gap:8px}
+.hero-card .big{font-family:var(--f-display);font-size:50px;font-weight:800;letter-spacing:-.03em;color:var(--accent);font-variant-numeric:tabular-nums;line-height:1.05}
+.statrow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:8px}.statrow>div{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px}.statrow b{display:block;font-size:17px;font-family:var(--f-display)}.statrow small{color:var(--fg-3);font-size:11.5px}
+.vcard{padding:22px;display:flex;flex-direction:column;gap:8px}.vcard .ico{width:42px;height:42px;border-radius:12px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center}
+.calc{display:grid;grid-template-columns:340px minmax(0,1fr);gap:16px;align-items:start}
+.calc form{padding:20px;display:flex;flex-direction:column;gap:14px}.calc label.f span.v{font-family:var(--f-mono);color:var(--accent)}
+.calc .hint{font-size:11.5px;color:var(--fg-3);font-weight:500}
+.res{padding:20px;display:flex;flex-direction:column;gap:16px}
+.live{display:inline-flex;align-items:center;gap:7px;color:var(--good);font-size:12px;font-weight:700;letter-spacing:.06em}.live::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--good);box-shadow:0 0 0 4px var(--good-soft)}
+.cmp{display:flex;flex-direction:column;gap:6px}.cmp .bar{height:20px;border-radius:7px}.cmp .bar i{transition:width .35s}.cmp .bar.old i{background:var(--line-strong)}
+.story-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.story{padding:18px;display:flex;flex-direction:column;gap:8px}.story .steps-n{font-family:var(--f-mono);font-size:12px;color:var(--fg-3)}.story p{color:var(--fg-2);font-size:13.5px}.story .go{margin-top:auto}
+.tline{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}.tline .card{padding:20px;display:flex;flex-direction:column;gap:6px}.tline .n{font-family:var(--f-display);font-size:28px;font-weight:800;color:var(--accent)}
+.cta{padding:44px 24px;text-align:center;align-items:center;background:linear-gradient(145deg,var(--surface),var(--accent-soft));display:flex;flex-direction:column;gap:14px}
+.ts-foot{margin-top:40px;background:linear-gradient(110deg,var(--nav-bg),var(--nav-bg-2));color:var(--nav-fg)}.ts-foot .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;padding-top:28px;padding-bottom:max(36px,env(safe-area-inset-bottom,0px))}.ts-foot b{color:#fff;letter-spacing:.08em}
+table.cost td,table.cost th{padding:10px 8px}table.cost td:not(:first-child),table.cost th:not(:first-child){text-align:right;font-family:var(--f-mono);font-size:13px}table.cost tr.sum td{font-weight:700;border-top:2px solid var(--line-strong)}
+@media (max-width:980px){.ts-hero,.calc{grid-template-columns:minmax(0,1fr)}.story-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.tline{grid-template-columns:repeat(2,minmax(0,1fr))}.ts-nav{display:none}}
+@media (max-width:620px){.wrap,.ts-top .in{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}.story-grid,.tline,.statrow{grid-template-columns:minmax(0,1fr)}.g3{grid-template-columns:minmax(0,1fr)}.ts-top .btn.hide-s{display:none}.hero-card .big{font-size:40px}.s-title{font-size:25px}}
+@media print{.ts-top,.ts-hero .row,.no-print,.ts-foot{display:none!important}body{background:#fff}.card{box-shadow:none}section.s{padding:14px 0;break-inside:avoid}}
+</style>
+<header class="ts-top"><div class="in">
+  <a class="ts-brand" href="#top" aria-label="TRUESCALE Start"><span id="logo"></span><span><b>TRUESCALE</b><small>The NEXORA AI Enterprise Suite</small></span></a>
+  <nav class="ts-nav" aria-label="Seitennavigation"><a href="#value">Mehrwert</a><a href="#roi">Kostenrechner</a><a href="#demo">Live-Demo</a><a href="#journey">Transformation</a></nav>
+  <a class="btn hide-s" id="suiteTop" href="index.html">Suite öffnen</a><a class="btn pri" href="#roi">Business Case</a>
+</div></header>
+<main id="top" class="wrap">
+  <section class="ts-hero">
+    <div>
+      <p class="eyebrow">The future of enterprise independence</p>
+      <h1>Your Business.<br>Your Rules.<br><span>Your ERP.</span></h1>
+      <p class="lead">Ob SAP, Microsoft Dynamics, Oracle oder eine individuelle Altlösung: Wir begleiten Sie in Ihre eigene, KI-native Enterprise-Plattform – auf Ihre Prozesse zugeschnitten, transparent kalkuliert und ohne nutzerabhängige NEXORA-Lizenzgebühren.</p>
+      <div class="row" style="margin-top:22px"><a class="btn pri" href="#roi">Einsparpotenzial berechnen</a><a class="btn" href="#demo">Live-Demo erleben</a></div>
+    </div>
+    <div class="card hero-card">
+      <span class="eyebrow" id="heroLabel">Illustratives 5-Jahres-Szenario · 1.000 ERP-Nutzer</span>
+      <span class="big" id="heroSaving">–</span>
+      <b style="font-size:16px">Potenzielle TCO-Differenz</b>
+      <p class="muted small">Keine NEXORA-Lizenzgebühr pro Nutzer. Implementierung und vertraglich definierte Wartung, Infrastruktur und Drittleistungen transparent ausgewiesen.</p>
+      <div class="statrow"><div><b id="heroPct">–</b><small>modellierte Reduktion</small></div><div><b>On-Prem</b><small>Bereitstellung</small></div><div><b>Hybrid</b><small>Bereitstellung</small></div></div>
+      <p class="faint small" style="margin-top:4px">Modellrechnung mit den Annahmen aus dem Kostenrechner – kein Herstellerangebot und kein garantierter Preisvorteil.</p>
+    </div>
+  </section>
+
+  <section class="s" id="value">
+    <p class="eyebrow">Warum TRUESCALE</p><h2 class="s-title">Nicht das nächste ERP. Ihr eigenes.</h2>
+    <p class="s-sub">Eine gemeinsame Enterprise-Basis mit genau den Prozessen, Integrationen und Oberflächen, die Ihr Unternehmen braucht.</p>
+    <div class="grid g3">
+      <div class="card vcard"><span class="ico" data-ic="ai"></span><h3>AI-native by design</h3><p class="muted">Natürliche Sprache, erklärbare Analysen und intelligente Workflows direkt im Geschäftsprozess – mit klaren Freigaben für kritische Aktionen.</p></div>
+      <div class="card vcard"><span class="ico" data-ic="mig"></span><h3>ERP-Unabhängigkeit</h3><p class="muted">Offene Integrationsarchitektur und universelle Migration als Weg aus starren Herstellerabhängigkeiten. Datenportabilität und Nutzungsrechte vertraglich geregelt.</p></div>
+      <div class="card vcard"><span class="ico" data-ic="an"></span><h3>Planbare Wirtschaftlichkeit</h3><p class="muted">Keine nutzerabhängigen NEXORA-Lizenzkosten. Klar definierte Implementierung, Wartung und transparent ausgewiesene externe Betriebskosten.</p></div>
+    </div>
+  </section>
+
+  <section class="s" id="roi">
+    <p class="eyebrow">Interaktiver Business Case</p><h2 class="s-title">Was kostet Ihre ERP-Freiheit?</h2>
+    <p class="s-sub">Passen Sie die Annahmen an – die Gegenüberstellung rechnet sofort neu. Sie ist indikativ und keine Preisliste eines Anbieters.</p>
+    <div class="calc">
+      <form class="card" id="calcForm" onsubmit="return false">
+        <label class="f">Heutige ERP-Landschaft<select class="input" id="vendor"><option>SAP</option><option>Microsoft Dynamics</option><option>Oracle</option><option>Andere / gemischt</option></select><span class="hint">Dient der Gesprächsführung; es werden keine Herstellerpreise unterstellt.</span></label>
+        <label class="f"><span class="row between">ERP-Nutzer <span class="v" id="usersLabel">1.000</span></span><input type="range" id="users" min="100" max="5000" step="100" value="1000" style="accent-color:var(--accent)"></label>
+        <label class="f">Betrachtungszeitraum<select class="input" id="years"><option value="3">3 Jahre</option><option value="5" selected>5 Jahre</option><option value="10">10 Jahre</option></select></label>
+        <label class="f">Bisherige Lizenzkosten je Nutzer und Monat (€)<input class="input" type="number" id="license" min="0" max="1000" value="80"></label>
+        <div class="grid g2"><label class="f">Implementierung klassisch (€)<input class="input" type="number" id="oldImpl" min="0" step="10000" value="1500000"></label><label class="f">Implementierung NEXORA (€)<input class="input" type="number" id="newImpl" min="0" step="10000" value="1800000"></label></div>
+        <div class="grid g2"><label class="f">Wartung klassisch / Jahr (€)<input class="input" type="number" id="oldMaint" min="0" step="10000" value="250000"></label><label class="f">Wartung NEXORA / Jahr (€)<input class="input" type="number" id="newMaint" min="0" step="10000" value="240000"></label></div>
+        <div class="grid g2"><label class="f">Infrastruktur klassisch / Jahr (€)<input class="input" type="number" id="oldInfra" min="0" step="10000" value="150000"></label><label class="f">Infrastruktur & externe Dienste NEXORA / Jahr (€)<input class="input" type="number" id="newInfra" min="0" step="10000" value="120000"></label></div>
+        <button type="button" class="btn" id="reset" style="justify-content:center">Beispielwerte zurücksetzen</button>
+      </form>
+      <div class="card res">
+        <span class="live">LIVE BERECHNET</span>
+        <div class="grid g3"><div class="card kpi"><span class="eyebrow">Klassisches ERP · TCO</span><span class="v" id="oldTotal">–</span></div><div class="card kpi"><span class="eyebrow">NEXORA · TCO</span><span class="v" id="newTotal">–</span></div><div class="card kpi"><span class="eyebrow">Potenzielle Differenz</span><span class="v" id="saving" style="color:var(--accent)">–</span><span class="small muted" id="savingPct"></span></div></div>
+        <div class="cmp"><div class="row between small"><span>Klassisches ERP</span><b class="num" id="oldBarLabel"></b></div><div class="bar old"><i id="oldBar" style="width:100%"></i></div><div class="row between small" style="margin-top:6px"><span>NEXORA AI</span><b class="num" id="newBarLabel"></b></div><div class="bar acc"><i id="newBar" style="width:50%"></i></div></div>
+        <div class="tbl-wrap"><table class="cost"><thead><tr><th>Kostenblock</th><th>Klassisch</th><th>NEXORA</th></tr></thead><tbody id="costRows"></tbody></table></div>
+        <div class="note acc small" id="businessMessage"></div>
+        <div class="row no-print"><button class="btn pri" id="print">Als PDF drucken</button><button class="btn" id="csv">Berechnung als CSV</button></div>
+        <p class="small faint">Methodik: Gesamtkosten = Implementierung + Nutzer × monatlicher Lizenzansatz × 12 × Jahre + (jährliche Wartung + jährliche Infrastruktur und externe Dienste) × Jahre. Für NEXORA wird keine nutzerabhängige Lizenzgebühr angesetzt. Nicht enthalten: interne Projektteams, Prozessänderungen, Schulungen, Datenbereinigung, Steuern, Finanzierung und nicht erfasste Drittleistungen. Eine belastbare TCO-Analyse braucht ein verbindliches Leistungs- und Betriebskonzept.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="s" id="demo">
+    <p class="eyebrow">Live-Demo · echte Business-Engine</p><h2 class="s-title">Drei Branchen. Eine Plattform.</h2>
+    <p class="s-sub">Keine Simulation: Jede Demo läuft in der NEXORA Suite auf der Business-Engine mit doppelter Buchführung, Beständen und Freigaben. Alle Unternehmen und Daten sind fiktiv; jede Demo lässt sich zurücksetzen und identisch wiederholen.</p>
+    <div class="seg" role="tablist" id="demoTabs"><button class="on" data-co="elevon">Elevon · Industrie</button><button data-co="novamart">NovaMart · Retail</button><button data-co="aventra">Aventra · Services</button></div>
+    <div class="story-grid" id="stories"></div>
+  </section>
+
+  <section class="s" id="journey">
+    <p class="eyebrow">Your path to independence</p><h2 class="s-title">Von Ihrer heutigen Landschaft zu Ihrem ERP.</h2>
+    <div class="tline">
+      <div class="card"><span class="n">01</span><h3>Discover</h3><p class="muted">Prozesse, Systeme, Daten, Risiken und TCO gemeinsam erfassen.</p></div>
+      <div class="card"><span class="n">02</span><h3>Design</h3><p class="muted">Individuelles Zielbild mit modularer NEXORA-Architektur und klaren Anforderungen.</p></div>
+      <div class="card"><span class="n">03</span><h3>Migrate</h3><p class="muted">Testmigration, Regeln, Vier-Augen-Freigabe und Abstimmung – angebunden an die universelle Migrationslösung des Partners.</p></div>
+      <div class="card"><span class="n">04</span><h3>Operate</h3><p class="muted">On-Premises oder Hybrid, definierte Wartung und transparente Betriebskosten.</p></div>
+    </div>
+  </section>
+
+  <section class="s"><div class="card cta"><p class="eyebrow">The enterprise is yours</p><h2 class="s-title" style="font-size:clamp(28px,4vw,46px)">Ihre Prozesse. Ihre Daten.<br><span style="color:var(--accent)">Ihre Zukunft.</span></h2><p class="s-sub">Wir entwickeln den Weg in eine ERP-Landschaft, die zu Ihrem Unternehmen passt – ohne nutzerabhängige NEXORA-Lizenzgebühren.</p><div class="row" style="justify-content:center"><a class="btn pri" href="#roi">Business Case gestalten</a><a class="btn" id="suiteCta" href="index.html">NEXORA Suite öffnen</a></div></div></section>
+</main>
+<footer class="ts-foot"><div class="wrap"><div><b>TRUESCALE</b><br>The NEXORA AI Enterprise Suite</div><div class="small">Your Business. Your Rules. Your ERP.<br>Konzeptseite · Preis- und Leistungsangaben sind illustrative Annahmen.</div></div></footer>
+<script>
+const IC={
+ users:'<circle cx="9" cy="8.5" r="3.2"/><path d="M3.5 19.5c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5"/><circle cx="16.5" cy="9.5" r="2.6"/><path d="M15.5 14.6c2.6-.3 4.5 1.3 5 4.4"/>',
+ start:'<path d="M3.5 11L12 4l8.5 7"/><path d="M5.5 9.5V20h4.5v-5.5h4V20h4.5V9.5"/>',
+ proj:'<path d="M3 7.5A2.5 2.5 0 015.5 5h3.6l2 2h7.4A2.5 2.5 0 0121 9.5v7a2.5 2.5 0 01-2.5 2.5h-13A2.5 2.5 0 013 16.5z"/>',
+ mig:'<path d="M8 4v15M8 19l-3-3M8 19l3-3M16 20V5M16 5l-3 3M16 5l3 3"/>',
+ proc:'<circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="12" cy="18" r="2.5"/><path d="M8.5 6h7M7.2 8.2l3.6 7.6M16.8 8.2l-3.6 7.6"/>',
+ test:'<rect x="5" y="4.5" width="14" height="16.5" rx="2"/><path d="M9 4.5V3h6v1.5M9 13l2 2 4-4.5"/>',
+ cut:'<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
+ an:'<rect x="3.5" y="3.5" width="17" height="17" rx="2.5"/><path d="M8 16.5v-4M12 16.5v-9M16 16.5v-6"/>',
+ ai:'<path d="M11 3.5l1.7 4.8 4.8 1.7-4.8 1.7L11 16.5l-1.7-4.8L4.5 10l4.8-1.7z"/><path d="M18 14.5l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z"/>',
+ bell:'<path d="M6 16.5V11a6 6 0 0112 0v5.5l1.5 1.5h-15z"/><path d="M10 20.5a2.2 2.2 0 004 0"/>',
+ help:'<circle cx="12" cy="12" r="8.5"/><path d="M9.6 9.5a2.5 2.5 0 014.9.6c0 1.8-2.5 2.1-2.5 3.9"/><path d="M12 17h.01"/>',
+ cal:'<rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
+ send:'<path d="M4.5 12.5L20 4.5l-5 15.5-3-6.5z"/><path d="M12 13.5l8-9"/>',
+ plus:'<path d="M12 5v14M5 12h14"/>',
+ sliders:'<path d="M4 7.5h9M17.5 7.5H20M4 16.5h3M11.5 16.5H20"/><circle cx="15.5" cy="7.5" r="2"/><circle cx="9.5" cy="16.5" r="2"/>',
+ db:'<ellipse cx="12" cy="6" rx="7" ry="2.6"/><path d="M5 6v12c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6V6M5 12c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6"/>',
+ layers:'<path d="M12 3.5l8.5 4.5L12 12.5 3.5 8z"/><path d="M3.5 12L12 16.5 20.5 12M3.5 16L12 20.5 20.5 16"/>',
+ checkc:'<circle cx="12" cy="12" r="8.5"/><path d="M8 12.2l2.8 2.8 5.2-5.6"/>',
+ flag:'<path d="M5.5 21V4"/><path d="M5.5 4.5h12l-2.5 4 2.5 4h-12"/>',
+ shield:'<path d="M12 3l7 3v5c0 4.6-3 8-7 10-4-2-7-5.4-7-10V6z"/><path d="M12 8.5v4.5M12 16h.01"/>',
+ doc:'<path d="M6.5 3h8l4 4v14h-12z"/><path d="M14.5 3v4h4M9.5 12h5M9.5 16h5"/>',
+ pie:'<circle cx="12" cy="12" r="8.5"/><path d="M12 3.5V12h8.5"/>',
+ bars:'<path d="M5 20v-6M10 20V9M15 20v-8M20 20V5"/>',
+ cube:'<path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9"/>',
+ check:'<path d="M5 12.5l4.5 4.5L19 7"/>',
+ building:'<rect x="5" y="3" width="14" height="18" rx="1.5"/><path d="M9 7h2M13 7h2M9 11h2M13 11h2M9 15h2M13 15h2"/>',
+ chev:'<path d="M7 10l5 5 5-5"/>',
+ search:'<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/>',
+ moon:'<path d="M19.5 14.5A8 8 0 019.5 4.5a7.5 7.5 0 1010 10z"/>',
+ x:'<path d="M6 6l12 12M18 6L6 18"/>',
+ appr:'<path d="M12 3l7 3v5c0 4.6-3 8-7 10-4-2-7-5.4-7-10V6z"/><path d="M9 12l2 2 4-4.5"/>',
+ set:'<circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/>',
+ arrowr:'<path d="M5 12h14M13 6l6 6-6 6"/>',
+ rocket:'<path d="M14 4c3 0 6 3 6 6l-7.5 7.5-6-6z"/><path d="M6.5 11.5L4 11l3-4h4M12.5 17.5l.5 2.5 4-3v-4"/><circle cx="15" cy="9" r="1.5"/>',
+ gauge:'<path d="M4 16a8 8 0 1116 0"/><path d="M12 16l4-5"/>',
+ dots:'<circle cx="5.5" cy="12" r="1.3" fill="currentColor"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/><circle cx="18.5" cy="12" r="1.3" fill="currentColor"/>'
+};
+const ic=(k,s=18)=>`<svg class="ic" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[k]}</svg>`;
+const LOGO=(s=34)=>`<svg width="${s}" height="${s}" viewBox="0 0 40 40" aria-hidden="true"><defs><linearGradient id="lg-n" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#4f7bff"/><stop offset=".55" stop-color="#7b5cff"/><stop offset="1" stop-color="#c06bff"/></linearGradient></defs><path d="M7 32V12.5c0-3 3.7-4.4 5.7-2.2L27.3 27c2 2.2 5.7.8 5.7-2.2V8" fill="none" stroke="url(#lg-n)" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+
+(function () {
+  const $ = id => document.getElementById(id);
+  const ON_PAGES = /github\.io$/.test(location.hostname);
+  const SUITE = ON_PAGES ? "index.html" : "https://marcelwagner-afk.github.io/nexora-suite/index.html";
+  $("logo").innerHTML = LOGO(30); document.querySelectorAll("[data-ic]").forEach(e => e.innerHTML = ic(e.dataset.ic, 22));
+  $("suiteTop").href = SUITE; $("suiteCta").href = SUITE;
+  const eur = n => new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(n);
+  const short = n => Math.abs(n) >= 1e6 ? (n / 1e6).toLocaleString("de-DE", { maximumFractionDigits: 2 }) + " Mio. €" : Math.abs(n) >= 1000 ? (n / 1000).toLocaleString("de-DE", { maximumFractionDigits: 1 }) + " Tsd. €" : eur(n);
+  const num = id => Math.max(0, Number($(id).value) || 0);
+  let last = {};
+  function calc() {
+    const u = num("users"), y = num("years"), lic = num("license"), oldI = num("oldImpl"), newI = num("newImpl"), oldM = num("oldMaint") * y, newM = num("newMaint") * y, oldF = num("oldInfra") * y, newF = num("newInfra") * y;
+    const license = u * lic * 12 * y, old = oldI + license + oldM + oldF, nex = newI + newM + newF, diff = old - nex, pct = old ? diff / old * 100 : 0;
+    last = { u, y, lic, oldI, newI, oldM, newM, oldF, newF, license, old, nex, diff, pct };
+    $("usersLabel").textContent = u.toLocaleString("de-DE"); $("oldTotal").textContent = short(old); $("newTotal").textContent = short(nex); $("saving").textContent = short(diff);
+    $("savingPct").textContent = Math.abs(pct).toLocaleString("de-DE", { maximumFractionDigits: 1 }) + " % " + (pct >= 0 ? "geringere TCO" : "höhere TCO");
+    $("saving").style.color = diff >= 0 ? "var(--accent)" : "var(--crit)";
+    $("heroSaving").textContent = short(diff); $("heroPct").textContent = Math.round(pct) + " %"; $("heroLabel").textContent = `Illustratives ${y}-Jahres-Szenario · ${u.toLocaleString("de-DE")} ERP-Nutzer`;
+    $("oldBarLabel").textContent = short(old); $("newBarLabel").textContent = short(nex); const max = Math.max(old, nex, 1); $("oldBar").style.width = old / max * 100 + "%"; $("newBar").style.width = nex / max * 100 + "%";
+    const rows = [["Implementierung", oldI, newI], ["Nutzerlizenzen", license, 0], ["Wartung und Support", oldM, newM], ["Infrastruktur / externe Dienste", oldF, newF]];
+    $("costRows").innerHTML = rows.map(([a, b, c]) => `<tr><td>${a}</td><td>${eur(b)}</td><td>${eur(c)}</td></tr>`).join("") + `<tr class="sum"><td>Gesamt</td><td>${eur(old)}</td><td>${eur(nex)}</td></tr>`;
+    $("businessMessage").textContent = diff >= 0 ? `Im gewählten Modell liegt NEXORA um ${eur(diff)} unter dem klassischen ERP. Das ist ein Szenario, kein garantierter Preisvorteil.` : `Im gewählten Modell liegt NEXORA um ${eur(-diff)} über dem klassischen ERP. Prüfen Sie Implementierungsumfang und laufende Kosten.`;
+  }
+  document.querySelectorAll("#calcForm input,#calcForm select").forEach(e => e.addEventListener("input", calc));
+  $("reset").onclick = () => { const d = { vendor: "SAP", users: 1000, years: 5, license: 80, oldImpl: 1500000, newImpl: 1800000, oldMaint: 250000, newMaint: 240000, oldInfra: 150000, newInfra: 120000 }; Object.entries(d).forEach(([k, v]) => $(k).value = v); calc(); };
+  $("print").onclick = () => window.print();
+  $("csv").onclick = () => { const L = last; const r = [["TRUESCALE NEXORA TCO-Modellrechnung"], ["ERP-Landschaft", $("vendor").value], ["Nutzer", L.u], ["Jahre", L.y], ["Lizenzansatz EUR je Nutzer/Monat", L.lic], ["Kostenposition", "Klassisches ERP EUR", "NEXORA EUR"], ["Implementierung", L.oldI, L.newI], ["Lizenzen", L.license, 0], ["Wartung", L.oldM, L.newM], ["Infrastruktur und externe Dienste", L.oldF, L.newF], ["Gesamt", L.old, L.nex], ["Differenz", L.diff], ["Hinweis", "Illustrative Modellrechnung; kein Angebot"]];
+    const csv = "﻿" + r.map(row => row.map(x => '"' + String(x).replaceAll('"', '""') + '"').join(";")).join("\r\n"); const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" })); a.download = "TRUESCALE_NEXORA_TCO.csv"; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000); };
+  const STORY_LIST = [{"id": "industrial", "tenant": "elevon", "cross": [], "short": "Auftrag bis Montage", "title": "From Customer Order to Manufacturing, Installation and Service", "situation": "Rheinpark Immobilien plant ein Bürogebäude und möchte 12 Aufzugsanlagen. Lager und Werk Stuttgart sind normal ausgelastet.", "steps": 17}, {"id": "retail", "tenant": "novamart", "cross": [], "short": "Bestellung bis Nachschub", "title": "From Customer Demand to Intelligent Fulfillment", "situation": "Ein NovaClub-Kunde bestellt online einen 55-Zoll-Fernseher. Im Zentrallager liegen 21 Stück, Meldebestand 20.", "steps": 11}, {"id": "services", "tenant": "aventra", "cross": ["elevon"], "short": "Zeit bis Zahlung", "title": "From Opportunity to Profitable Project Delivery", "situation": "Aventra führt die S/4HANA-Transformation bei Elevon durch (P-1001, Budget 500.000 €). Drei Berater haben diese Woche Zeiten erfasst.", "steps": 9}, {"id": "crosslift", "tenant": "novamart", "cross": ["elevon"], "short": "Filiale kauft Aufzüge", "title": "Unternehmensübergreifend: NovaMart kauft Aufzüge bei Elevon", "situation": "NovaMart baut eine Filiale um und braucht zwei Aufzüge. Lieferant ist Elevon.", "steps": 10}, {"id": "service", "tenant": "elevon", "cross": [], "short": "Störung bis Abrechnung", "title": "Service-to-Cash: Ein Aufzug fällt aus", "situation": "Im Rheinpark Tower in Köln steht eine Kabine zwischen zwei Etagen. Die Anlage hat einen Teilwartungsvertrag.", "steps": 7}, {"id": "omni", "tenant": "novamart", "cross": [], "short": "Click & Collect und Retoure", "title": "Omnichannel: Click & Collect und Retoure", "situation": "Eine Kundin bestellt online und holt in der Filiale ab. Ein anderer Kunde schickt einen Fernseher wegen Bildfehler zurück.", "steps": 9}, {"id": "migration", "tenant": "elevon", "cross": [], "short": "Migration und Cutover", "title": "Übernahme Liftservice Nord: Datenmigration und Cutover", "situation": "Elevon übernimmt die Liftservice Nord GmbH mit 42 Kunden, 61 Anlagen, 26 offenen Posten und einem Ersatzteillager.", "steps": 8}, {"id": "design", "tenant": "elevon", "cross": [], "short": "Zeichnung bis Fertigware", "title": "Design-to-Make: Von der CAD-Zeichnung zur fertigen Baugruppe", "situation": "Die Konstruktion hat die Schachtkonsole SK-200 gezeichnet: verschweißte Blechteile, Normteile, zwei Zukaufteile, feuerverzinkt. 20 Stück werden für die nächsten Anlagen gebraucht.", "steps": 11}, {"id": "p2p", "tenant": "novamart", "cross": [], "short": "Einkauf indirekt", "title": "Procure-to-Pay indirekt: Vom Bedarf bis zur Zahlung", "situation": "Die Filialleitung braucht Kopierpapier, das Zentrallager eine neue Unterhaltsreinigung.", "steps": 6}, {"id": "hire", "tenant": "elevon", "cross": [], "short": "Recruiting bis Onboarding", "title": "Hire-to-Onboard: Neue Servicetechnikerin", "situation": "Elevon sucht eine Servicetechnikerin. Eine Bewerberin ist im Interview.", "steps": 4}];
+  function renderStories(co) { $("stories").innerHTML = STORY_LIST.filter(s => s.tenant === co || (s.cross || []).includes(co)).map(s => `<div class="card story"><span class="eyebrow">${s.short}</span><h3>${s.title}</h3><span class="steps-n">${s.steps} Schritte · ca. ${Math.max(2, Math.round(s.steps * 0.9))} Minuten</span><p>${s.situation}</p><a class="btn pri sm go" href="${SUITE}?story=${s.id}" ${ON_PAGES ? "" : 'target="_blank" rel="noopener"'}>In der Suite starten</a></div>`).join(""); }
+  document.querySelectorAll("#demoTabs button").forEach(b => b.onclick = () => { document.querySelectorAll("#demoTabs button").forEach(x => x.classList.toggle("on", x === b)); renderStories(b.dataset.co); });
+  calc(); renderStories("elevon");
+})();
+</script>
+</body></html>
