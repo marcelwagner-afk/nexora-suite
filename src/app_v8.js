@@ -27,7 +27,13 @@ C.setProvider("nexoraTasks", (tid, uid) => roleTasks(tid, uid));
 // Ein Befehlsweg für alles: "conn.<system>.<befehl>" geht an die Konnektoren, der Rest unverändert an die Engine.
 // Damit laufen Konnektor-Ereignisse durch dasselbe Protokoll (act → logEntry/persist, Wiedergabe, Reset).
 const _engineDispatch = E.dispatch;
-E.dispatch = function (w, tid, cmd, p, ctx) { return String(cmd).startsWith("conn.") ? C.dispatchAny({ dispatch: _engineDispatch }, w, tid, cmd, p, ctx) : _engineDispatch(w, tid, cmd, p, ctx); };
+const AUDIT_ORDER = new WeakMap(); // Mandantenobjekt → Reihenfolge der Einträge aus Engine-Audit und Konnektor-Ledger
+E.dispatch = function (w, tid, cmd, p, ctx) {
+  const conn = String(cmd).startsWith("conn."); const r = conn ? C.dispatchAny({ dispatch: _engineDispatch }, w, tid, cmd, p, ctx) : _engineDispatch(w, tid, cmd, p, ctx);
+  const t = w && w.tenants && w.tenants[tid];
+  if (r && r.ok && t) { const o = AUDIT_ORDER.get(t) || []; if (conn) { const L = C.ledger(w, tid); if (L.length) o.push(["c", L[L.length - 1].seq]); } else if (t.audit && t.audit.length && (!o.length || !o.some(x => x[0] === "e" && x[1] === t.audit.length))) o.push(["e", t.audit.length]); AUDIT_ORDER.set(t, o); }
+  return r;
+};
 // Systemübergreifende Folgen: jede Folge ist ein eigenes protokolliertes Ereignis desselben Menschen.
 const _act8 = act;
 act = function (cmd, payload, opt) {
@@ -38,8 +44,8 @@ act = function (cmd, payload, opt) {
 
 /* ---------- Phase 2: ein Kartenformat, eine Inbox, eine Suche, Deep Links ---------- */
 var LAYER_READY = true;
-LAYER_ROUTES.splice(0, LAYER_ROUTES.length, "tasks", "ai", "systems", "agents", "documents", "admin");
-MODS.systems = ["Systeme", "db", "live"]; MODS.agents = ["Agenten", "ai", "live"]; MODS.obj = ["Objekt", "doc", "live"]; ROUTES.push("systems", "agents", "obj");
+LAYER_ROUTES.splice(0, LAYER_ROUTES.length, "tasks", "ai", "systems", "agents", "audit", "documents", "admin");
+MODS.systems = ["Systeme", "db", "live"]; MODS.agents = ["Agenten", "users", "live"]; MODS.audit = ["Protokoll", "check", "live"]; MODS.privacy = ["Mitbestimmung & Datenschutz", "shield", "live"]; MODS.obj = ["Objekt", "doc", "live"]; ROUTES.push("systems", "agents", "audit", "privacy", "obj");
 const SYS_ORDER = ["nexora", "sap", "m365", "servicenow", "workday"];
 const sysName = id => (C.CONNECTORS[id] || { name: id }).name;
 const simBadge = sys => C.CONNECTORS[sys] && C.CONNECTORS[sys].simulated ? `<span class="ly-sim" title="Keine echte Integration – Daten aus dem Seed erzeugt">Demo-Konnektor · simuliert</span>` : `<span class="ly-sim live">Live-Engine</span>`;
@@ -244,3 +250,76 @@ VIEWS.agents = () => {
        return `<tr><td><button class="link-btn" data-act="ask" data-q="${esc(q)}">${esc(q)}</button></td>${d.ok ? `<td>${esc(d.agent.name)}</td><td>${esc(d.route.label)}</td><td class="r num">${eur4(d.cost)}</td>` : `<td colspan="3"><span class="pill p-crit">abgelehnt</span> <span class="faint">${esc(d.code === "NO_ROUTE" ? "System nicht angebunden" : "kein zulässiger Weg")}</span></td>`}</tr>`; }).join("")}</tbody></table>
        <p class="small faint" style="margin-top:8px">Fehler werden in dieser Sitzung gezählt (abgelehnte Anfragen und fehlgeschlagene Aufrufe); sie erreichen kein System und erzeugen keine Kosten.</p></section>`;
 };
+
+/* ---------- Phase 5: Kosten, Protokoll, Vier-Augen, Mitbestimmung & Datenschutz ---------- */
+S.auditRej = S.auditRej || []; // abgelehnte Aktionen dieser Sitzung (erreichen kein System, nicht im gemeinsamen Protokoll)
+S.auditF = S.auditF || { sys: "", user: "", res: "", q: "" };
+const _act8b = act;
+act = function (cmd, payload, opt) { const r = _act8b(cmd, payload, opt); if (r && !r.ok && S.layer === "layer") { const t = T(); const u = U(); const sys = String(cmd).startsWith("conn.") ? cmd.split(".")[1] : "nexora"; const rc = routeCost(cmd);
+  S.auditRej.push({ session: true, date: t.date, userName: u.name, role: (R() || {}).name || "", system: sysName(sys), route: rc.label, agent: "–", cmd, ref: (payload && payload.ref) || null, cost: 0, ok: false, text: r.text, code: r.code, via: (payload && payload.via) || "Mensch", tenant: t.id }); }
+  return r; };
+// Routerablehnungen ebenfalls in die Sitzungsliste
+const _routeAsk5 = routeAsk;
+routeAsk = function (q) { const rq = _routeAsk5(q); if (!rq.d.ok) { const t = T(); S.auditRej.push({ session: true, date: t.date, userName: U().name, role: (R() || {}).name || "", system: rq.d.system ? sysName(rq.d.system) : "–", route: "kein zulässiger Weg", agent: rq.d.agent ? rq.d.agent.id : "Router", cmd: "frage", ref: null, cost: 0, ok: false, text: rq.d.text, code: rq.d.code, via: "Assistent", tenant: t.id }); } return rq; };
+function auditRows(tid) {
+  tid = tid || S.tenant; const t = W.tenants[tid]; const L = C.ledger(W, tid); const byC = new Map(L.map(x => [x.seq, x])); const order = AUDIT_ORDER.get(t) || []; const rows = []; const seen = new Set();
+  const uOf = name => t.users.find(u => u.name === name); const roleOf = u => u ? ((t.roles.find(r => r.id === u.role) || {}).name || "") : "";
+  const eRow = a => { const u = uOf(a.user); return { date: a.date, userName: a.user || "Demo-Automatik", role: roleOf(u), system: "NEXORA-Engine", route: C.ROUTES.nexora[0].label, agent: "nexora", cmd: a.cmd, ref: (a.docs || []).join(" ") || null, cost: 0, ok: true, text: a.text, via: a.user ? "Mensch" : "Demo-Automatik" }; };
+  for (const [k, n] of order) { if (k === "c" && byC.has(n)) { rows.push(byC.get(n)); seen.add("c" + n); } if (k === "e" && t.audit[n - 1]) { rows.push(eRow(t.audit[n - 1])); seen.add("e" + n); } }
+  for (const x of L) if (!seen.has("c" + x.seq)) rows.push(x); // Sicherheitsnetz: nichts geht verloren (z. B. Einträge aus Querverbindungen)
+  t.audit.forEach((a, i) => { if (a.cmd !== "seed" && !seen.has("e" + (i + 1))) rows.push(eRow(a)); });
+  for (const x of S.auditRej.filter(r => r.tenant === tid)) rows.push(x);
+  return rows.map((r, i) => Object.assign({ n: i + 1 }, r));
+}
+const AUDIT_COLS = [["n", "Lfd. Nr."], ["date", "Datum"], ["userName", "Nutzer"], ["role", "Rolle"], ["system", "System"], ["route", "Zugriffsweg"], ["agent", "Agent"], ["cmd", "Befehl"], ["ref", "Referenz"], ["cost", "Kosten (EUR, Beispielwert)"], ["ok", "Ergebnis"], ["via", "Ausgelöst über"], ["text", "Text"]];
+const resTxt = r => r.ok ? "ausgeführt" : "abgelehnt" + (r.code ? " (" + r.code + ")" : "") + (r.session ? " · nur diese Sitzung" : "");
+function auditFiltered() { const f = S.auditF; const q = (f.q || "").toLowerCase(); return auditRows().filter(r => (!f.sys || r.system === f.sys) && (!f.user || r.userName === f.user) && (!f.res || (f.res === "ok") === !!r.ok) && (!q || [r.cmd, r.ref, r.text, r.route, r.agent].some(x => String(x || "").toLowerCase().includes(q)))); }
+function auditCsv(rows) {
+  const cell = v => { const s = String(v == null ? "" : v); return /[;"\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+  const val = (r, k) => k === "cost" ? Number(r.cost || 0).toFixed(3).replace(".", ",") : k === "ok" ? resTxt(r) : k === "date" ? dDe(r.date) : r[k];
+  return "﻿" + [AUDIT_COLS.map(c => c[1]).join(";")].concat(rows.map(r => AUDIT_COLS.map(([k]) => cell(val(r, k))).join(";"))).join("\r\n") + "\r\n";
+}
+ACT.auditCsv = () => { const rows = auditFiltered(); saveBlob(`protokoll_${S.tenant}_${T().date}.csv`, new Blob([auditCsv(rows)], { type: "text/csv;charset=utf-8" }), { noTab: true }); toast(`${rows.length} Zeilen als CSV exportiert`); };
+ACT.auditReset = () => { S.auditF = { sys: "", user: "", res: "", q: "" }; render(); };
+Object.assign(ON, { auSys(v) { S.auditF.sys = v; render(); }, auUser(v) { S.auditF.user = v; render(); }, auRes(v) { S.auditF.res = v; render(); }, auQ(v) { S.auditF.q = v; render(); } });
+const costNow = () => { const d = T().date; return { day: C.costs(W, S.tenant, { date: d }).total, month: C.costs(W, S.tenant, { period: d.slice(0, 7) }).total }; };
+VIEWS.audit = () => {
+  const all = auditRows(); const rows = auditFiltered(); const f = S.auditF; const c = costNow(); const sum = Math.round(rows.reduce((a, r) => a + (r.cost || 0), 0) * 1000) / 1000;
+  const opts = (vals, cur) => `<option value="">Alle</option>` + [...new Set(vals)].filter(Boolean).sort().map(v => `<option ${v === cur ? "selected" : ""}>${esc(v)}</option>`).join("");
+  return head("Experience Layer · " + esc(T_NAMES[S.tenant]), "Protokoll", `<button class="btn pri" data-act="auditCsv">CSV exportieren</button>`)
+   + `<div class="note acc small sn"><div>Jede Aktion und jede Agentenabfrage mit Datum, Person, Rolle, System, Zugriffsweg, Agent, Kosten und Ergebnis. Die Einträge entstehen aus dem gemeinsamen Ereignisprotokoll und sind reproduzierbar; abgelehnte Aktionen erreichen kein System und erscheinen nur in dieser Sitzung. Kosten sind ${C.COST_NOTE}.</div></div>`
+   + `<div class="grid g3"><section class="card card-pad"><div class="eyebrow">Kosten heute</div><b class="num big" id="auDay">${eur4(c.day)}</b></section><section class="card card-pad"><div class="eyebrow">Kosten ${esc(perDe(T().date.slice(0, 7)))}</div><b class="num big" id="auMonth">${eur4(c.month)}</b></section><section class="card card-pad"><div class="eyebrow">Summe der Auswahl</div><b class="num big" id="auSum">${eur4(sum)}</b><span class="small faint"> ${rows.length} von ${all.length} Einträgen</span></section></div>`
+   + `<section class="card card-pad"><div class="row" style="gap:10px;flex-wrap:wrap;align-items:flex-end">
+      <label class="f">System<select class="input" data-on="auSys">${opts(all.map(r => r.system), f.sys)}</select></label>
+      <label class="f">Nutzer<select class="input" data-on="auUser">${opts(all.map(r => r.userName), f.user)}</select></label>
+      <label class="f">Ergebnis<select class="input" data-on="auRes"><option value="">Alle</option><option value="ok" ${f.res === "ok" ? "selected" : ""}>ausgeführt</option><option value="rej" ${f.res === "rej" ? "selected" : ""}>abgelehnt</option></select></label>
+      <label class="f" style="flex:1;min-width:180px">Suche<input class="input" data-on="auQ" value="${esc(f.q)}" placeholder="Befehl, Referenz, Text …"></label>
+      ${f.sys || f.user || f.res || f.q ? `<button class="btn sm" data-act="auditReset">Filter zurücksetzen</button>` : ""}</div></section>`
+   + `<section class="card" style="overflow:auto"><table class="small au-tbl"><thead><tr>${AUDIT_COLS.filter(c => c[0] !== "text").map(([k, l]) => `<th class="${k === "cost" ? "r" : ""}">${esc(l.replace(" (EUR, Beispielwert)", ""))}</th>`).join("")}</tr></thead><tbody>${rows.length ? rows.slice().reverse().slice(0, 300).map(r => `<tr class="${r.ok ? "" : "rej"}" title="${esc(r.text || "")}"><td class="num">${r.n}</td><td class="num">${esc(dDe(r.date))}</td><td>${esc(r.userName)}</td><td>${esc(r.role)}</td><td>${esc(r.system)}</td><td>${esc(r.route)}</td><td>${esc(r.agent)}</td><td class="mono">${esc(r.cmd)}</td><td class="mono">${esc(r.ref || "")}</td><td class="r num">${eur4(r.cost)}</td><td>${r.ok ? pill("p-good", "ausgeführt") : pill("p-crit", "abgelehnt")}${r.session ? `<span class="faint"> Sitzung</span>` : ""}</td><td>${esc(r.via)}</td></tr>`).join("") : `<tr><td colspan="12" class="muted">Keine Einträge${f.sys || f.user || f.res || f.q ? " für diesen Filter" : ""}.</td></tr>`}</tbody></table>${rows.length > 300 ? `<p class="small faint" style="padding:8px 12px">Angezeigt die letzten 300; der Export enthält alle ${rows.length}.</p>` : ""}</section>`;
+};
+// Kostenzähler in der Kopfzeile (nur im Layer-Modus; Suite-Ansicht unverändert)
+const _topExtras5 = topExtras;
+topExtras = function () { if (S.layer !== "layer") return _topExtras5(); const c = costNow(); return `<a class="cost-ctr" href="#audit" title="Kosten der protokollierten Zugriffe – ${esc(C.COST_NOTE)}" data-day="${c.day}" data-month="${c.month}"><span><i>heute</i> <b class="num">${eur4(c.day)}</b></span><span><i>Monat</i> <b class="num">${eur4(c.month)}</b></span></a>` + _topExtras5(); };
+// Kosten je Aufgabe auf der Karte (Satz der Hauptaktion)
+const _cardHtml5 = cardHtml;
+cardHtml = function (k, o) { const a = (k.actions || [])[0]; const h = _cardHtml5(k, o); if (!a) return h; const rc = routeCost(a.cmd); return h.replace(`<span class="ly-route" title="Zugriffsweg">${esc(k.route)}</span>`, `<span class="ly-route" title="Zugriffsweg und Beispielkosten je Aktion">${esc(k.route)} · ${eur4(rc.cost)}</span>`); };
+// Seite „Mitbestimmung & Datenschutz“ im Demo Control Center
+VIEWS.privacy = () => {
+  const t = T(); const sysIds = SYS_ORDER; const matrix = t.users.filter(u => !u.account).map(u => { const ks = C.listTasks(W, t.id, { user: u.id }); const set = new Set(ks.map(k => k.sys)); return { u, role: (t.roles.find(r => r.id === u.role) || {}).name || "", set, n: ks.length }; });
+  const flows = [
+    ["Simulierte Systeme (SAP, Microsoft 365, ServiceNow, Workday)", "Experience Layer im Browser", "Aufgaben, Belegdaten, Namen von Anfordernden und Mitarbeitenden – alles synthetisch aus dem Seed", "Inbox, Suche, Karten"],
+    ["Experience Layer", "Gemeinsames Ereignisprotokoll (Datenbank dieser Seite) oder lokaler Browserspeicher", "Befehl, Parameter, ausführende Person (Demo-Rolle), Geschäftsdatum", "Reproduzierbarkeit, Live-Demo auf mehreren Geräten, Protokoll"],
+    ["Experience Layer", "Claude (nur im Modus „Claude“)", "Die gestellte Frage, Ergebnisse der lesenden Werkzeuge und des gerouteten Agenten", "Antworten in natürlicher Sprache; Claude bucht nichts"],
+    ["Experience Layer", "Google Drive (nur auf Klick, eigenes Konto)", "Sicherung des Ereignisprotokolls, Belegjournal, PDFs", "Sicherung und Export"],
+    ["Router", "–", "Abgelehnte Anfragen", "Werden nicht weitergegeben, nur in dieser Sitzung gezählt"]
+  ];
+  return head("Demo Control Center", "Mitbestimmung & Datenschutz", `<a class="btn" href="#admin">← Demo Control Center</a>`)
+   + `<div class="note warn small">Diese Seite beschreibt ausschließlich, wie die Demo funktioniert. Sie enthält keine Rechtsaussagen und ersetzt keine Prüfung durch Datenschutz, Betriebsrat oder Rechtsberatung.</div>`
+   + `<section class="card card-pad"><h3>Welche Daten fließen wohin</h3><table class="small" style="margin-top:8px"><thead><tr><th>Von</th><th>Nach</th><th>Daten</th><th>Zweck</th></tr></thead><tbody>${flows.map(f => `<tr>${f.map(x => `<td>${esc(x)}</td>`).join("")}</tr>`).join("")}</tbody></table>
+      <p class="small faint" style="margin-top:8px">Alle Daten der Demo sind synthetisch. Es bestehen keine Verbindungen zu echten Fremdsystemen; die Konnektoren arbeiten ohne Netzwerkzugriff.</p></section>`
+   + `<section class="card card-pad" style="overflow-x:auto"><h3>Welche Rolle sieht was</h3><p class="small muted" style="margin:4px 0 8px">Aufgaben in der Inbox je Person und System, berechnet aus den Berechtigungen der Rolle (${esc(T_NAMES[t.id])}).</p><table class="small priv-mx"><thead><tr><th>Person</th><th>Rolle</th>${sysIds.map(s => `<th class="c">${esc(sysName(s).replace(" (simuliert)", ""))}</th>`).join("")}<th class="r">Aufgaben</th></tr></thead><tbody>${matrix.map(m => `<tr><td>${esc(m.u.name)}</td><td>${esc(m.role)}</td>${sysIds.map(s => `<td class="c">${m.set.has(s) ? "●" : "<span class='faint'>–</span>"}</td>`).join("")}<td class="r num">${m.n}</td></tr>`).join("")}</tbody></table></section>`
+   + `<div class="grid g2"><section class="card card-pad"><h3>Protokoll und Auswertung</h3><ul class="small" style="padding-left:18px;margin-top:6px;display:flex;flex-direction:column;gap:4px"><li>Das Protokoll enthält je Aktion die ausführende Person und Rolle. Einsicht haben alle Betrachter der Demo.</li><li>Kosten werden je Zugriff, nicht je Person ausgewertet; die Ansicht „Agenten“ zeigt Summen je Agent.</li><li>Freigaben über ${esc(eur(C.FOUR_EYES_LIMIT))} (Beispielwert) brauchen zwei verschiedene Personen.</li><li>„Alle zurücksetzen“ entfernt Protokoll, Konnektorzustand und angelegte Accounts.</li></ul></section>
+      <section class="card card-pad"><h3>Grenzen der KI</h3><ul class="small" style="padding-left:18px;margin-top:6px;display:flex;flex-direction:column;gap:4px"><li>Claude und der Regel-Rückfall schlagen Aktionen nur vor.</li><li>Ausgeführt wird erst nach Klick und Bestätigung einer Person, mit Rechteprüfung der Rolle.</li><li>${esc(C.SAP_POLICY_NOTE)}</li></ul></section></div>`;
+};
+const _adminV8 = VIEWS.admin;
+VIEWS.admin = () => { const h = _adminV8(); if (S.layer !== "layer") return h; return h + `<section class="card card-pad row between" style="gap:12px"><div><h3>Mitbestimmung & Datenschutz</h3><p class="small muted">Welche Daten fließen wohin, welche Rolle sieht was – Beschreibung der Demo, keine Rechtsaussage.</p></div><a class="btn" href="#privacy">Öffnen →</a></section>`; };

@@ -94,6 +94,17 @@ async def layer(p):
   await pg.screenshot(path=SP + "layer_router.png")
   await pg.evaluate("location.hash='agents'"); await pg.wait_for_timeout(120)
   assert await pg.evaluate("document.querySelectorAll('.ag-card').length") == 5; await pg.screenshot(path=SP + "layer_agents.png", full_page=True)
+  # Phase 5: Protokoll – Summe = Kostenzähler, CSV mit allen Spalten, Filter, Seite Mitbestimmung & Datenschutz
+  await pg.evaluate("location.hash='audit'"); await pg.wait_for_timeout(150)
+  au = await pg.evaluate("""(() => { const rows = auditRows(); const sum = Math.round(rows.reduce((a, r) => a + (r.cost || 0), 0) * 1000) / 1000; const c = document.querySelector('.cost-ctr'); return { n: rows.length, sum, month: +c.dataset.month, day: +c.dataset.day, ledger: C.ledger(W, 'elevon').length, eng: rows.filter(r => r.system === 'NEXORA-Engine').length, rej: rows.filter(r => !r.ok).length }; })()""")
+  print("Protokoll:", au); assert au["n"] >= au["ledger"] and abs(au["sum"] - au["month"]) < 1e-9 and au["eng"] >= 1 and au["rej"] >= 1
+  csv = await pg.evaluate("auditCsv(auditRows())"); head = csv.lstrip("\ufeff").split("\r\n")[0].split(";")
+  print("CSV-Spalten:", head); assert len(head) == 13 and all(h in head for h in ["Datum", "Nutzer", "Rolle", "System", "Zugriffsweg", "Agent", "Kosten (EUR, Beispielwert)", "Ergebnis"]) and len(csv.strip().split("\r\n")) == au["n"] + 1
+  await pg.select_option("[data-on=auSys]", "SAP S/4HANA (simuliert)"); await pg.wait_for_timeout(120)
+  fs = await pg.evaluate("auditFiltered().every(r => r.system === 'SAP S/4HANA (simuliert)') && auditFiltered().length > 0"); assert fs, "Filter"
+  await pg.screenshot(path=SP + "layer_audit.png"); await pg.evaluate("ACT.auditReset()")
+  await pg.evaluate("location.hash='privacy'"); await pg.wait_for_timeout(120)
+  assert await pg.evaluate("document.querySelectorAll('.priv-mx tbody tr').length") >= 5; await pg.screenshot(path=SP + "layer_privacy.png", full_page=True)
   await pg.evaluate("ACT.setLayer({v:'suite'})"); await pg.wait_for_timeout(100); assert await pg.evaluate("S.layer") == "suite"
   await b.close(); assert not errs, errs
 
