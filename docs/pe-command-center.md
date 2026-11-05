@@ -1,6 +1,6 @@
 # NEXORA PE Command Center – Analyse und Umsetzungsplan
 
-*NEXORA AI – A brand of TRUESCALE*
+*NEXORA AI*
 
 Stand: 05.11.2026. Dieses Dokument ist das Ergebnis von PE-Phase 1 („Architecture & Foundation“). Es beschreibt:
 

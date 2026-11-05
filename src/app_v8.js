@@ -334,7 +334,7 @@ VIEWS.admin = () => { const h = _adminV8(); if (S.layer !== "layer") return h; r
 S.embed = false;
 function enterEmbed() { S.embed = true; S.layer = "layer"; S.live = false; if (!["tasks", "ai", "obj"].includes(route())) location.hash = "tasks"; render(); }
 ACT.leaveEmbed = () => { S.embed = false; try { const u = new URL(location.href); u.searchParams.delete("embed"); history.replaceState(null, "", u.pathname + u.search + location.hash); } catch (e) {} render(); };
-const embedBar = () => { const rt = route(); return `<div class="emb-bar"><div class="row between" style="gap:8px"><span class="emb-brand">${LOGO(20)}<b>NEXORA</b><small class="faint">A brand of TRUESCALE</small></span><button class="btn sm" data-act="userMenu">${esc(U().name)} · ${esc((R() || {}).name || "")}</button></div>
+const embedBar = () => { const rt = route(); return `<div class="emb-bar"><div class="row between" style="gap:8px"><span class="emb-brand">${LOGO(20)}<b>NEXORA</b></span><button class="btn sm" data-act="userMenu">${esc(U().name)} · ${esc((R() || {}).name || "")}</button></div>
   <div class="seg emb-tabs" role="tablist"><a role="tab" class="${rt !== "ai" ? "on" : ""}" href="#tasks" aria-selected="${rt !== "ai"}">Inbox <b>${C.listTasks(W, S.tenant, { user: S.users[S.tenant] }).length}</b></a><a role="tab" class="${rt === "ai" ? "on" : ""}" href="#ai" aria-selected="${rt === "ai"}">Assistent</a></div>
   <div class="emb-note">Vorschau einer Einbettung (z. B. in Teams oder Copilot) · Fremdsysteme simuliert · <button class="link-btn" data-act="leaveEmbed">Vollansicht</button></div></div>`; };
 const _render6 = render;

@@ -1,5 +1,5 @@
 /* ===== v0.9 NEXORA PE Command Center – Oberfläche (MVP, PE-Phase 2) =====
-   NEXORA AI – A brand of TRUESCALE. Rechenkern: src/pe.js (window.NexoraPE). Alle Daten synthetisch.
+   NEXORA AI. Rechenkern: src/pe.js (window.NexoraPE). Alle Daten synthetisch.
    Jede Anzeige ruft die Lesefunktionen mit dem gewählten Principal auf; die Prüfung liegt im Rechenkern, nicht hier. */
 const PE = window.NexoraPE;
 const PE_KEY = "nexora-pe-v09";

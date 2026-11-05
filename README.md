@@ -1,6 +1,6 @@
 # NEXORA AI Suite
 
-*NEXORA AI – A brand of TRUESCALE*
+*NEXORA AI*
 
 KI-native Enterprise-Plattform als vollständig klickbare Demo mit drei verbundenen Digital Twins:
 

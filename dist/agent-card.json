@@ -5,10 +5,10 @@
   "url": "https://marcelwagner-afk.github.io/nexora-suite/",
   "version": "0.8.0",
   "provider": {
-    "organization": "TRUESCALE",
+    "organization": "Marcel Wagner",
     "url": "https://github.com/marcelwagner-afk/nexora-suite"
   },
-  "brand": "NEXORA AI – A brand of TRUESCALE",
+  "brand": "NEXORA AI",
   "capabilities": {
     "streaming": false,
     "pushNotifications": false,

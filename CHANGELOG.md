@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.9.11 – Ohne TRUESCALE-Marke (2026-11)
+
+- **Marke:** Zusatz „A brand of TRUESCALE“ überall entfernt (Kopfzeilen der Suite, Prototyp, Einbettungsleiste, Fußzeile, Kommentare, README, Doku). Herausgeber in `agent-card.json`: Marcel Wagner, Marke NEXORA AI.
+- **Filme:** Web-Fassungen in `media/` neu erzeugt ohne Markenzeile und ohne truescale.group-Adresse auf der Schlusskarte; im Imagespot ist das gesprochene „a brand of TRUESCALE“ abgesenkt. Die Originale bleiben unverändert.
+
 ## v0.9.10 – Filme (2026-11)
 
 - **Vier Filme (16:9)** in `media/`, als Web-Fassung (1280 × 720, H.264, Schnellstart) mit Vorschaubild: Imagespot, Experience Layer, PE Command Center, IT-Infrastruktur. Englisch mit eingebrannten Untertiteln; im Film als Demo mit synthetischen Daten gekennzeichnet.
