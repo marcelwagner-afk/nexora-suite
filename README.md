@@ -18,7 +18,9 @@ Alle Daten sind synthetisch und werden reproduzierbar erzeugt (Seed 20261102). E
 | `src/app.js`, `src/app_ext.js` | Oberfläche, geführte Demos, Live-Änderungen und Backend-Anbindung |
 | `test/engine.test.js` | 47 Akzeptanztests: Buchungslogik, Reproduzierbarkeit, alle E2E-Prozesse |
 | `test/e2e.py` | Playwright-Browsertest. Er spielt alle 13 Demo-Storys durch, prüft Konsistenz und Reset, Experience Layer, Ablösung, Einbettung und Marktposition und erzeugt Screenshots. |
-| `test/visual.py` | Pixelvergleich der Suite-Ansicht gegen eine Referenz (`save` / `compare`) |
+| `test/visual.py` | Pixelvergleich der Suite-Ansicht gegen eine Referenz (`save` / `compare`, `--inhalt` ohne Seitennavigation) |
+| `src/pe.js`, `src/app_pe.js`, `src/pe.css` | PE Command Center: Rechenkern (in Node testbar) und Oberfläche |
+| `test/pe.test.js`, `test/pe.bench.js` | Tests (Kennzahlen, Fonds, Mandantentrennung) und Leistungsmessung des PE-Rechenkerns |
 | `src/dxf.js` | DXF-Leser: Schriftfeld- und Positionsattribute, Geometrie, Schnittlängen aus Abwicklungen |
 | `samples/MR-1200.dxf` | Synthetische Werkstattzeichnung Maschinenrahmen, 2 Blätter A1, 15 Positionen (`samples/make_mr1200.py`) |
 | `samples/SK-200.dxf` | Einfache Beispielzeichnung Schachtkonsole (`samples/make_sk200.py`) |
@@ -155,6 +157,33 @@ Die Karten in der Inbox sehen vorher und nachher gleich aus, nur Quelle und Zugr
 - Direkter Agentenzugriff auf SAP-Tabellen oder -Schnittstellen wird abgelehnt. Der Hinweis bezieht sich auf die SAP API Policy (v4/2026), ausdrücklich ohne Rechtsbewertung.
 - Keine Herstellerlogos; Herstellernamen stehen nur als Text.
 
+## PE Command Center (v0.9, MVP)
+
+Ein Bereich **Private Equity** in derselben Navigation, für PE-Investoren. Plan, Datenmodell, Berechtigungsmodell und Roadmap stehen in [`docs/pe-command-center.md`](docs/pe-command-center.md).
+
+- **Demo-Umgebung:**
+  - Investor „Nexora Global Equity Partners“ mit drei Fonds (10/8/7 Unternehmen, 25 insgesamt) und 36 Monaten Historie.
+  - Verschiedene Länder, Währungen, ERP-Systeme, Rechnungslegungsstandards und Beteiligungsquoten.
+  - Ein zweiter Investor („Rheintal Capital“) prüft die Mandantentrennung.
+  - Alles ist **synthetisch** und deterministisch aus dem Seed erzeugt; ERP-Anbindungen sind simuliert.
+- **Rechenkern** `src/pe.js` (UMD, in Node testbar):
+  - Lokale Kontenpläne je ERP-Familie werden auf den Konzernkontenplan gemappt.
+  - Umrechnung in EUR: Flüsse zum Durchschnittskurs, Bestände zum Stichtagskurs.
+  - Kennzahlen mit Formel und Ebene in `PE.KPI_DEFS`.
+  - Fondskennzahlen (Paid-in, NAV, DPI, RVPI, TVPI, MOIC, Gross/Net IRR per XIRR auf datierten Cashflows) stehen getrennt von den operativen Kennzahlen.
+  - Die Bilanzidentität wird erzwungen und getestet.
+- **Berechtigung:**
+  - Jede Lesefunktion verlangt einen Principal. Sie prüft Organisation, Fonds, Unternehmen, Rollen-Obergrenze und die Datenfreigabe des Unternehmens (Kennzahlen, Abschlüsse oder bis zur Buchung).
+  - Die Prüfung läuft im Rechenkern der Seite, nicht auf einem Server; die Server-Absicherung ist Teil der Zielarchitektur.
+- **Ansichten:**
+  - PE Command Center: Kennzahlen, Diagramme, Ranking, Risiko-Heatmap, Verteilung nach Land und Branche mit Klick-Filter, Fondstabelle, regelbasierte Hinweise.
+  - Portfolio Companies.
+  - Unternehmensdetail mit Drill-down Unternehmen → Gesellschaft → Konto → Buchung.
+  - Administration: Organisation, Fonds und Unternehmen anlegen, mit Rollenprüfung.
+  - Weitere Module sind als „geplant“ markiert, mit Umfang und Phase.
+- **Aggregation:** Portfolio-Summen sind eine Management-Aggregation zu 100 % der aktiven Unternehmen, nicht anteilig und keine Konsolidierung. Unternehmen im Onboarding sind ausgeschlossen und werden benannt.
+- **Tests:** `node test/pe.test.js` (24 Tests, in CI) und `python test/e2e.py` (Block „PE Command Center“). Leistungsmessung des Rechenkerns: `node test/pe.bench.js 100` (2.500 Unternehmen).
+
 ## Marktposition pflegen
 
 Die Positionierungsmatrix „Wer liefert die eine Oberfläche für alle Anwendungen?“ steht auf der TRUESCALE-Seite unter `truescale.html#markt`. Die Suite verlinkt sie in der Navigation („Marktposition · TRUESCALE“). Die Referenzumsetzung liegt in `docs/positionierung-referenz.html`.
@@ -173,6 +202,7 @@ Die Positionierungsmatrix „Wer liefert die eine Oberfläche für alle Anwendun
 ```bash
 node test/engine.test.js
 node test/connectors.test.js
+node test/pe.test.js
 python build.py
 python test/visual.py compare <Referenzordner>   # optional: Suite-Ansicht pixelgleich
 pip install playwright && python -m playwright install chromium

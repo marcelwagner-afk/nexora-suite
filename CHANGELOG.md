@@ -1,5 +1,30 @@
 # Changelog
 
+## v0.9 – PE Command Center, MVP (2026-11)
+
+**Neu**
+- **Bereich „Private Equity“ in der Navigation:**
+  - Umgesetzt: PE Command Center, Portfolio Companies mit Unternehmensdetail, Administration.
+  - Zehn weitere Module sind sichtbar als „geplant“ markiert, mit Umfang und Phase.
+- **Rechenkern `src/pe.js`:**
+  - 25 synthetische Portfoliounternehmen in drei Fonds mit 36 Monaten Historie, dazu ein zweiter Investor.
+  - Harmonisierung lokaler Kontenpläne und Währungsumrechnung.
+  - Kennzahlen mit Formeln; Fondskennzahlen per XIRR.
+  - Rechteprüfung je Lesefunktion.
+  - Drill-down bis zur Buchung, nur mit Freigabe und Einzelposten im Quellsystem.
+  - Verwaltung: Organisation, Fonds und Unternehmen anlegen.
+- **Marke:** „NEXORA AI – A brand of TRUESCALE“ in Suite, Prototyp, TRUESCALE-Seite, Agentenkarte und README.
+- **Plan:** `docs/pe-command-center.md`.
+
+**Tests**
+- `test/pe.test.js`: 24 Tests (Bilanzidentität, Formeln, XIRR-Referenz, Fondskennzahlen, Mandantentrennung, Freigabestufen, Datenlücken, Verwaltung), in CI.
+- e2e-Block „PE Command Center“, auch bei 400 px Breite.
+- `test/pe.bench.js` misst den Rechenkern mit 2.500 Unternehmen.
+
+**Grenzen**
+- Keine Server-Absicherung, Verschlüsselung, SSO/MFA oder Lasttests einer Serverarchitektur. Die Rechteprüfung läuft im Browser.
+- Hinweise sind regelbasiert, keine KI. Claude als AI Financial Advisor folgt in PE-Phase 3.
+
 ## v0.8 – Experience Layer (2026-11)
 
 Die Suite wird zu einer herstellerneutralen Oberfläche über mehrere Systeme. Die NEXORA-Engine bleibt vollständig erhalten und ist ein Konnektor unter mehreren. Die Suite-Ansicht funktioniert unverändert wie v0.7 und ist über den Umschalter erreichbar.

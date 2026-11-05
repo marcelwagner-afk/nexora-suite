@@ -13,6 +13,8 @@ jobs:
         run: node test/engine.test.js
       - name: Konnektor-Tests (Experience Layer)
         run: node test/connectors.test.js
+      - name: PE Command Center (Rechenkern, Mandantentrennung)
+        run: node test/pe.test.js
       - name: Build
         run: python build.py
       - name: Browser-E2E (alle Demo-Storys)
