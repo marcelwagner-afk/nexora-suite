@@ -1,0 +1,74 @@
+/* Tests des PE Command Center (Rechenkern, Kennzahlen, Fondskennzahlen, Mandantentrennung). Ausführen: node test/pe.test.js */
+const PE = require("../src/pe.js");
+let pass = 0, failN = 0; const results = [];
+function test(name, fn) { try { fn(); pass++; results.push(["ok", name]); } catch (e) { failN++; results.push(["FEHLER", name + " → " + e.message]); } }
+function ok(c, msg) { if (!c) throw new Error(msg); }
+const near = (a, b, tol, msg) => { if (!(Math.abs(a - b) <= tol)) throw new Error(`${msg}: erwartet ${b}, ist ${a}`); };
+const code = fn => { try { fn(); return "OK"; } catch (e) { return e.code || e.message; } };
+const W = PE.createWorld(); const P = id => PE.principal(W, id); const I = PE._internal;
+const NG = W.companies.filter(c => c.orgId === "ngep"); const byScen = s => NG.find(c => c.scenario === s);
+
+test("Demo-Umgebung: eine PE-Organisation mit drei Fonds (10/8/7) und 25 Portfoliounternehmen, alles synthetisch", () => {
+  ok(W.orgs.find(o => o.id === "ngep").name === "Nexora Global Equity Partners", "Organisation"); ok(NG.length === 25, "25 Unternehmen");
+  ok(["F1", "F2", "F3"].map(f => NG.filter(c => c.fundId === f).length).join() === "10,8,7", "Verteilung 10/8/7"); ok(W.note === PE.DEMO_NOTE && /Synthetische/.test(W.note), "Kennzeichnung");
+  ok(new Set(NG.map(c => c.currency)).size >= 3 && new Set(NG.map(c => c.erp)).size >= 6 && new Set(NG.map(c => c.country)).size >= 4 && new Set(NG.map(c => c.ownership)).size >= 3, "Vielfalt Währung, ERP, Land, Anteil"); });
+test("Größenordnung: Umsatz rund 3,2 Mrd. €, EBITDA rund 480 Mio. € (LTM, alle 25)", () => { let r = 0, e = 0; for (const c of NG) { const k = I.companyKpis(W, c, "LTM"); r += k.revenue; e += k.ebitda; } ok(r > 2.9e9 && r < 3.6e9, "Umsatz " + r); ok(e > 420e6 && e < 560e6, "EBITDA " + e); });
+test("Reproduzierbar: gleicher Seed ergibt identische Welt", () => { const a = PE.createWorld(), b = PE.createWorld(); ok(JSON.stringify(a.data) === JSON.stringify(b.data) && JSON.stringify(a.companies) === JSON.stringify(b.companies), "identisch"); });
+test("36 Monate Historie je Unternehmen (Nov 2023 – Okt 2026)", () => { ok(W.periods.length === 36 && W.periods[0] === "2023-11" && W.periods[35] === "2026-10", "Perioden"); for (const c of W.companies) ok(W.data[c.id].length === 36, c.id); });
+test("Bilanzidentität in jedem Monat jedes Unternehmens (Aktiva = Passiva)", () => { for (const c of W.companies) { const e = I.checkConsistency(W, c); ok(!e.length, c.id + " " + e[0]); } });
+test("Fortschreibung: Anlagevermögen = Vorperiode + Capex − Abschreibung; Kassenveränderung = Cashflow", () => { for (const c of NG.slice(0, 8)) for (let i = 1; i < 36; i++) { const h = I.harmonizedMonth(W, c, i), g = I.harmonizedMonth(W, c, i - 1);
+  near(h.FA, g.FA + h.CAPEX - h.DA, 0.05, c.id + " FA " + i);
+  const ni = h.REV - h.COGS - h.OPEX_PERS - h.OPEX_OTHER - h.DA - h.INT - h.TAX; const dCash = ni + h.DA - ((h.AR + h.INV - h.AP) - (g.AR + g.INV - g.AP)) - h.CAPEX + (h.DEBT - g.DEBT) - h.DIV + h.EQIN; near(h.CASH - g.CASH, dCash, 0.2, c.id + " Kasse " + i);
+  near(h.EQ - g.EQ, ni - h.DIV + h.EQIN, 0.2, c.id + " EK " + i); } });
+test("Harmonisierung: jedes lokale Konto ist einer Konzernkategorie zugeordnet; Kategorien = Summe der lokalen Konten", () => { for (const c of W.companies) { const map = {}; for (const [cat, list] of Object.entries(PE.COA_FAMILY[c.erpFamily])) for (const [no] of list) map[no] = cat;
+  for (const no of Object.keys(W.data[c.id][0].accounts)) ok(map[no], c.id + " Konto " + no + " ungemappt");
+  const h = I.harmonizedMonth(W, c, 5); const revAcc = PE.COA_FAMILY[c.erpFamily].REV.map(x => W.data[c.id][5].accounts[x[0]] || 0).reduce((a, b) => a + b, 0); near(h.REV, revAcc, 0.001, c.id + " REV"); } });
+test("Währung: Flüsse zum Durchschnittskurs, Bestände zum Stichtagskurs", () => { const c = NG.find(x => x.currency === "GBP"); const i = 30; const h = I.harmonizedMonth(W, c, i), e = I.eurMonth(W, c, i), r = W.fx.GBP[W.periods[i]]; near(e.REV, h.REV / r.avg, 0.001, "REV"); near(e.CASH, h.CASH / r.close, 0.001, "CASH"); ok(r.avg !== r.close, "Kurse verschieden"); });
+test("Kennzahlenformeln: Marge, Rohertrag, EBIT, FCF, Net Debt, Leverage, Cash Conversion", () => { const c = NG[2]; const k = I.companyKpis(W, c, "LTM"); const f = I.flowsSum(W, c, 24, 35);
+  near(k.ebitda, f.REV - f.COGS - f.OPEX_PERS - f.OPEX_OTHER, 0.01, "EBITDA"); near(k.margin, k.ebitda / k.revenue, 1e-12, "Marge"); near(k.grossProfit, f.REV - f.COGS, 0.01, "Rohertrag"); near(k.ebit, k.ebitda - f.DA, 0.01, "EBIT");
+  near(k.fcf, k.ebitda - f.TAX - f.dNWC - f.CAPEX, 0.01, "FCF"); near(k.netDebt, k.grossDebt - k.cash, 0.01, "Net Debt"); near(k.leverage, k.netDebt / k.ltmEbitda, 1e-12, "Leverage"); near(k.cashConversion, k.fcf / k.ebitda, 1e-12, "Cash Conversion");
+  near(k.covenantHeadroom, (k.covenantMax - k.leverage) / k.covenantMax, 1e-12, "Covenant"); near(k.ev, k.ltmEbitda * k.multiple, 0.01, "EV"); near(k.equityValue, k.ev - k.netDebt, 0.01, "Equity"); });
+test("XIRR gegen Referenzwerte (ACT/365, Excel-Beispiel 37,34 %)", () => { near(PE.xirr([{ date: "2008-01-01", amount: -10000 }, { date: "2008-03-01", amount: 2750 }, { date: "2008-10-30", amount: 4250 }, { date: "2009-02-15", amount: 3250 }, { date: "2009-04-01", amount: 2750 }]), 0.373362535, 1e-6, "Excel-Beispiel");
+  near(PE.xirr([{ date: "2021-01-01", amount: -100 }, { date: "2022-01-01", amount: 110 }]), 0.10, 1e-9, "10 % in einem Jahr"); ok(PE.xirr([{ date: "2021-01-01", amount: -100 }]) === null, "ohne Rückfluss keine IRR"); });
+test("Fondskennzahlen: Paid-in = Investments + Fees, TVPI = DPI + RVPI, Net IRR < Gross IRR, MOIC je Deal nachrechenbar", () => { for (const f of ["F1", "F2", "F3"]) { const m = PE.fundMetrics(W, P("p1"), f);
+  near(m.paidIn, m.invested + m.fees, 1, f + " Paid-in"); near(m.tvpi, m.dpi + m.rvpi, 1e-12, f + " TVPI"); ok(m.netIrr < m.grossIrr, f + " Net < Gross"); ok(m.nav <= m.navGross, f + " NAV netto ≤ brutto");
+  for (const d of m.deals) near(d.moic, (d.realized + d.unrealized) / d.invested, 1e-9, d.id + " MOIC"); } });
+test("Fonds- und Unternehmenskennzahlen getrennt: Portfolio-CFO und Operating Partner sehen keine Fondskennzahlen", () => { ok(code(() => PE.fundMetrics(W, P("p6"), "F1")) === "FORBIDDEN", "CFO"); ok(code(() => PE.fundMetrics(W, P("p4"), "F1")) === "FORBIDDEN", "Operating Partner"); ok(PE.company(W, P("p6"), P("p6").companyId).investment === null, "keine Investmentdaten im Unternehmensdetail"); });
+test("Management-Aggregation: 100 % der aktiven Unternehmen, nicht anteilig; Onboarding-Unternehmen ausgeschlossen", () => { const k = PE.portfolioKpis(W, P("p1"), {}); const act = NG.filter(c => c.onboarding === "Aktiv");
+  near(k.revenue, act.map(c => I.companyKpis(W, c, "LTM").revenue).reduce((a, b) => a + b, 0), 1, "Summe 100 %"); ok(k.companies === 24 && k.excluded.length === 1 && k.excluded[0].id === byScen("acquisition").id, "Onboarding ausgeschlossen"); near(k.margin, k.ebitda / k.revenue, 1e-12, "Marge = Σ/Σ"); ok(/nicht anteilig, nicht konsolidiert/.test(k.basis), "Kennzeichnung"); });
+test("Datenlücke statt erfundener Zahl: Wachstum GJ 2024 ohne vollständiges Vorjahr", () => { const k = PE.portfolioKpis(W, P("p1"), { period: "FY2024" }); ok(k.revenueGrowth === null && k.gaps.some(g => /Vorjahreszeitraum/.test(g)), "Lücke benannt"); ok(PE.portfolioKpis(W, P("p1"), { period: "LTM" }).revenueGrowth !== null, "LTM hat Vorjahr"); });
+test("Mandantentrennung: kein Investor sieht Daten eines anderen Investors", () => { const a = PE.companies(W, P("p1"), {}), b = PE.companies(W, P("p10"), {}); ok(a.every(c => !c.id.includes("rtc")) && a.length === 25, "NGEP nur eigene"); ok(b.length === 2 && b.every(c => c.id.includes("rtc")), "Rheintal nur eigene");
+  ok(code(() => PE.company(W, P("p10"), "PC01")) === "FORBIDDEN", "Detail fremd"); ok(code(() => PE.fundMetrics(W, P("p10"), "F1")) === "FORBIDDEN", "Fonds fremd"); ok(code(() => PE.drill(W, P("p10"), { company: "PC01" })) === "FORBIDDEN", "Drill fremd"); ok(PE.series(W, P("p10"), ["PC01"], "revenue").every(x => x.value === 0), "Zeitreihe leer"); });
+test("Mandantentrennung: ein Portfoliounternehmen sieht nur sich selbst", () => { for (const id of ["p6", "p7", "p8"]) { const p = P(id); const l = PE.companies(W, p, {}); ok(l.length === 1 && l[0].id === p.companyId, id + " nur eigenes");
+  const other = NG.find(c => c.id !== p.companyId); ok(code(() => PE.company(W, p, other.id)) === "FORBIDDEN", id + " fremdes Detail"); ok(code(() => PE.drill(W, p, { company: other.id })) === "FORBIDDEN", id + " fremder Drill"); ok(PE.insights(W, p, {}).every(x => x.id === p.companyId), id + " Hinweise nur eigene"); } });
+test("Fondsgrenzen: Fund Manager Fund I sieht nur Fund I", () => { const l = PE.companies(W, P("p2"), {}); ok(l.length === 10 && l.every(c => c.fundId === "F1"), "nur F1"); ok(code(() => PE.fundMetrics(W, P("p2"), "F2")) === "FORBIDDEN", "Fonds F2 gesperrt"); ok(PE.portfolioKpis(W, P("p2"), {}).companies === 10, "Aggregation nur F1"); });
+test("Operating Partner sieht genau die zugewiesenen Unternehmen", () => { const p = P("p4"); const l = PE.companies(W, p, {}); ok(l.length === p.companies.length && l.every(c => p.companies.includes(c.id)), "zugewiesen"); });
+test("Freigabestufen: Analyst nur Kennzahlen, Auditor keine Buchungen, Datenfreigabe begrenzt auch den Administrator", () => {
+  const c = NG.find(x => x.fundId === "F1" && x.dsa.level === "transactions"); ok(!PE.company(W, P("p5"), c.id).access.statements && PE.company(W, P("p5"), c.id).statements === null, "Analyst ohne Abschlüsse");
+  ok(code(() => PE.drill(W, P("p5"), { company: c.id })) === "FORBIDDEN", "Analyst kein Drill"); ok(!PE.access(W, P("p9"), c, "transactions") && PE.access(W, P("p9"), c, "statements"), "Auditor bis Abschlüsse");
+  const k = NG.find(x => x.dsa.level === "kpi"); ok(PE.access(W, P("p1"), k, "kpi") && !PE.access(W, P("p1"), k, "statements"), "DSA kpi begrenzt Admin"); });
+test("Drill-down bis zur Buchung nur mit Freigabe und Einzelposten im Quellsystem; Summe der Buchungen = Kontosaldo", () => {
+  const c = NG.find(x => x.dsa.level === "transactions" && PE.ERP[x.erp].lineItems); const d = PE.drill(W, P("p1"), { company: c.id, period: "2026-09" }); const rev = d.accounts.find(a => a.category === "REV");
+  const t = PE.drill(W, P("p1"), { company: c.id, period: "2026-09", account: rev.no }); near(t.transactions.reduce((a, x) => a + x.amount, 0), rev.local, 0.001, "Summe");
+  const le = c.entities[0]; const tl = PE.drill(W, P("p1"), { company: c.id, period: "2026-09", entity: le.id, account: rev.no }); near(tl.transactions.reduce((a, x) => a + x.amount, 0), rev.local * le.weight, 0.02, "Gesellschaft");
+  const noLi = NG.find(x => x.dsa.level === "transactions" && !PE.ERP[x.erp].lineItems); if (noLi) { const r0 = PE.drill(W, P("p1"), { company: noLi.id }).accounts.find(a => a.category === "REV"); ok(code(() => PE.drill(W, P("p1"), { company: noLi.id, account: r0.no })) === "DATA_GAP", "ohne Einzelposten: Datenlücke"); }
+  const sumLE = c.entities.reduce((a, e) => a + e.weight, 0); near(sumLE, 1, 1e-9, "Gesellschaften = Unternehmen"); });
+test("Szenarien sichtbar: Margenverfall, Liquiditätsrisiko, Working Capital, Akquisition, ERP-Transformation", () => {
+  const m = I.companyKpis(W, byScen("margin"), "LTM"); ok(m.margin - m.marginPrior < -0.03, "Margenverfall"); const l = I.companyKpis(W, byScen("liquidity"), "LTM"); ok(l.runwayMonths != null && l.runwayMonths < 6, "Reichweite < 6 Monate: " + l.runwayMonths);
+  const w = I.companyKpis(W, byScen("wc"), "LTM"); ok(w.workingCapital / w.revenue > 0.35, "hohes NWC"); ok(byScen("acquisition").onboarding !== "Aktiv", "Akquisition im Onboarding"); ok(byScen("erp").erp === "SAP ECC", "Altsystem");
+  const ins = PE.insights(W, P("p1"), {}); ok(["Liquiditätsengpass absehbar", "EBITDA-Marge rückläufig", "Hohes Working Capital"].every(t => ins.some(x => x.title === t)), "Hinweise"); ok(ins.every(x => x.evidence && x.period && x.method && x.action && x.kpis), "jeder Hinweis mit Beleg, Zeitraum, Methode, Empfehlung"); });
+test("Plan/Ist: Forecast = Ist Jan–Okt + Run-Rate Nov–Dez", () => { const b = I.budgetVsActual(W, NG[4]); const ytd = b.months.slice(0, 10).reduce((a, x) => a + x.actualRevenue, 0); const rr = b.months.slice(7, 10).reduce((a, x) => a + x.actualRevenue, 0) / 3; near(b.fy.forecastRevenue, ytd + 2 * rr, 1, "Forecast"); });
+test("Kennzahl-Definitionen: jede Kennzahl hat Formel und Ebene; Fondskennzahlen als „nur Fonds“ markiert", () => { for (const [k, d] of Object.entries(PE.KPI_DEFS)) ok(d.formula && d.level && d.label, k); ok(["dpi", "rvpi", "tvpi", "netIrr"].every(k => /nur Fonds/.test(PE.KPI_DEFS[k].level)), "Fondsebene"); });
+
+test("Verwaltung: Organisation anlegen (nur Plattform-Betrieb), Fonds und Unternehmen zuordnen (nur Administrator der Organisation), isoliert", () => { const w = PE.createWorld(); const P2 = id => PE.principal(w, id);
+  ok(code(() => PE.apply(w, P2("p1"), "createOrg", { name: "Alpenblick Partners" })) === "FORBIDDEN", "PE-Admin darf keine Organisation anlegen");
+  const o = PE.apply(w, P2("p0"), "createOrg", { name: "Alpenblick Partners" }); const adm = PE.principal(w, o.adminId); ok(adm && adm.orgId === o.id, "Administrator angelegt");
+  const f1 = PE.apply(w, adm, "addFund", { name: "Alpenblick Fund I", size: 300e6 }); const f2 = PE.apply(w, adm, "addFund", { name: "Alpenblick Fund II", size: 500e6 }); ok(w.funds.filter(f => f.orgId === o.id).length === 2, "zwei Fonds");
+  const c1 = PE.apply(w, adm, "addCompany", { name: "Gipfelwerk GmbH", fundId: f1.id, erp: "SAP S/4HANA", ownership: 0.8 }); PE.apply(w, adm, "addCompany", { name: "Talblick Logistik", fundId: f2.id });
+  ok(PE.companies(w, adm, {}).length === 2 && PE.companies(w, adm, {}).every(c => c.noData && c.onboarding === "Nicht gestartet"), "zwei Unternehmen, ohne Daten");
+  ok(PE.companies(w, P2("p1"), {}).length === 25 && !PE.companies(w, P2("p1"), {}).some(c => c.id === c1.id), "NGEP sieht die neuen nicht"); ok(PE.companies(w, adm, {}).every(c => c.id.startsWith("NEW-")), "Neue Organisation sieht keine NGEP-Daten");
+  ok(code(() => PE.apply(w, adm, "addCompany", { name: "Fremdzugriff", fundId: "F1" })) === "FORBIDDEN", "kein Unternehmen in fremden Fonds"); ok(code(() => PE.apply(w, P2("p2"), "addFund", { name: "Schattenfonds", size: 1 })) === "FORBIDDEN", "Fund Manager darf keine Fonds anlegen");
+  ok(PE.companies(w, P2("p0"), {}).length === 0, "Plattform-Betrieb sieht keine Finanzdaten"); ok(PE.portfolioKpis(w, adm, {}).companies === 0, "ohne Daten keine Aggregation"); ok(PE.company(w, adm, c1.id).noData, "Datenlücke im Detail"); });
+
+for (const [s, n] of results) console.log((s === "ok" ? "  ✓ " : "  ✗ ") + n);
+console.log(`\n${pass} bestanden, ${failN} fehlgeschlagen`); if (failN) process.exit(1);

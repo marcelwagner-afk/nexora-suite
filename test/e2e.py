@@ -155,6 +155,33 @@ async def layer(p):
   await pg.evaluate("ACT.setLayer({v:'suite'})"); await pg.wait_for_timeout(100); assert await pg.evaluate("S.layer") == "suite"
   await b.close(); assert not errs, errs
 
+async def pe(p):
+  """PE Command Center: Kennzahlen, Filter, Drill-down, Mandantentrennung über die Oberfläche, Verwaltung, schmale Breite."""
+  b = await p.chromium.launch(); pg = await b.new_page(viewport={"width": 1440, "height": 900}); errs = []; pg.on("pageerror", lambda e: errs.append(str(e)))
+  html = "<!doctype html><html><head><meta charset='utf-8'></head><body>" + open(ROOT / "dist" / "nexora-suite.html").read() + "</body></html>"
+  await pg.set_content(html); await pg.wait_for_timeout(400)
+  await pg.evaluate("S.live=false; S.pe.principal='p1'; S.pe.log=[]; PEW=null; location.hash='pe'"); await pg.wait_for_timeout(300)
+  st = await pg.evaluate("({ kpis: document.querySelectorAll('.pe-kpi').length, funds: document.querySelectorAll('.pe-tbl tbody tr').length, hm: document.querySelectorAll('.pe-hm tbody tr').length, ins: document.querySelectorAll('.pe-in').length, nav: document.querySelectorAll('.pe-nav a').length, demo: !!document.querySelector('.pe-demo'), rev: document.querySelector('[data-kpi=revenue] b').innerText })")
+  print("PE Command Center:", st); assert st["kpis"] >= 20 and st["hm"] == 24 and st["ins"] >= 3 and st["nav"] == 13 and st["demo"] and "Mrd" in st["rev"]
+  await pg.screenshot(path=SP + "pe_command_center.png", full_page=True)
+  await pg.click(".pe-db >> nth=0"); await pg.wait_for_timeout(150); f = await pg.evaluate("({ c: S.pe.filter.country, n: document.querySelectorAll('.pe-hm tbody tr').length })"); print("Filter per Klick:", f); assert f["c"] and f["n"] < 24
+  await pg.evaluate("ACT.peReset()"); await pg.select_option("[data-on=peF][data-k=fund]", "F2"); await pg.wait_for_timeout(150); assert await pg.evaluate("document.querySelectorAll('.pe-hm tbody tr').length") == 8
+  await pg.evaluate("ACT.peReset(); location.hash='pecos'"); await pg.wait_for_timeout(150); assert await pg.evaluate("document.querySelectorAll('.pe-cos tbody tr').length") == 25; await pg.screenshot(path=SP + "pe_companies.png")
+  await pg.click(".pe-cos tbody tr >> nth=8"); await pg.wait_for_timeout(150); assert await pg.evaluate("location.hash") == "#peco"
+  await pg.evaluate("ACT.peOpen({id:'PC09', tab:'fin'})"); await pg.wait_for_timeout(120); await pg.evaluate("ACT.peDrill({})"); await pg.wait_for_timeout(100); await pg.click("tr.click[data-a] >> nth=0"); await pg.wait_for_timeout(150)
+  ok = await pg.evaluate("(() => { const rows = [...document.querySelectorAll('.pe-tbl tbody tr')]; return rows.length > 3 && /Summe = Kontosaldo/.test(rows[rows.length - 1].innerText); })()"); assert ok, "Drill bis Buchung"; await pg.screenshot(path=SP + "pe_drilldown.png", full_page=True)
+  # Mandantentrennung über die Oberfläche
+  await pg.select_option("[data-on=pePrin]", "p6"); await pg.wait_for_timeout(150); await pg.evaluate("location.hash='pecos'"); await pg.wait_for_timeout(120); n6 = await pg.evaluate("document.querySelectorAll('.pe-cos tbody tr').length")
+  await pg.evaluate("ACT.peOpen({id:'PC09'})"); await pg.wait_for_timeout(120); fb = await pg.evaluate("document.querySelector('#page').innerText.includes('FORBIDDEN')"); print("Portfolio-CFO:", n6, "Unternehmen, fremdes Detail gesperrt:", fb); assert n6 == 1 and fb
+  await pg.evaluate("S.pe.principal='p10'; location.hash='pecos'; render()"); await pg.wait_for_timeout(150); n10 = await pg.evaluate("[...document.querySelectorAll('.pe-cos tbody tr')].map(r => r.innerText.split('\\n')[0])"); print("Zweiter Investor sieht:", n10); assert len(n10) == 2 and not any("Albris" in x for x in n10)
+  # Verwaltung: Plattform legt Organisation an, Administrator legt Fonds und Unternehmen an
+  await pg.evaluate("S.pe.principal='p0'; location.hash='peadmin'; render()"); await pg.wait_for_timeout(120); await pg.fill("#peOrgName", "Alpenblick Partners"); await pg.click("[data-act=peCreateOrg]"); await pg.wait_for_timeout(150)
+  await pg.fill("#peFundName", "Alpenblick Fund I"); await pg.click("[data-act=peAddFund]"); await pg.wait_for_timeout(120); await pg.fill("#peCoName", "Gipfelwerk GmbH"); await pg.click("[data-act=peAddCo]"); await pg.wait_for_timeout(150)
+  ad = await pg.evaluate("({ p: S.pe.principal, cos: NexoraPE.companies(peWorld(), peP(), {}).map(c => c.name + ':' + c.onboarding), log: S.pe.log.length })"); print("Verwaltung:", ad); assert ad["cos"] == ["Gipfelwerk GmbH:Nicht gestartet"] and ad["log"] == 3
+  await pg.screenshot(path=SP + "pe_admin.png", full_page=True); await pg.evaluate("ACT.peResetAdmin(); S.pe.principal='p1'; peSave()")
+  await pg.set_viewport_size({"width": 400, "height": 820}); await pg.evaluate("location.hash='pe'; render()"); await pg.wait_for_timeout(200); sw = await pg.evaluate("document.documentElement.scrollWidth"); print("PE bei 400 px, Seitenbreite:", sw); assert sw <= 400
+  await pg.screenshot(path=SP + "pe_mobile.png"); await b.close(); assert not errs, errs; print("PE Command Center ok")
+
 async def main():
   async with async_playwright() as p:
     b=await p.chromium.launch()
@@ -233,3 +260,7 @@ async def _layer():
 asyncio.run(_layer())
 print('Experience Layer ok')
 print('Marktposition ok')
+async def _pe():
+  async with async_playwright() as p:
+    await pe(p)
+asyncio.run(_pe())
