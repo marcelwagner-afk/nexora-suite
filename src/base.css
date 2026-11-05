@@ -5,6 +5,7 @@
   --accent:#6a45f0; --accent-2:#8b6cff; --accent-ink:#ffffff; --accent-soft:#efeafe; --accent-line:#cfc2fb;
   --nav-bg:#17153a; --nav-bg-2:#211d52; --nav-fg:#c9c6e6; --nav-fg-strong:#ffffff; --nav-on:#3a2f8f; --nav-line:#2c2860;
   --good:#16834a; --good-soft:#e3f5ea; --warn:#b26a00; --warn-soft:#fdf1dc; --crit:#c62a3a; --crit-soft:#fde6e8;
+  /* Marktposition: Kategorien und Bewertungen */ --cat-suite:#3f62c8; --cat-work:#0d7f74; --cat-ai:#b25f0c; --rate-good:#16834a; --rate-mid:#b07a12; --rate-weak:#a3a0b8; --quad:#f1eefb;
   --demo:#6a45f0; --demo-soft:#efeafe;
   --shadow:0 1px 2px rgba(35,28,90,.04),0 4px 16px rgba(35,28,90,.06);
   --f-display:"Plus Jakarta Sans","Segoe UI",system-ui,sans-serif;
@@ -18,6 +19,7 @@
   --accent:#9b80ff; --accent-2:#b6a2ff; --accent-ink:#140f33; --accent-soft:#2a2358; --accent-line:#4b3fa0;
   --nav-bg:#0b0a1c; --nav-bg-2:#14123a; --nav-fg:#b6b3d8; --nav-fg-strong:#ffffff; --nav-on:#2f2775; --nav-line:#221f4a;
   --good:#5fd38f; --good-soft:#163527; --warn:#f0b05a; --warn-soft:#3a2c14; --crit:#ff8a94; --crit-soft:#3d1a22;
+  --cat-suite:#86a3ff; --cat-work:#4fd1c0; --cat-ai:#f0a54a; --rate-good:#5fd38f; --rate-mid:#e8b44c; --rate-weak:#5d5a80; --quad:#1b1944;
   --demo:#b6a2ff; --demo-soft:#2a2358; --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 16px rgba(0,0,0,.25); color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#100f22; --surface:#191733; --sunk:#221f42; --line:#2b2850; --line-strong:#3c3870;
@@ -25,6 +27,7 @@
   --accent:#9b80ff; --accent-2:#b6a2ff; --accent-ink:#140f33; --accent-soft:#2a2358; --accent-line:#4b3fa0;
   --nav-bg:#0b0a1c; --nav-bg-2:#14123a; --nav-fg:#b6b3d8; --nav-fg-strong:#ffffff; --nav-on:#2f2775; --nav-line:#221f4a;
   --good:#5fd38f; --good-soft:#163527; --warn:#f0b05a; --warn-soft:#3a2c14; --crit:#ff8a94; --crit-soft:#3d1a22;
+  --cat-suite:#86a3ff; --cat-work:#4fd1c0; --cat-ai:#f0a54a; --rate-good:#5fd38f; --rate-mid:#e8b44c; --rate-weak:#5d5a80; --quad:#1b1944;
   --demo:#b6a2ff; --demo-soft:#2a2358; --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 16px rgba(0,0,0,.25); color-scheme:dark}
 html,body{height:100%}
 body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:14px;line-height:1.5}

@@ -34,13 +34,73 @@ section.s{padding:44px 0;display:flex;flex-direction:column;gap:18px}
 .cta{padding:44px 24px;text-align:center;align-items:center;background:linear-gradient(145deg,var(--surface),var(--accent-soft));display:flex;flex-direction:column;gap:14px}
 .ts-foot{margin-top:40px;background:linear-gradient(110deg,var(--nav-bg),var(--nav-bg-2));color:var(--nav-fg)}.ts-foot .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;padding-top:28px;padding-bottom:max(36px,env(safe-area-inset-bottom,0px))}.ts-foot b{color:#fff;letter-spacing:.08em}
 table.cost td,table.cost th{padding:10px 8px}table.cost td:not(:first-child),table.cost th:not(:first-child){text-align:right;font-family:var(--f-mono);font-size:13px}table.cost tr.sum td{font-weight:700;border-top:2px solid var(--line-strong)}
+
+/* Marktposition (#markt) – Daten in src/market.js; Farben ausschließlich über Tokens aus base.css */
+#markt{gap:44px}
+#markt .mk-head{display:flex;flex-direction:column;gap:12px}
+#markt .mk-h1{font-size:clamp(28px,4vw,42px);line-height:1.08;font-weight:800;letter-spacing:-.02em}
+#markt .mk-lede{font-size:16.5px;color:var(--fg-2);max-width:68ch}
+#markt .mk-meta{display:flex;flex-wrap:wrap;gap:8px 18px;font:500 12.5px var(--f-mono);color:var(--fg-3)}
+#markt .mk-sec{display:flex;flex-direction:column;gap:16px}
+#markt .mk-sec h3.mk-h2{font-size:clamp(21px,2.4vw,26px);font-weight:800;letter-spacing:-.015em}
+#markt .mk-sec p.mk-intro{color:var(--fg-2);max-width:72ch}
+#markt .mk-map{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:20px 18px 14px}
+#markt .mk-scroll{overflow-x:auto}
+#markt .mk-map svg{display:block;width:100%;min-width:760px;height:auto}
+#markt .mk-legend{display:flex;flex-wrap:wrap;gap:10px 22px;padding:12px 6px 4px;font-size:13px;color:var(--fg-2)}
+#markt .mk-legend span{display:inline-flex;align-items:center;gap:8px}
+#markt .mk-dot{width:12px;height:12px;border-radius:50%;display:inline-block}
+#markt .mk-dot.hollow{background:transparent!important;border:2px solid var(--fg-2)}
+#markt svg .pt{cursor:pointer} #markt svg .pt:focus{outline:none}
+#markt svg .pt:focus .ring,#markt svg .pt:hover .ring{stroke:var(--fg);stroke-width:2}
+#markt svg text{font-family:var(--f-body)}
+#markt .mk-table{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:18px}
+#markt table{border-collapse:collapse;width:100%;min-width:980px;font-size:13.5px}
+#markt th,#markt td{padding:12px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}
+#markt thead th{font:600 11.5px/1.35 var(--f-mono);letter-spacing:.04em;text-transform:uppercase;color:var(--fg-3);background:var(--surface);white-space:normal}
+#markt tbody th{font-weight:700;font-size:14px;min-width:170px}
+#markt tbody th small{display:block;font-weight:500;font-size:12px;color:var(--fg-3);margin-top:2px}
+#markt tr:last-child td,#markt tr:last-child th{border-bottom:0}
+#markt tr.hl{background:var(--accent-soft)}
+#markt tr.goal{background:linear-gradient(90deg,var(--accent-soft),transparent 80%)} #markt tr.goal th{color:var(--accent)} #markt tr.now th{color:var(--fg-2)}
+#markt .r{display:flex;flex-direction:column;gap:3px}
+#markt .sym{display:inline-block;width:13px;height:13px;border-radius:50%;flex:none}
+#markt .r3 .sym,#markt .sym.s3{background:var(--rate-good)}
+#markt .r2 .sym,#markt .sym.s2{border:2px solid var(--rate-mid);background:linear-gradient(90deg,var(--rate-mid) 50%,transparent 50%)}
+#markt .r1 .sym,#markt .sym.s1{border:2px solid var(--rate-weak)}
+#markt .r0 .sym,#markt .sym.s0{width:12px;height:2px;border-radius:1px;background:var(--fg-3);margin-block:5px}
+#markt .rp .sym,#markt .sym.sp{border:2px dashed var(--accent);background:transparent}
+#markt .r em{font-style:normal;font-size:12px;color:var(--fg-3);line-height:1.35}
+#markt em.mat{font-style:normal;font-size:12.5px;color:var(--fg-2)}
+#markt .mk-matlegend{display:flex;flex-wrap:wrap;gap:8px 20px;font-size:13px;color:var(--fg-2)}
+#markt .mk-matlegend span{display:inline-flex;align-items:center;gap:8px}
+#markt .mk-grid4{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+#markt .mk-cell{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:10px;min-width:0}
+#markt .mk-k{font:600 12px var(--f-mono);color:var(--accent);letter-spacing:.06em;text-transform:uppercase}
+#markt .mk-cell p{color:var(--fg-2);font-size:14.5px}
+#markt .mk-proof{font-size:13px!important;color:var(--fg-3)!important;border-top:1px dashed var(--line-strong);padding-top:10px}
+#markt .mk-risks{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+#markt .mk-risk{padding:16px 0 0;border-top:2px solid var(--line-strong);display:flex;flex-direction:column;gap:8px;min-width:0}
+#markt .mk-risk p{color:var(--fg-2);font-size:14px} #markt .mk-risk .ans{color:var(--fg);font-weight:600}
+#markt .mk-path{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin:0;padding:0;list-style:none}
+#markt .mk-stage{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:12px;min-width:0}
+#markt .mk-stage p{color:var(--fg-2);font-size:14.5px}
+#markt .mk-bar{display:flex;height:10px;border-radius:5px;overflow:hidden;background:var(--line)} #markt .mk-bar i{display:block;height:100%;background:var(--accent)}
+#markt .mk-barl{display:flex;justify-content:space-between;font:500 12px var(--f-mono);color:var(--fg-3)}
+#markt .mk-tag{margin-top:auto;font-size:13px;font-weight:600;color:var(--fg)!important;border-top:1px dashed var(--line-strong);padding-top:10px}
+#markt .mk-note{font-size:13px;color:var(--fg-3);max-width:80ch}
+#markt .mk-sources{font-size:13px;color:var(--fg-3);display:flex;flex-direction:column;gap:6px}
+#markt .mk-sources ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px}
+#markt .mk-sources a{color:var(--fg-2);text-decoration-color:var(--line-strong);text-underline-offset:2px} #markt .mk-sources a:hover{color:var(--accent)}
+@media (max-width:760px){#markt .mk-grid4,#markt .mk-risks,#markt .mk-path{grid-template-columns:minmax(0,1fr)}}
+@media (prefers-reduced-motion:no-preference){#markt tr{transition:background .2s}}
 @media (max-width:980px){.ts-hero,.calc{grid-template-columns:minmax(0,1fr)}.story-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.tline{grid-template-columns:repeat(2,minmax(0,1fr))}.ts-nav{display:none}}
 @media (max-width:620px){.wrap,.ts-top .in{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}.story-grid,.tline,.statrow{grid-template-columns:minmax(0,1fr)}.g3{grid-template-columns:minmax(0,1fr)}.ts-top .btn.hide-s{display:none}.hero-card .big{font-size:40px}.s-title{font-size:25px}}
 @media print{.ts-top,.ts-hero .row,.no-print,.ts-foot{display:none!important}body{background:#fff}.card{box-shadow:none}section.s{padding:14px 0;break-inside:avoid}}
 </style>
 <header class="ts-top"><div class="in">
   <a class="ts-brand" href="#top" aria-label="TRUESCALE Start"><span id="logo"></span><span><b>TRUESCALE</b><small>The NEXORA AI Enterprise Suite</small></span></a>
-  <nav class="ts-nav" aria-label="Seitennavigation"><a href="#value">Mehrwert</a><a href="#roi">Kostenrechner</a><a href="#demo">Live-Demo</a><a href="#journey">Transformation</a></nav>
+  <nav class="ts-nav" aria-label="Seitennavigation"><a href="#value">Mehrwert</a><a href="#markt">Marktposition</a><a href="#roi">Kostenrechner</a><a href="#demo">Live-Demo</a><a href="#journey">Transformation</a></nav>
   <a class="btn hide-s" id="suiteTop" href="index.html">Suite öffnen</a><a class="btn pri" href="#roi">Business Case</a>
 </div></header>
 <main id="top" class="wrap">
@@ -69,6 +129,63 @@ table.cost td,table.cost th{padding:10px 8px}table.cost td:not(:first-child),tab
       <div class="card vcard"><span class="ico" data-ic="mig"></span><h3>ERP-Unabhängigkeit</h3><p class="muted">Offene Integrationsarchitektur und universelle Migration als Weg aus starren Herstellerabhängigkeiten. Datenportabilität und Nutzungsrechte vertraglich geregelt.</p></div>
       <div class="card vcard"><span class="ico" data-ic="an"></span><h3>Planbare Wirtschaftlichkeit</h3><p class="muted">Keine nutzerabhängigen NEXORA-Lizenzkosten. Klar definierte Implementierung, Wartung und transparent ausgewiesene externe Betriebskosten.</p></div>
     </div>
+  </section>
+
+  <section class="s" id="markt" aria-labelledby="mkTitle">
+    <div class="mk-head">
+      <p class="eyebrow" id="mkAsOf">Wettbewerbsposition · Stand November 2026</p>
+      <h2 class="mk-h1" id="mkTitle">Wer liefert die eine Oberfläche für alle Anwendungen?</h2>
+      <p class="mk-lede">Jeder große Anbieter erklärt seinen Assistenten oder sein Portal zur einen Eingangstür. Keiner ist dabei herstellerneutral und vereinheitlicht zugleich die eigentliche Arbeit: Aktionen, Masken und Freigaben über Systemgrenzen hinweg. Genau dort liegt der Platz für NEXORA × truescale: erst als neutrale Oberfläche über allen Systemen, daraus ein individuelles ERP-Dashboard, das Prozess für Prozess ausgebaut wird, bis es die Altsysteme ablöst.</p>
+      <div class="mk-meta"><span>Grundlage: Rechercheschwerpunkt „Einheitliche Oberfläche für alle Apps“</span><span>Qualitative Einordnung, keine Messung</span><span id="mkInternalBadge" hidden>Interne Fassung</span></div>
+    </div>
+    <div class="mk-sec" aria-labelledby="mkH1">
+      <p class="eyebrow">01 · Positionierungskarte</p>
+      <h3 class="mk-h2" id="mkH1">Neutralität gegen Tiefe der Vereinheitlichung</h3>
+      <p class="mk-intro">Waagerecht: Wie stark ist das Angebot an die eigene Suite gebunden? Senkrecht: Vereinheitlicht es nur den Einstieg (Login, Startseite, Suche) oder auch die Arbeit selbst (Aktionen, Masken, Freigaben im selben Fluss)? Ein Punkt antippen markiert die passende Zeile in der Matrix.</p>
+      <div class="mk-map">
+        <div class="mk-scroll"><svg id="mkChart" viewBox="0 0 1000 640" role="img" aria-labelledby="mkChartT mkChartD"><title id="mkChartT">Positionierungskarte einheitlicher Arbeitsoberflächen</title><desc id="mkChartD">Suite-Anbieter wie SAP, Oracle und Workday liegen links, neutrale Schichten wie Glean, Intranet-Suiten und Omnissa rechts unten. Der Bereich rechts oben, neutral und tief vereinheitlichend, ist frei und als Zielbild von NEXORA × truescale markiert.</desc></svg></div>
+        <div class="mk-legend"><span><i class="mk-dot" style="background:var(--cat-suite)"></i>Suite-Anbieter</span><span><i class="mk-dot" style="background:var(--cat-work)"></i>Portal, Intranet, Workspace</span><span><i class="mk-dot" style="background:var(--cat-ai)"></i>KI- und Suchschicht</span><span><i class="mk-dot" style="background:var(--accent)"></i>NEXORA × truescale</span><span><i class="mk-dot hollow"></i>angekündigt, Preview oder Zielbild</span></div>
+      </div>
+    </div>
+    <div class="mk-sec" aria-labelledby="mkH2">
+      <p class="eyebrow">02 · Kriterienmatrix</p>
+      <h3 class="mk-h2" id="mkH2">Was die Anbieter heute tatsächlich abdecken</h3>
+      <p class="mk-intro" id="mkMatIntro"></p>
+      <div class="mk-matlegend"><span><i class="sym s3"></i>stark</span><span><i class="sym s2"></i>teilweise</span><span><i class="sym s1"></i>schwach oder nicht</span><span><i class="sym s0"></i>keine belastbare Angabe</span><span id="mkLegendPlanned"><i class="sym sp"></i>geplant (Roadmap)</span></div>
+      <div class="mk-table"><table id="mkMat"><thead id="mkMatHead"></thead><tbody id="mkMatBody"></tbody></table></div>
+    </div>
+    <div class="mk-sec" aria-labelledby="mkH3">
+      <p class="eyebrow">03 · Weißraum</p>
+      <h3 class="mk-h2" id="mkH3">Vier Stellen, an denen NEXORA × truescale sich abhebt</h3>
+      <p class="mk-intro" id="mkWsIntro"></p>
+      <div class="mk-grid4">
+        <article class="mk-cell"><span class="mk-k">Neutrale Orchestrierung</span><h3>Die Assistenten koordinieren statt mit ihnen konkurrieren</h3><p>Ein Konzern mit SAP, Microsoft 365 und ServiceNow hat bald drei „eine“ Eingangstüren. NEXORA leitet jede Aufgabe an den passenden Agenten weiter und zeigt das Ergebnis in derselben Oberfläche.</p><p class="mk-proof">Befund: Joule, Copilot, Gemini Enterprise, Slack und EmployeeWorks beanspruchen alle die Front-Door-Rolle. Workday zeigt mit Workday Everywhere, dass „in den anderen laufen“ funktioniert.</p></article>
+        <article class="mk-cell"><span class="mk-k">SAP lizenzbewusst</span><h3>Compliance by Design statt Agent Tax als Überraschung</h3><p>Für jeden Zugriff auf SAP ist sichtbar, über welchen freigegebenen Weg er läuft und was er kostet: Joule per A2A, MCP Gateway oder freigegebene Schnittstelle.</p><p class="mk-proof">Befund: SAP API Policy v4/2026 schränkt externe Agenten ein (Quelle ist ein Meinungsbeitrag, Originaltext vor Kundenaussagen prüfen). DSAG: 3 % nutzen Joule produktiv.</p></article>
+        <article class="mk-cell"><span class="mk-k">Masken im Dialog</span><h3>Tabellen, Freigaben und Kennzahlen direkt im Gespräch</h3><p>Reiner Chat scheitert an strukturierter Arbeit. NEXORA zeigt echte Masken im Gesprächsfluss und springt bei Bedarf per Deep Link in die Vollanwendung.</p><p class="mk-proof">Befund: MCP Apps ist seit Juli 2026 Teil des MCP-Standards und läuft in Claude, ChatGPT und M365 Copilot. Jede Aktion wird als prüfbare Nachricht protokolliert.</p></article>
+        <article class="mk-cell"><span class="mk-k">Europäisch &amp; mitbestimmungsfähig</span><h3>Revisionssicher, betriebsratstauglich, abkündigungssicher</h3><p>Jede Aktion im Ereignisprotokoll, Rollen und Vier-Augen-Prinzip sichtbar, Betrieb On-Premises oder hybrid. Das adressiert Datenresidenz und Mitbestimmung.</p><p class="mk-proof">Befund: Viva Goals, Citrix Microapps und Meta Workplace wurden abgekündigt. Kunden suchen Stabilität. Die NEXORA-Engine ist bereits ereignisbasiert und reproduzierbar.</p></article>
+      </div>
+    </div>
+    <div class="mk-sec" aria-labelledby="mkH4">
+      <p class="eyebrow">04 · Risiken</p>
+      <h3 class="mk-h2" id="mkH4">Wo die Positionierung angreifbar ist</h3>
+      <div class="mk-risks">
+        <div class="mk-risk"><h3>Microsofts Vertriebsweg</h3><p>Teams und Outlook sind ohnehin der Arbeitsplatz. Eine weitere eigene Oberfläche setzt sich dagegen schwer durch.</p><p class="ans">Antwort: NEXORA läuft auch eingebettet in Teams und Copilot, nicht nur als eigene Seite.</p></div>
+        <div class="mk-risk"><h3>Abbruchquote agentischer Projekte</h3><p>Gartner erwartet, dass über 40 % der agentischen KI-Projekte bis Ende 2027 abgebrochen werden.</p><p class="ans">Antwort: mit eng umrissenen Anwendungsfällen und messbarem Nutzen starten, etwa Freigaben über Systemgrenzen.</p></div>
+        <div class="mk-risk"><h3>SAP-Zugang</h3><p>Die SAP-Policy ist bisher nur über einen Meinungsbeitrag belegt und kann sich ändern.</p><p class="ans">Antwort: Integrationsweg pro System austauschbar halten und den Policy-Text im Original prüfen.</p></div>
+      </div>
+    </div>
+    <div class="mk-sec" aria-labelledby="mkH5">
+      <p class="eyebrow">05 · Vom Layer zum eigenen ERP</p>
+      <h3 class="mk-h2" id="mkH5">Erst überlagern, dann Prozess für Prozess ablösen</h3>
+      <p class="mk-intro">Weil jede Aufgabe schon in der NEXORA-Oberfläche erledigt wird, merken Mitarbeiter nicht, welches System dahinter arbeitet. So entsteht für jedes Unternehmen ein individuelles ERP-Dashboard nach seinen Prozessen und Rollen. Dahinter wird ein Prozess nach dem anderen vom Altsystem auf die NEXORA-Engine umgestellt, bis die alten Systeme abgeschaltet werden können. In der Softwaremodernisierung heißt dieses Vorgehen Strangler-Prinzip.</p>
+      <ol class="mk-path">
+        <li class="mk-stage"><span class="mk-k">Schritt 1 · Überlagern</span><h3>Eine Oberfläche über allen Systemen</h3><p>NEXORA liegt über SAP, Microsoft 365, ServiceNow und Workday: ein Dashboard, eine Inbox, eine Suche. Die Altsysteme bleiben führend.</p><div class="mk-bar" role="img" aria-label="Illustrativ: kaum Prozesse auf der NEXORA-Engine"><i style="width:6%"></i></div><div class="mk-barl"><span>NEXORA-Engine</span><span>Altsysteme</span></div><p class="mk-tag">Nutzen ab Tag 1, kein Migrationsrisiko</p></li>
+        <li class="mk-stage"><span class="mk-k">Schritt 2 · Ausbauen</span><h3>Das Dashboard wächst, erste Prozesse wechseln</h3><p>Neue Kacheln, Freigaben und Auswertungen je Rolle. Erste Prozesse laufen in der NEXORA-Engine, im Parallelbetrieb mit Abstimmung gegen das Altsystem.</p><div class="mk-bar" role="img" aria-label="Illustrativ: etwa ein Drittel der Prozesse auf der NEXORA-Engine"><i style="width:35%"></i></div><div class="mk-barl"><span>NEXORA-Engine</span><span>Altsysteme</span></div><p class="mk-tag">Oberfläche bleibt gleich, nur das System dahinter wechselt</p></li>
+        <li class="mk-stage"><span class="mk-k">Schritt 3 · Ablösen</span><h3>NEXORA ist das ERP</h3><p>Ist ein Prozess vollständig umgestellt, wird das Altsystem dafür abgeschaltet. Lizenz- und Agentenkosten entfallen, der truescale-Kostenrechner zeigt das Potenzial.</p><div class="mk-bar" role="img" aria-label="Illustrativ: alle Prozesse auf der NEXORA-Engine"><i style="width:100%"></i></div><div class="mk-barl"><span>NEXORA-Engine</span><span>Altsysteme</span></div><p class="mk-tag">Your Business. Your Rules. Your ERP.</p></li>
+      </ol>
+      <p class="mk-note" id="mkPathNote"></p>
+    </div>
+    <div class="mk-sources" aria-labelledby="mkSrc"><span class="eyebrow" id="mkSrc">Quellen</span><ol id="mkSources"></ol></div>
   </section>
 
   <section class="s" id="roi">
@@ -148,6 +265,10 @@ table.cost td,table.cost th{padding:10px 8px}table.cost td:not(:first-child),tab
   $("csv").onclick = () => { const L = last; const r = [["TRUESCALE NEXORA TCO-Modellrechnung"], ["ERP-Landschaft", $("vendor").value], ["Nutzer", L.u], ["Jahre", L.y], ["Lizenzansatz EUR je Nutzer/Monat", L.lic], ["Kostenposition", "Klassisches ERP EUR", "NEXORA EUR"], ["Implementierung", L.oldI, L.newI], ["Lizenzen", L.license, 0], ["Wartung", L.oldM, L.newM], ["Infrastruktur und externe Dienste", L.oldF, L.newF], ["Gesamt", L.old, L.nex], ["Differenz", L.diff], ["Hinweis", "Illustrative Modellrechnung; kein Angebot"]];
     const csv = "﻿" + r.map(row => row.map(x => '"' + String(x).replaceAll('"', '""') + '"').join(";")).join("\r\n"); const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" })); a.download = "TRUESCALE_NEXORA_TCO.csv"; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000); };
   /*STORIES*/
+  /*MARKET*/
+  const MARKET_INTERNAL = false; const mkInternal = () => MARKET_INTERNAL || location.hash === "#markt-intern";
+  renderMarket(mkInternal()); window.addEventListener("hashchange", () => { if (/^#markt/.test(location.hash)) { renderMarket(mkInternal()); document.getElementById("markt").scrollIntoView(); } });
+  if (location.hash === "#markt-intern") document.getElementById("markt").scrollIntoView();
   function renderStories(co) { $("stories").innerHTML = STORY_LIST.filter(s => s.tenant === co || (s.cross || []).includes(co)).map(s => `<div class="card story"><span class="eyebrow">${s.short}</span><h3>${s.title}</h3><span class="steps-n">${s.steps} Schritte · ca. ${Math.max(2, Math.round(s.steps * 0.9))} Minuten</span><p>${s.situation}</p><a class="btn pri sm go" href="${SUITE}?story=${s.id}" ${ON_PAGES ? "" : 'target="_blank" rel="noopener"'}>In der Suite starten</a></div>`).join(""); }
   document.querySelectorAll("#demoTabs button").forEach(b => b.onclick = () => { document.querySelectorAll("#demoTabs button").forEach(x => x.classList.toggle("on", x === b)); renderStories(b.dataset.co); });
   calc(); renderStories("elevon");
