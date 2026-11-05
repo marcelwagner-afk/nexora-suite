@@ -29,6 +29,7 @@ const SAMPLES = {json.dumps({k: (d.parent/'samples'/(k + '.dxf')).read_text() fo
 {(d/"app_pe3.js").read_text()}
 {(d/"app_pe4.js").read_text()}
 {(d/"app_pe5.js").read_text()}
+{(d/"app_pe6.js").read_text()}
 {(d/"app_boot.js").read_text()}
 </script>
 '''

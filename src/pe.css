@@ -61,3 +61,10 @@
 .pe-onb{list-style:none;padding:0;margin:8px 0;display:flex;flex-direction:column;gap:6px}.pe-onb li{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:6px 8px;border-radius:8px}.pe-onb li.cur{background:var(--warn-soft)}.pe-onb .n{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--sunk);font-size:12px;font-weight:700}.pe-onb li.done .n{background:var(--good-soft);color:var(--good)}
 .input.sm{padding:4px 8px;font-size:12px;height:auto}
 .pe-vc-tbl td{vertical-align:top}
+
+/* Phase 6 */
+.pe-bar{display:inline-block;height:8px;border-radius:4px;background:var(--accent);opacity:.7;margin:0 8px;max-width:40vw}
+.pe-wave{padding:8px 0;border-bottom:1px solid var(--line)}
+.pe-tbl tr.on td{background:var(--sunk)}
+.pe-tbl td.neg{color:var(--crit)}
+.pe-tbl td.num{white-space:nowrap}

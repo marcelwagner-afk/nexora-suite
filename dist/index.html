@@ -478,6 +478,13 @@ body.layer .app.live .cost-ctr{display:none}
 .input.sm{padding:4px 8px;font-size:12px;height:auto}
 .pe-vc-tbl td{vertical-align:top}
 
+/* Phase 6 */
+.pe-bar{display:inline-block;height:8px;border-radius:4px;background:var(--accent);opacity:.7;margin:0 8px;max-width:40vw}
+.pe-wave{padding:8px 0;border-bottom:1px solid var(--line)}
+.pe-tbl tr.on td{background:var(--sunk)}
+.pe-tbl td.neg{color:var(--crit)}
+.pe-tbl td.num{white-space:nowrap}
+
 </style>
 <div id="root"></div>
 <div id="layer"></div>
@@ -2910,6 +2917,38 @@ return { MIG_PROJECTS, WORK_CENTERS, CATALOG, CATEGORY_DEFAULT, deriveDrawing, R
     return { id: c.id, name: c.name, steps: ONB_STEPS.map((s, i) => ({ step: i + 1, name: s, done: done[i] })), status, request: req, ready: done.slice(0, 9).every(Boolean), blocking: firstOpen >= 0 ? ONB_STEPS[firstOpen] : null };
   }
   function onboardingList(W, p) { return visibleCompanies(W, p, {}).filter(c => c.onboarding !== "Aktiv" || W.onb.req[c.id] || c.created).map(c => onboarding(W, p, c.id)); }
+
+  /* ===== PE-Phase 6: ERP-Transformation – Bewertung und Szenarien A–D mit offenen Annahmen (Beispielwerte) ===== */
+  const ERP_FAMILY_LABEL = { sap: "SAP", dynamics: "Microsoft", oracle: "Oracle", netsuite: "Oracle", datev: "DATEV", sage: "Sage", infor: "Infor", custom: "Eigenentwicklung", nexora: "NEXORA" };
+  const TA = { // Annahmen (Beispielwerte, keine Herstellerpreise) – in der Oberfläche sichtbar und anpassbar
+    licensePerUser: { "SAP ECC": 1700, "SAP S/4HANA": 2100, "SAP Business One": 900, "Microsoft Dynamics 365": 1300, "Oracle ERP Cloud": 1900, "Oracle NetSuite": 1400, "DATEV": 450, "Sage": 600, "Infor": 1300, "Eigenentwicklung": 0, "NEXORA AI Suite": 0 },
+    maintenancePct: 0.22, onPrem: ["SAP ECC", "Sage", "Infor", "Eigenentwicklung", "DATEV"], hostingFix: 60000, hostingPerUser: 180, interfaceCost: 15000, customDevPerYear: 250000,
+    nexoraImplBase: 250000, nexoraImplPerUser: 1400, nexoraMaintPct: 0.18, nexoraHostingFix: 48000, nexoraHostingPerUser: 60, hubSetup: 20000, hubPerYear: 12000, financeShare: 0.3, parallelMonths: 6, years: 5 };
+  const COVERAGE = { Industrie: 0.85, Maschinenbau: 0.85, Logistik: 0.7, Software: 0.65, "IT-Services": 0.8, Medizintechnik: 0.55, Pharma: 0.45, Konsumgüter: 0.75, Lebensmittel: 0.7, Handel: 0.85 };
+  const TECH_DEBT = { "SAP ECC": [0.9, "Mainstream-Wartung SAP ECC 6.0 endet laut SAP Ende 2027 (optional verlängert bis 2030)"], "Eigenentwicklung": [0.85, "Individuelle Lösung, Abhängigkeit von Einzelpersonen"], "Sage": [0.55, "Begrenzte Skalierung für Gruppenstrukturen"], "DATEV": [0.5, "Finanzbuchhaltung beim Steuerberater, keine operativen Prozesse"], "Infor": [0.4, "Releasewechsel anstehend"], "SAP Business One": [0.35, "Für Mittelstand ausgelegt"], "Microsoft Dynamics 365": [0.2, "Aktuelle Cloud-Plattform"], "SAP S/4HANA": [0.15, "Aktuelle Plattform"], "Oracle ERP Cloud": [0.15, "Aktuelle Cloud-Plattform"], "Oracle NetSuite": [0.2, "Aktuelle Cloud-Plattform"], "NEXORA AI Suite": [0, "NEXORA ist bereits das ERP (Modell B)"] };
+  function assessCompany(W, c, A) {
+    A = Object.assign({}, TA, A || {}); const k = companyKpis(W, c, "LTM"); const users = Math.max(25, Math.round(k.revenue / 1e6 * 1.6)); const interfaces = 4 + c.entities.length * 2 + (c.erp === "Eigenentwicklung" ? 6 : 0);
+    const lic = users * (A.licensePerUser[c.erp] || 0); const onPrem = A.onPrem.includes(c.erp); const maint = onPrem ? lic * A.maintenancePct : 0; const hosting = c.erp === "NEXORA AI Suite" ? A.nexoraHostingFix + users * A.nexoraHostingPerUser : A.hostingFix + users * A.hostingPerUser; const integ = interfaces * A.interfaceCost; const custom = c.erp === "Eigenentwicklung" ? A.customDevPerYear : 0;
+    const run = lic + maint + hosting + integ + custom; const coverage = COVERAGE[c.industry]; const [debt, debtText] = TECH_DEBT[c.erp]; const complexity = Math.min(1, 0.25 + c.entities.length * 0.15 + (c.currency !== "EUR" ? 0.1 : 0) + (1 - coverage) * 0.6 + (c.erp === "Eigenentwicklung" || c.erp === "SAP ECC" ? 0.15 : 0));
+    const impl = c.erp === "NEXORA AI Suite" ? 0 : (A.nexoraImplBase + users * A.nexoraImplPerUser) * (1 + complexity); const nxRun = impl * A.nexoraMaintPct + A.nexoraHostingFix + users * A.nexoraHostingPerUser + Math.max(0, interfaces - 4) * A.interfaceCost * 0.5;
+    const Y = A.years; const isNx = c.erp === "NEXORA AI Suite";
+    const sc = { A: { label: "A: ERP bleibt unverändert", oneTime: 0, annual: run }, B: { label: "B: nur Finanzintegration", oneTime: A.hubSetup, annual: run + A.hubPerYear },
+      C: { label: "C: teilweise NEXORA (Finanzen)", oneTime: isNx ? 0 : impl * 0.4 + run * A.parallelMonths / 12 * 0.5, annual: isNx ? run : run * (1 - A.financeShare) + nxRun * 0.45 },
+      D: { label: "D: vollständige NEXORA-Transformation", oneTime: isNx ? 0 : impl + run * A.parallelMonths / 12, annual: isNx ? run : nxRun } };
+    for (const v of Object.values(sc)) v.tco = v.oneTime + Y * v.annual; for (const v of Object.values(sc)) v.saving = sc.A.tco - v.tco;
+    const excluded = c.scenario === "liquidity" ? "Liquiditätsrisiko: Transformation erst nach Stabilisierung" : c.onboarding !== "Aktiv" ? "Erst nach abgeschlossenem Onboarding" : null;
+    const score = isNx ? 0 : Math.round((debt * 0.35 + coverage * 0.35 + Math.min(1, Math.max(0, sc.D.saving / Math.max(1, sc.A.tco))) * 0.3) * 100);
+    const candidate = !isNx && !excluded && sc.D.saving > 0 && coverage >= 0.65 && score >= 50;
+    return { id: c.id, name: c.name, industry: c.industry, erp: c.erp, family: ERP_FAMILY_LABEL[c.erpFamily], model: c.model, users, interfaces, costs: { license: lic, maintenance: maint, hosting, integration: integ, customDev: custom, run }, coverage, techDebt: debt, techDebtText: debtText, complexity, implementation: impl, nexoraRun: nxRun, scenarios: sc, score, candidate, excluded,
+      formulas: { run: "Lizenz/Abo (Nutzer × Satz) + Wartung (" + Math.round(A.maintenancePct * 100) + " % bei On-Premise) + Hosting + Schnittstellen × Satz + Individualentwicklung", D: `Einmalig: Implementierung (Basis + Nutzer × Satz) × (1 + Komplexität) + ${A.parallelMonths} Monate Parallelbetrieb; laufend: ${Math.round(A.nexoraMaintPct * 100)} % Wartung auf die Implementierung + Hosting + Restschnittstellen – keine nutzerabhängigen NEXORA-Lizenzen`, tco: `TCO = Einmalkosten + ${Y} × laufende Kosten; Einsparung = TCO A − TCO Szenario` } };
+  }
+  function transformation(W, p, filter, A) {
+    const cs = visibleCompanies(W, p, filter).filter(c => !c.noData); const rows = cs.map(c => assessCompany(W, c, A)); const fam = {}; for (const r of rows) fam[r.family] = (fam[r.family] || 0) + 1;
+    const cand = rows.filter(r => r.candidate).sort((a, b) => b.score - a.score); const waves = { "Welle 1 · 2027 H1": [], "Welle 2 · 2027 H2": [], "Welle 3 · 2028": [] }; cand.forEach((r, i) => waves[i < 2 ? "Welle 1 · 2027 H1" : i < 5 ? "Welle 2 · 2027 H2" : "Welle 3 · 2028"].push(r.name));
+    const S = (l, f) => l.reduce((a, r) => a + f(r), 0);
+    return { rows, landscape: fam, nexora: rows.filter(r => r.model === "B").map(r => r.name), candidates: cand, waves, totals: { runToday: S(rows, r => r.costs.run), implCandidates: S(cand, r => r.scenarios.D.oneTime), savingCandidates: S(cand, r => r.scenarios.D.saving), tcoA: S(cand, r => r.scenarios.A.tco), tcoD: S(cand, r => r.scenarios.D.tco) }, assumptions: Object.assign({}, TA, A || {}), coverage: COVERAGE,
+      note: "Alle Kosten sind Beispielwerte aus offenen Annahmen, keine Herstellerpreise und kein Angebot. Einsparungen ergeben sich ausschließlich aus der gezeigten Rechnung." };
+  }
   /* ---------- Verwaltung: Organisation, Fonds, Unternehmen anlegen (Befehle mit Rechteprüfung, wiederholbar aus einem Protokoll) ---------- */
   const slug = s => String(s || "").toLowerCase().normalize("NFD").replace(/[^a-z0-9]+/g, "").slice(0, 10);
   function apply(W, p, cmd, x) {
@@ -2955,7 +2994,7 @@ return { MIG_PROJECTS, WORK_CENTERS, CATALOG, CATEGORY_DEFAULT, deriveDrawing, R
   function checkConsistency(W, c) { const errs = []; for (let i = 0; i < W.periods.length; i++) { const h = harmonizedMonth(W, c, i); const d = h.CASH + h.AR + h.INV + h.FA - h.AP - h.DEBT - h.EQ; if (Math.abs(d) > 1) errs.push(`${W.periods[i]}: Bilanzdifferenz ${d.toFixed(2)}`); } return errs; }
 
   return { VERSION, SEED, VALUATION_DATE, PERIODS, PERIOD_SETS, DEMO_NOTE, GROUP_COA, COA_FAMILY, ERP, FX_BASE, SECTOR_MULT, KPI_DEFS, HEALTH_FORMULA, ROLES, LEVEL,
-    createWorld, apply, xirr, access, consolidate, GROUPS, METHOD_LABEL, investments, exitSim, LIFECYCLE, vcSummary, VC_CATS, covenantForecast, riskRegister, onboarding, onboardingList, ONB_STEPS, hubMonitor, hubDetail, CONNECTOR_SPECS, HUB_PERIOD, adjustments, compare, marginBridge, forecast, liquidityForecast, wcPotential, planVariance, anomalies, advise, EXAMPLES, WC_METHOD, FC_METHOD, principal, companies, company, portfolioKpis, fundMetrics, funds, series, drill, insights, visibleCompanies,
+    createWorld, apply, xirr, access, transformation, TRANSFORM_ASSUMPTIONS: TA, consolidate, GROUPS, METHOD_LABEL, investments, exitSim, LIFECYCLE, vcSummary, VC_CATS, covenantForecast, riskRegister, onboarding, onboardingList, ONB_STEPS, hubMonitor, hubDetail, CONNECTOR_SPECS, HUB_PERIOD, adjustments, compare, marginBridge, forecast, liquidityForecast, wcPotential, planVariance, anomalies, advise, EXAMPLES, WC_METHOD, FC_METHOD, principal, companies, company, portfolioKpis, fundMetrics, funds, series, drill, insights, visibleCompanies,
     _internal: { translation, icData, lifecycleOf, gaapAdjust, seasonalForecast, harmonizedMonth, eurMonth, companyKpis, dealMetrics, fundCalc, checkConsistency, flowsSum, statements, budgetVsActual } };
 });
 
@@ -4778,7 +4817,7 @@ const PE_NAV = [
   ["pe-fin", "Financial Intelligence", "an", "live", 3], ["pe-cons", "Financial Consolidation", "pie", "live", 5], ["pe-cash", "Cash & Liquidity", "gauge", "live", 3],
   ["pe-inv", "Investment Performance", "rocket", "live", 5], ["pe-vc", "Value Creation", "check", "live", 5], ["pe-risk", "Risk Intelligence", "shield", "live", 5],
   ["pe-ai", "AI Financial Advisor", "ai", "live", 3], ["pe-hub", "ERP Integration Hub", "db", "live", 4], ["pe-onb", "Portfolio Onboarding", "users", "live", 5],
-  ["pe-trans", "ERP Transformation", "flag", "plan", 6], ["peadmin", "Administration", "set", "live"]
+  ["pe-trans", "ERP Transformation", "flag", "live", 6], ["peadmin", "Administration", "set", "live"]
 ];
 const PE_PLAN = { 3: "PE-Phase 3 – Financial Intelligence", 4: "PE-Phase 4 – ERP Connectivity", 5: "PE-Phase 5 – Advanced PE Capabilities", 6: "PE-Phase 6 – ERP Transformation" };
 for (const [r, l, i, st] of PE_NAV) { MODS[r] = [l, i, st]; ROUTES.push(r); } MODS.peco = ["Portfolio Company", "building", "live"]; ROUTES.push("peco");
@@ -5170,6 +5209,37 @@ VIEWS["pe-onb"] = () => {
 };
 
 function daysBetweenUi(d) { return (Date.parse(PE.VALUATION_DATE) - Date.parse(d)) / 86400000; }
+
+/* ===== PE-Phase 6: ERP-Transformation – Landschaft, Kandidaten, Szenarien A–D, Roadmap (Beispielwerte) ===== */
+S.pe.ta = S.pe.ta || {}; S.pe.taId = S.pe.taId || null;
+const PE_TA_EDIT = [["maintenancePct", "Wartung On-Premise (Anteil Lizenz)", 0.01], ["hostingPerUser", "Hosting je Nutzer und Jahr (€)", 10], ["interfaceCost", "Schnittstelle je Jahr (€)", 1000], ["nexoraImplPerUser", "NEXORA-Implementierung je Nutzer (€)", 100], ["parallelMonths", "Parallelbetrieb (Monate)", 1], ["years", "Betrachtungszeitraum (Jahre)", 1]];
+Object.assign(ON, { peTaIn(v, el) { const k = el.dataset.k; if (v === "") delete S.pe.ta[k]; else S.pe.ta[k] = +v; render(); } });
+Object.assign(ACT, { peTaOpen(d) { S.pe.taId = S.pe.taId === d.id ? null : d.id; render(); }, peTaReset() { S.pe.ta = {}; render(); } });
+const peTile = (label, value, sub, formula) => `<div class="pe-kpi"><span class="eyebrow">${esc(label)}</span><b class="num">${value}</b>${sub ? `<span class="small muted">${sub}</span>` : ""}${formula ? `<details><summary>Formel</summary><p class="small">${esc(formula)}</p></details>` : ""}`+"</div>";
+VIEWS["pe-trans"] = () => {
+  const w = peWorld(), p = peP(); const r = peTry(() => PE.transformation(w, p, S.pe.filter, S.pe.ta)); if (!r.ok) return peNoAccess("ERP Transformation", r.text);
+  const t = r.v, A = t.assumptions; const sel = t.rows.find(x => x.id === S.pe.taId);
+  const fam = Object.entries(t.landscape).sort((a, b) => b[1] - a[1]);
+  const scen = x => ["A", "B", "C", "D"].map(k => x.scenarios[k]);
+  return peHead("ERP Transformation") + peDemo()
+   + `<div class="note warn small"><div><b>Beispielwerte, keine Herstellerpreise.</b> ${esc(t.note)} Herstellernamen stehen nur als Text; es besteht keine echte Integration zu diesen Systemen.</div></div>`
+   + peFilters(PE.companies(w, p, { period: S.pe.filter.period }))
+   + `<div class="pe-kpis">${peTile("Unternehmen bewertet", t.rows.length, "mit Daten im Sichtbereich")}${peTile("ERP-Betrieb heute p. a.", peM(t.totals.runToday), "Summe Szenario A", "Lizenz + Wartung + Hosting + Schnittstellen + Individualentwicklung je Unternehmen")}${peTile("Migrationskandidaten", t.candidates.length, "Bewertung ≥ 50, Einsparung > 0, Abdeckung ≥ 65 %")}${peTile("Einmalkosten Kandidaten", peM(t.totals.implCandidates), "Szenario D, geschätzt", t.rows[0] ? t.rows[0].formulas.D : "")}${peTile("Rechnerische Einsparung", peM(t.totals.savingCandidates), A.years + " Jahre, nur Kandidaten", t.rows[0] ? t.rows[0].formulas.tco : "")}</div>`
+   + `<div class="grid g2"><section class="card card-pad"><h3>ERP-Landschaft</h3><div class="list">${fam.map(([f, n]) => `<div class="dt-row static"><span class="grow small">${esc(f)}</span><span class="pe-bar" style="width:${Math.round(n / t.rows.length * 160)}px"></span><b class="num small">${n}</b></div>`).join("")}</div>
+      <p class="small faint">Bereits auf NEXORA (Modell B): ${t.nexora.length ? esc(t.nexora.join(", ")) : "keines im Sichtbereich"}. Die Ablösung einzelner Prozesse steuert das <a href="#transition">Ablöse-Cockpit</a> der Suite.</p></section>
+     <section class="card card-pad"><h3>Roadmap (Vorschlag)</h3>${Object.entries(t.waves).map(([wv, l]) => `<div class="pe-wave"><b class="small">${esc(wv)}</b><div class="small">${l.length ? l.map(esc).join(", ") : '<span class="faint">keine Kandidaten</span>'}</div></div>`).join("")}
+      <p class="small faint">Reihenfolge nach Bewertung (35 % technische Schuld, 35 % funktionale Abdeckung, 30 % Einsparquote). Ausgeschlossen: Unternehmen mit Liquiditätsrisiko oder laufendem Onboarding. Die Roadmap ist ein Vorschlag – entschieden wird im Investment Committee.</p></section></div>`
+   + `<section class="card" style="overflow:auto"><div class="card-pad" style="padding-bottom:0"><h3>Bewertung je Unternehmen</h3><p class="small muted">Zeile anklicken für Kostenaufbau und Szenarien A–D.</p></div><table class="small pe-tbl"><thead><tr><th>Unternehmen</th><th>ERP</th><th class="r">Nutzer</th><th class="r">Betrieb p. a.</th><th class="r">Abdeckung</th><th class="r">Techn. Schuld</th><th class="r">Komplexität</th><th class="r">Einsparung D (${A.years} J.)</th><th class="r">Bewertung</th><th>Einstufung</th></tr></thead><tbody>
+     ${t.rows.slice().sort((a, b) => b.score - a.score).map(x => `<tr class="click ${x.id === S.pe.taId ? "on" : ""}" data-act="peTaOpen" data-id="${x.id}"><td>${esc(x.name)}</td><td>${esc(x.erp)}</td><td class="r num">${x.users}</td><td class="r num">${peM(x.costs.run)}</td><td class="r num">${Math.round(x.coverage * 100)} %</td><td class="r num">${Math.round(x.techDebt * 100)} %</td><td class="r num">${Math.round(x.complexity * 100)} %</td><td class="r num ${x.scenarios.D.saving < 0 ? "neg" : ""}">${x.model === "B" ? "–" : peM(x.scenarios.D.saving)}</td><td class="r num">${x.model === "B" ? "–" : x.score}</td><td>${x.model === "B" ? pill("p-ok", "NEXORA") : x.candidate ? pill("p-ok", "Kandidat") : x.excluded ? pill("p-neu", "Zurückgestellt") : pill("p-neu", "Kein Kandidat")}</td></tr>`).join("")}</tbody></table></section>`
+   + (sel ? `<section class="card card-pad" data-ta="${sel.id}"><h3>${esc(sel.name)} · ${esc(sel.erp)}</h3>${sel.excluded ? `<div class="note warn small"><div>${esc(sel.excluded)}</div></div>` : ""}
+      <div class="grid g2"><div><h4>Kostenaufbau heute (p. a.)</h4><table class="small pe-tbl"><tbody>${[["Lizenz / Abo", sel.costs.license], ["Wartung", sel.costs.maintenance], ["Hosting", sel.costs.hosting], ["Schnittstellen (" + sel.interfaces + ")", sel.costs.integration], ["Individualentwicklung", sel.costs.customDev]].map(([l, v]) => `<tr><td>${l}</td><td class="r num">${peM(v)}</td></tr>`).join("")}<tr class="tot"><td>Summe</td><td class="r num">${peM(sel.costs.run)}</td></tr></tbody></table>
+        <p class="small faint">${esc(sel.formulas.run)}</p><p class="small">Technische Schuld: ${esc(sel.techDebtText)}. Funktionale Abdeckung durch NEXORA für ${esc(sel.industry)}: ${Math.round(sel.coverage * 100)} % (Annahme). Geschätzte Implementierung: ${peM(sel.implementation)}.</p></div>
+       <div><h4>Szenarien über ${A.years} Jahre</h4><table class="small pe-tbl"><thead><tr><th>Szenario</th><th class="r">Einmalig</th><th class="r">Laufend p. a.</th><th class="r">TCO</th><th class="r">Differenz zu A</th></tr></thead><tbody>${scen(sel).map(v => `<tr><td>${esc(v.label)}</td><td class="r num">${peM(v.oneTime)}</td><td class="r num">${peM(v.annual)}</td><td class="r num">${peM(v.tco)}</td><td class="r num ${v.saving < 0 ? "neg" : ""}">${peM(v.saving)}</td></tr>`).join("")}</tbody></table>
+        <p class="small faint">${esc(sel.formulas.D)}. ${esc(sel.formulas.tco)}. Ein negativer Wert heißt: das Szenario kostet im Zeitraum mehr als heute.</p></div></div></section>` : "")
+   + `<section class="card card-pad"><h3>Annahmen <span class="small faint">· Beispielwerte, keine Herstellerpreise</span></h3><div class="row" style="gap:10px;flex-wrap:wrap;align-items:flex-end">${PE_TA_EDIT.map(([k, l, st]) => `<label class="f">${esc(l)}<input class="input" type="number" step="${st}" data-on="peTaIn" data-k="${k}" value="${A[k]}"></label>`).join("")}<button class="btn" data-act="peTaReset">Zurücksetzen</button></div>
+      <details><summary class="small">Lizenzsätze je Nutzer und Jahr (Beispielwerte)</summary><table class="small pe-tbl"><tbody>${Object.entries(A.licensePerUser).map(([k, v]) => `<tr><td>${esc(k)}</td><td class="r num">${peM(v)}</td></tr>`).join("")}</tbody></table></details>
+      <p class="small faint">Die Annahmen gelten nur in dieser Ansicht und werden nicht gespeichert. Die Hinweise zu Wartungsenden beruhen auf öffentlichen Herstellerangaben und sind ohne Gewähr; für SAP gilt zusätzlich: kein direkter Agentenzugriff, Verweis auf die SAP API Policy v4/2026, ausdrücklich ohne Rechtsbewertung.</p></section>`;
+};
 
 /* ---------- Start ---------- */
 boot(); adoptAccounts(); if (window.innerWidth < 700 && route() === "home" && !location.search.includes("story=")) location.hash = "tasks"; render(); startBackend(); startRoom();

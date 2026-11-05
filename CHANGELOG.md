@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.9.6 – PE ERP-Transformation (2026-11)
+
+- **ERP-Transformation** (`PE.transformation`): Bewertung je Unternehmen mit Nutzerzahl, Lizenz/Abo, Wartung, Hosting, Schnittstellen, Individualentwicklung, funktionaler Abdeckung, technischer Schuld, Migrationskomplexität und geschätzter Implementierung.
+- **Szenarien A–D** über einen wählbaren Zeitraum: A unverändert, B nur Finanzintegration, C teilweise NEXORA (Finanzen), D vollständige Transformation. TCO = Einmalkosten + Jahre × laufende Kosten; Einsparung = TCO A − TCO Szenario. Negative Werte bleiben sichtbar.
+- **Kandidaten und Roadmap:** Bewertung aus technischer Schuld, Abdeckung und Einsparquote; Unternehmen mit Liquiditätsrisiko oder laufendem Onboarding werden zurückgestellt. Die Roadmap ist ein Vorschlag in drei Wellen.
+- **Annahmen** sind offen, in der Ansicht änderbar und als „Beispielwerte, keine Herstellerpreise“ gekennzeichnet. Herstellernamen nur als Text, keine echte Integration. Verweis auf das Ablöse-Cockpit.
+- **Offen:** Engine-Mandanten (Elevon, NovaMart, Aventra) noch ohne Live-Daten im PE-Portfolio.
+- **Tests:** `test/pe.test.js` hat jetzt 55 Tests; der e2e-Block öffnet einen Kandidaten, ändert den Parallelbetrieb und prüft die Rechnung sowie die Darstellung bei 400 px.
+
 ## v0.9.5 – PE Advanced Capabilities (2026-11)
 
 - **Financial Consolidation:**

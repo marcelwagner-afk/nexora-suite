@@ -16,7 +16,7 @@ const PE_NAV = [
   ["pe-fin", "Financial Intelligence", "an", "live", 3], ["pe-cons", "Financial Consolidation", "pie", "live", 5], ["pe-cash", "Cash & Liquidity", "gauge", "live", 3],
   ["pe-inv", "Investment Performance", "rocket", "live", 5], ["pe-vc", "Value Creation", "check", "live", 5], ["pe-risk", "Risk Intelligence", "shield", "live", 5],
   ["pe-ai", "AI Financial Advisor", "ai", "live", 3], ["pe-hub", "ERP Integration Hub", "db", "live", 4], ["pe-onb", "Portfolio Onboarding", "users", "live", 5],
-  ["pe-trans", "ERP Transformation", "flag", "plan", 6], ["peadmin", "Administration", "set", "live"]
+  ["pe-trans", "ERP Transformation", "flag", "live", 6], ["peadmin", "Administration", "set", "live"]
 ];
 const PE_PLAN = { 3: "PE-Phase 3 – Financial Intelligence", 4: "PE-Phase 4 – ERP Connectivity", 5: "PE-Phase 5 – Advanced PE Capabilities", 6: "PE-Phase 6 – ERP Transformation" };
 for (const [r, l, i, st] of PE_NAV) { MODS[r] = [l, i, st]; ROUTES.push(r); } MODS.peco = ["Portfolio Company", "building", "live"]; ROUTES.push("peco");

@@ -708,6 +708,38 @@
     return { id: c.id, name: c.name, steps: ONB_STEPS.map((s, i) => ({ step: i + 1, name: s, done: done[i] })), status, request: req, ready: done.slice(0, 9).every(Boolean), blocking: firstOpen >= 0 ? ONB_STEPS[firstOpen] : null };
   }
   function onboardingList(W, p) { return visibleCompanies(W, p, {}).filter(c => c.onboarding !== "Aktiv" || W.onb.req[c.id] || c.created).map(c => onboarding(W, p, c.id)); }
+
+  /* ===== PE-Phase 6: ERP-Transformation – Bewertung und Szenarien A–D mit offenen Annahmen (Beispielwerte) ===== */
+  const ERP_FAMILY_LABEL = { sap: "SAP", dynamics: "Microsoft", oracle: "Oracle", netsuite: "Oracle", datev: "DATEV", sage: "Sage", infor: "Infor", custom: "Eigenentwicklung", nexora: "NEXORA" };
+  const TA = { // Annahmen (Beispielwerte, keine Herstellerpreise) – in der Oberfläche sichtbar und anpassbar
+    licensePerUser: { "SAP ECC": 1700, "SAP S/4HANA": 2100, "SAP Business One": 900, "Microsoft Dynamics 365": 1300, "Oracle ERP Cloud": 1900, "Oracle NetSuite": 1400, "DATEV": 450, "Sage": 600, "Infor": 1300, "Eigenentwicklung": 0, "NEXORA AI Suite": 0 },
+    maintenancePct: 0.22, onPrem: ["SAP ECC", "Sage", "Infor", "Eigenentwicklung", "DATEV"], hostingFix: 60000, hostingPerUser: 180, interfaceCost: 15000, customDevPerYear: 250000,
+    nexoraImplBase: 250000, nexoraImplPerUser: 1400, nexoraMaintPct: 0.18, nexoraHostingFix: 48000, nexoraHostingPerUser: 60, hubSetup: 20000, hubPerYear: 12000, financeShare: 0.3, parallelMonths: 6, years: 5 };
+  const COVERAGE = { Industrie: 0.85, Maschinenbau: 0.85, Logistik: 0.7, Software: 0.65, "IT-Services": 0.8, Medizintechnik: 0.55, Pharma: 0.45, Konsumgüter: 0.75, Lebensmittel: 0.7, Handel: 0.85 };
+  const TECH_DEBT = { "SAP ECC": [0.9, "Mainstream-Wartung SAP ECC 6.0 endet laut SAP Ende 2027 (optional verlängert bis 2030)"], "Eigenentwicklung": [0.85, "Individuelle Lösung, Abhängigkeit von Einzelpersonen"], "Sage": [0.55, "Begrenzte Skalierung für Gruppenstrukturen"], "DATEV": [0.5, "Finanzbuchhaltung beim Steuerberater, keine operativen Prozesse"], "Infor": [0.4, "Releasewechsel anstehend"], "SAP Business One": [0.35, "Für Mittelstand ausgelegt"], "Microsoft Dynamics 365": [0.2, "Aktuelle Cloud-Plattform"], "SAP S/4HANA": [0.15, "Aktuelle Plattform"], "Oracle ERP Cloud": [0.15, "Aktuelle Cloud-Plattform"], "Oracle NetSuite": [0.2, "Aktuelle Cloud-Plattform"], "NEXORA AI Suite": [0, "NEXORA ist bereits das ERP (Modell B)"] };
+  function assessCompany(W, c, A) {
+    A = Object.assign({}, TA, A || {}); const k = companyKpis(W, c, "LTM"); const users = Math.max(25, Math.round(k.revenue / 1e6 * 1.6)); const interfaces = 4 + c.entities.length * 2 + (c.erp === "Eigenentwicklung" ? 6 : 0);
+    const lic = users * (A.licensePerUser[c.erp] || 0); const onPrem = A.onPrem.includes(c.erp); const maint = onPrem ? lic * A.maintenancePct : 0; const hosting = c.erp === "NEXORA AI Suite" ? A.nexoraHostingFix + users * A.nexoraHostingPerUser : A.hostingFix + users * A.hostingPerUser; const integ = interfaces * A.interfaceCost; const custom = c.erp === "Eigenentwicklung" ? A.customDevPerYear : 0;
+    const run = lic + maint + hosting + integ + custom; const coverage = COVERAGE[c.industry]; const [debt, debtText] = TECH_DEBT[c.erp]; const complexity = Math.min(1, 0.25 + c.entities.length * 0.15 + (c.currency !== "EUR" ? 0.1 : 0) + (1 - coverage) * 0.6 + (c.erp === "Eigenentwicklung" || c.erp === "SAP ECC" ? 0.15 : 0));
+    const impl = c.erp === "NEXORA AI Suite" ? 0 : (A.nexoraImplBase + users * A.nexoraImplPerUser) * (1 + complexity); const nxRun = impl * A.nexoraMaintPct + A.nexoraHostingFix + users * A.nexoraHostingPerUser + Math.max(0, interfaces - 4) * A.interfaceCost * 0.5;
+    const Y = A.years; const isNx = c.erp === "NEXORA AI Suite";
+    const sc = { A: { label: "A: ERP bleibt unverändert", oneTime: 0, annual: run }, B: { label: "B: nur Finanzintegration", oneTime: A.hubSetup, annual: run + A.hubPerYear },
+      C: { label: "C: teilweise NEXORA (Finanzen)", oneTime: isNx ? 0 : impl * 0.4 + run * A.parallelMonths / 12 * 0.5, annual: isNx ? run : run * (1 - A.financeShare) + nxRun * 0.45 },
+      D: { label: "D: vollständige NEXORA-Transformation", oneTime: isNx ? 0 : impl + run * A.parallelMonths / 12, annual: isNx ? run : nxRun } };
+    for (const v of Object.values(sc)) v.tco = v.oneTime + Y * v.annual; for (const v of Object.values(sc)) v.saving = sc.A.tco - v.tco;
+    const excluded = c.scenario === "liquidity" ? "Liquiditätsrisiko: Transformation erst nach Stabilisierung" : c.onboarding !== "Aktiv" ? "Erst nach abgeschlossenem Onboarding" : null;
+    const score = isNx ? 0 : Math.round((debt * 0.35 + coverage * 0.35 + Math.min(1, Math.max(0, sc.D.saving / Math.max(1, sc.A.tco))) * 0.3) * 100);
+    const candidate = !isNx && !excluded && sc.D.saving > 0 && coverage >= 0.65 && score >= 50;
+    return { id: c.id, name: c.name, industry: c.industry, erp: c.erp, family: ERP_FAMILY_LABEL[c.erpFamily], model: c.model, users, interfaces, costs: { license: lic, maintenance: maint, hosting, integration: integ, customDev: custom, run }, coverage, techDebt: debt, techDebtText: debtText, complexity, implementation: impl, nexoraRun: nxRun, scenarios: sc, score, candidate, excluded,
+      formulas: { run: "Lizenz/Abo (Nutzer × Satz) + Wartung (" + Math.round(A.maintenancePct * 100) + " % bei On-Premise) + Hosting + Schnittstellen × Satz + Individualentwicklung", D: `Einmalig: Implementierung (Basis + Nutzer × Satz) × (1 + Komplexität) + ${A.parallelMonths} Monate Parallelbetrieb; laufend: ${Math.round(A.nexoraMaintPct * 100)} % Wartung auf die Implementierung + Hosting + Restschnittstellen – keine nutzerabhängigen NEXORA-Lizenzen`, tco: `TCO = Einmalkosten + ${Y} × laufende Kosten; Einsparung = TCO A − TCO Szenario` } };
+  }
+  function transformation(W, p, filter, A) {
+    const cs = visibleCompanies(W, p, filter).filter(c => !c.noData); const rows = cs.map(c => assessCompany(W, c, A)); const fam = {}; for (const r of rows) fam[r.family] = (fam[r.family] || 0) + 1;
+    const cand = rows.filter(r => r.candidate).sort((a, b) => b.score - a.score); const waves = { "Welle 1 · 2027 H1": [], "Welle 2 · 2027 H2": [], "Welle 3 · 2028": [] }; cand.forEach((r, i) => waves[i < 2 ? "Welle 1 · 2027 H1" : i < 5 ? "Welle 2 · 2027 H2" : "Welle 3 · 2028"].push(r.name));
+    const S = (l, f) => l.reduce((a, r) => a + f(r), 0);
+    return { rows, landscape: fam, nexora: rows.filter(r => r.model === "B").map(r => r.name), candidates: cand, waves, totals: { runToday: S(rows, r => r.costs.run), implCandidates: S(cand, r => r.scenarios.D.oneTime), savingCandidates: S(cand, r => r.scenarios.D.saving), tcoA: S(cand, r => r.scenarios.A.tco), tcoD: S(cand, r => r.scenarios.D.tco) }, assumptions: Object.assign({}, TA, A || {}), coverage: COVERAGE,
+      note: "Alle Kosten sind Beispielwerte aus offenen Annahmen, keine Herstellerpreise und kein Angebot. Einsparungen ergeben sich ausschließlich aus der gezeigten Rechnung." };
+  }
   /* ---------- Verwaltung: Organisation, Fonds, Unternehmen anlegen (Befehle mit Rechteprüfung, wiederholbar aus einem Protokoll) ---------- */
   const slug = s => String(s || "").toLowerCase().normalize("NFD").replace(/[^a-z0-9]+/g, "").slice(0, 10);
   function apply(W, p, cmd, x) {
@@ -753,6 +785,6 @@
   function checkConsistency(W, c) { const errs = []; for (let i = 0; i < W.periods.length; i++) { const h = harmonizedMonth(W, c, i); const d = h.CASH + h.AR + h.INV + h.FA - h.AP - h.DEBT - h.EQ; if (Math.abs(d) > 1) errs.push(`${W.periods[i]}: Bilanzdifferenz ${d.toFixed(2)}`); } return errs; }
 
   return { VERSION, SEED, VALUATION_DATE, PERIODS, PERIOD_SETS, DEMO_NOTE, GROUP_COA, COA_FAMILY, ERP, FX_BASE, SECTOR_MULT, KPI_DEFS, HEALTH_FORMULA, ROLES, LEVEL,
-    createWorld, apply, xirr, access, consolidate, GROUPS, METHOD_LABEL, investments, exitSim, LIFECYCLE, vcSummary, VC_CATS, covenantForecast, riskRegister, onboarding, onboardingList, ONB_STEPS, hubMonitor, hubDetail, CONNECTOR_SPECS, HUB_PERIOD, adjustments, compare, marginBridge, forecast, liquidityForecast, wcPotential, planVariance, anomalies, advise, EXAMPLES, WC_METHOD, FC_METHOD, principal, companies, company, portfolioKpis, fundMetrics, funds, series, drill, insights, visibleCompanies,
+    createWorld, apply, xirr, access, transformation, TRANSFORM_ASSUMPTIONS: TA, consolidate, GROUPS, METHOD_LABEL, investments, exitSim, LIFECYCLE, vcSummary, VC_CATS, covenantForecast, riskRegister, onboarding, onboardingList, ONB_STEPS, hubMonitor, hubDetail, CONNECTOR_SPECS, HUB_PERIOD, adjustments, compare, marginBridge, forecast, liquidityForecast, wcPotential, planVariance, anomalies, advise, EXAMPLES, WC_METHOD, FC_METHOD, principal, companies, company, portfolioKpis, fundMetrics, funds, series, drill, insights, visibleCompanies,
     _internal: { translation, icData, lifecycleOf, gaapAdjust, seasonalForecast, harmonizedMonth, eurMonth, companyKpis, dealMetrics, fundCalc, checkConsistency, flowsSum, statements, budgetVsActual } };
 });

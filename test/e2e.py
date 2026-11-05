@@ -220,7 +220,16 @@ async def pe(p):
   n0 = await pg.evaluate("NexoraPE.portfolioKpis(peWorld(), peP(), {}).companies"); await pg.click("[data-act=peOnbAct]"); await pg.wait_for_timeout(150); n1 = await pg.evaluate("NexoraPE.portfolioKpis(peWorld(), peP(), {}).companies"); print("Onboarding aktiviert: Unternehmen im Reporting", n0, "→", n1); assert n1 == n0 + 1
   await pg.screenshot(path=SP + "pe_onboarding.png", full_page=True)
   await pg.evaluate("S.pe.principal='p1'; S.pe.log=[]; PEW=null; peSave()")
+  # PE-Phase 6: ERP-Transformation – Kandidat öffnen, Annahme ändern, Rechnung folgt
+  await pg.evaluate("location.hash='pe-trans'; render()"); await pg.wait_for_timeout(200)
+  tt = await pg.evaluate("document.querySelector('#page').innerText"); assert "Beispielwerte, keine Herstellerpreise" in tt and "Roadmap" in tt and "Castell" in tt, tt[:300]
+  top = await pg.evaluate("NexoraPE.transformation(peWorld(), peP(), S.pe.filter, S.pe.ta).candidates[0].id"); await pg.click(f"tr[data-act=peTaOpen][data-id={top}]"); await pg.wait_for_selector(f"[data-ta={top}]", timeout=3000)
+  d0 = await pg.evaluate(f"NexoraPE.transformation(peWorld(), peP(), S.pe.filter, S.pe.ta).rows.find(r => r.id === '{top}').scenarios.D.oneTime")
+  await pg.evaluate("const el=document.querySelector('[data-on=peTaIn][data-k=parallelMonths]'); el.value='12'; el.dispatchEvent(new Event('change', {bubbles:true}))"); await pg.wait_for_timeout(150)
+  d1 = await pg.evaluate(f"NexoraPE.transformation(peWorld(), peP(), S.pe.filter, S.pe.ta).rows.find(r => r.id === '{top}').scenarios.D.oneTime"); print("ERP-Transformation", top, "Einmalkosten D", round(d0), "→", round(d1), "bei 12 Monaten Parallelbetrieb"); assert d1 > d0
+  await pg.screenshot(path=SP + "pe_transformation.png", full_page=True); await pg.click("[data-act=peTaReset]"); await pg.wait_for_timeout(100)
   await pg.set_viewport_size({"width": 400, "height": 820}); await pg.evaluate("location.hash='pe'; render()"); await pg.wait_for_timeout(200); sw = await pg.evaluate("document.documentElement.scrollWidth"); print("PE bei 400 px, Seitenbreite:", sw); assert sw <= 400
+  await pg.evaluate("location.hash='pe-trans'; render()"); await pg.wait_for_timeout(200); sw = await pg.evaluate("document.documentElement.scrollWidth"); print("ERP-Transformation bei 400 px:", sw); assert sw <= 400
   await pg.screenshot(path=SP + "pe_mobile.png"); await b.close(); assert not errs, errs; print("PE Command Center ok")
 
 async def main():
