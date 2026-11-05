@@ -289,6 +289,16 @@ test("MR-1200 (2 Blätter, 15 Pos.): Profile mit Bohrungen/Gewinden, Pulverbesch
   ok(E.avail(t, "B-MR1200", "WH2") === 10, "10 Rahmen im Lager"); consistency(w);
 });
 
+/* ---- Atomarität mit schlanker Sicherung (Stresstest v0.9.8) ---- */
+test("Atomarität: abgelehnte Befehle lassen alle drei Mandanten unverändert; Mandantenübergreifendes nur über send()", () => {
+  const w = E.createWorld(); const hs = () => E.TENANT_IDS.map(id => E.tenantHash(w.tenants[id])).join(); const h0 = hs();
+  for (const [tid, cmd, p] of [["novamart", "placeWebOrder", { articleId: "A-10001", qty: 99999 }], ["elevon", "createPO", { supplierId: "S-NIX", lines: [] }], ["aventra", "assignStaff", { projectId: "P-0000", employeeIds: [], hoursPerMonth: 1 }]]) { const r = E.dispatch(w, tid, cmd, p, A); ok(!r.ok, cmd + " abgelehnt"); }
+  ok(hs() === h0, "alle Mandanten unverändert");
+  const src = require("fs").readFileSync(require("path").join(__dirname, "../src/engine.js"), "utf8"); const writes = src.split("\n").filter(l => /w\.tenants\[/.test(l) && !/^function (send|createWorld|resetTenant)\b/.test(l.trim()) && !/snapOther|const t = w\.tenants\[tenantId\]/.test(l));
+  ok(writes.length === 0, "unerwarteter Zugriff auf andere Mandanten: " + writes.map(l => l.trim().slice(0, 60)).join(" | "));
+  const n0 = w.tenants.elevon.inbox.length; run(w, "novamart", "orderLiftsFromElevon", { qty: 1 }); ok(w.tenants.elevon.inbox.length === n0 + 1, "Nachricht an Elevon zugestellt");
+});
+
 for (const [s, n] of results) console.log((s === "ok" ? "  ✓ " : "  ✗ ") + n);
 console.log(`\n${pass} bestanden, ${failN} fehlgeschlagen`);
 process.exit(failN ? 1 : 0);

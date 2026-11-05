@@ -200,14 +200,16 @@ Fehler sind strukturiert: `{ code: "FORBIDDEN" | "NOT_FOUND" | "DATA_GAP", text 
 
 **Annahmen:** Funktionale Abdeckung je Branche und Kostensätze sind Annahmen, keine gemessenen Werte und keine Herstellerpreise.
 
+**Stresstest (v0.9.8):** Ergebnisse und Behebungen in [`stresstest.md`](stresstest.md); unter anderem Risk Intelligence bei 2.500 Unternehmen 0,5 s statt 5,9 s.
+
 **Gemessen** mit `node test/pe.bench.js 100` im Cloud-Container der Entwicklung, ohne Server und ohne Datenbank:
 
 | Messgröße | Wert |
 |---|---|
 | Datenumfang | 2.500 Unternehmen, 90.000 Monatsdatensätze, 1,62 Mio. Kontensalden |
-| Welt erzeugen | rund 2,1 s |
-| Portfolio-Kennzahlen über alle Unternehmen | rund 1,2 s |
-| Unternehmensliste eines Fonds | rund 0,45 s |
+| Welt erzeugen | rund 1,4 s (vor dem Stresstest 2,1 s) |
+| Portfolio-Kennzahlen über alle Unternehmen | rund 0,2 s (vorher 1,2 s) |
+| Unternehmensliste eines Fonds | rund 0,08 s (vorher 0,45 s) |
 
 Für die Zielgröße mit Tausenden Unternehmen und Millionen Buchungen braucht es die Serverarchitektur mit Vorberechnung (materialisierte Monatsaggregate) und Caching. Diese Werte sind dort erst zu messen.
 

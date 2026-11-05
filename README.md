@@ -183,7 +183,7 @@ Ein Bereich **Private Equity** in derselben Navigation, für PE-Investoren. Plan
   - Administration: Organisation, Fonds und Unternehmen anlegen, mit Rollenprüfung.
   - Financial Intelligence, Cash & Liquidity, AI Financial Advisor, ERP Integration Hub, Konsolidierung, Investment Performance mit Exit-Simulation, Value Creation, Risk Intelligence, Portfolio Onboarding und ERP-Transformation (Szenarien A–D mit Beispielwerten, keine Herstellerpreise). Details je Phase im CHANGELOG.
 - **Aggregation:** Portfolio-Summen sind eine Management-Aggregation zu 100 % der aktiven Unternehmen, nicht anteilig und keine Konsolidierung. Unternehmen im Onboarding sind ausgeschlossen und werden benannt.
-- **Tests:** `node test/pe.test.js` (60 Tests, in CI) und `python test/e2e.py` (Block „PE Command Center“). Leistungsmessung des Rechenkerns: `node test/pe.bench.js 100` (2.500 Unternehmen).
+- **Tests:** `node test/pe.test.js` (60 Tests, in CI) und `python test/e2e.py` (Block „PE Command Center“). Leistungsmessung des Rechenkerns: `node test/pe.bench.js 100` (2.500 Unternehmen). Stresstests: `node test/pe.stress.js` und `python test/ui.stress.py`, Ergebnisse in [`docs/stresstest.md`](docs/stresstest.md).
 
 ## Marktposition pflegen
 

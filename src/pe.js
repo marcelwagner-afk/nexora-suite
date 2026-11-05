@@ -4,7 +4,7 @@
    Jede Lesefunktion verlangt einen Principal und prüft die Berechtigung selbst (Organisation, Fonds, Unternehmen,
    Freigabestufe). In dieser Auslieferung läuft die Prüfung im selben Programm wie die Oberfläche – kein Server. */
 (function (root, factory) { if (typeof module === "object" && module.exports) module.exports = factory(); else root.NexoraPE = factory(); })(typeof self !== "undefined" ? self : this, function () {
-  const VERSION = "0.9.0";
+  "use strict"; const VERSION = "0.9.0";
   const SEED = 20261102;
   const VALUATION_DATE = "2026-10-31";
   const LAST = "2026-10"; const MONTHS = 36;
@@ -222,14 +222,18 @@
   /* ---------- Harmonisierung: lokale Konten → Konzernkategorien, Umrechnung in EUR ---------- */
   const catOfAccount = fam => { const m = {}; for (const [cat, list] of Object.entries(COA_FAMILY[fam])) for (const [no] of list) m[no] = cat; return m; };
   const CAT_CACHE = {};
-  function harmonizedMonth(W, c, i) {
-    const m = W.data[c.id][i]; const map = CAT_CACHE[c.erpFamily] || (CAT_CACHE[c.erpFamily] = catOfAccount(c.erpFamily)); const out = {}; for (const k of Object.keys(GROUP_COA)) out[k] = 0;
+  // Monatswerte sind nach dem Aufbau der Welt unveränderlich: Ergebnis je Monatsdatensatz zwischenspeichern (Stresstest: größter Einzelposten)
+  const HM_CACHE = new WeakMap(), EM_CACHE = new WeakMap();
+  function harmonizedMonth(W, c, i) { const m = W.data[c.id][i]; let o = HM_CACHE.get(m); if (!o) { o = Object.freeze(harmonizedRaw(W, c, m)); HM_CACHE.set(m, o); } return o; }
+  function harmonizedRaw(W, c, m) {
+    const map = CAT_CACHE[c.erpFamily] || (CAT_CACHE[c.erpFamily] = catOfAccount(c.erpFamily)); const out = {}; for (const k of Object.keys(GROUP_COA)) out[k] = 0;
     for (const [no, v] of Object.entries(m.accounts)) out[map[no]] += v; return out;
   }
   const rateOf = (W, cur, p) => W.fx[cur][p];
   /* Flüsse zum Monatsdurchschnittskurs, Bestände zum Stichtagskurs (Monatsende) */
-  function eurMonth(W, c, i) { const h = harmonizedMonth(W, c, i); const p = W.periods[i]; const r = rateOf(W, c.currency, p); const o = {};
-    for (const [k, [, kind]] of Object.entries(GROUP_COA)) o[k] = h[k] / (kind === "Bilanz" ? r.close : r.avg); return o; }
+  function eurMonth(W, c, i) { const m = W.data[c.id][i]; const key = c.currency; let byCur = EM_CACHE.get(m); if (byCur && byCur[key]) return byCur[key];
+    const h = harmonizedMonth(W, c, i); const p = W.periods[i]; const r = rateOf(W, c.currency, p); const o = {};
+    for (const [k, [, kind]] of Object.entries(GROUP_COA)) o[k] = h[k] / (kind === "Bilanz" ? r.close : r.avg); Object.freeze(o); if (!byCur) EM_CACHE.set(m, byCur = {}); byCur[key] = o; return o; }
 
   /* ---------- Zeiträume ---------- */
   const PERIOD_SETS = { LTM: { label: "LTM Nov 2025 – Okt 2026", from: "2025-11", to: "2026-10" }, "FY2026YTD": { label: "GJ 2026 bis Oktober", from: "2026-01", to: "2026-10" }, FY2025: { label: "GJ 2025", from: "2025-01", to: "2025-12" }, FY2024: { label: "GJ 2024", from: "2024-01", to: "2024-12" } };
@@ -824,7 +828,7 @@
     if (["vcAdd", "vcUpdate"].includes(cmd)) { const c = W.companies.find(z => z.id === (x.companyId || (W.vc.items.find(i => i.id === x.id) || {}).companyId)); if (!c) fail("NOT_FOUND", "Unternehmen oder Initiative unbekannt.");
       const okR = (["pe_admin", "fund_manager"].includes(p.role) && access(W, p, c, "kpi")) || (p.role === "operating_partner" && access(W, p, c, "kpi")) || (["portfolio_cfo", "portfolio_controller"].includes(p.role) && p.companyId === c.id); if (!okR) fail("FORBIDDEN", "Initiativen pflegen PE-Team, Operating Partner und CFO/Controller des Unternehmens.");
       if (cmd === "vcAdd") { if (!VC_CATS[x.category]) fail("INPUT", "Kategorie fehlt."); const id = "VC-" + String(++W.vc.seq).padStart(3, "0"); W.vc.items.push({ id, companyId: c.id, category: x.category, lever: c.id + ":" + x.category + ":" + slug(x.lever || x.name), name: String(x.name || "").slice(0, 80), description: String(x.description || ""), owner: p.name, baseline: +x.baseline || 0, ebitdaImpact: x.category === "wc" ? 0 : +x.ebitdaImpact || 0, cashImpact: +x.cashImpact || 0, costs: +x.costs || 0, due: x.due || "2027-12-31", actualEbitda: 0, status: "identifiziert", evidence: x.evidence || "manuell erfasst" }); return { text: `Initiative ${id} angelegt`, id }; }
-      const it = W.vc.items.find(i => i.id === x.id); if (x.status) { if (!["identifiziert", "genehmigt", "laufend", "gefährdet", "abgeschlossen", "verworfen"].includes(x.status)) fail("INPUT", "Unbekannter Status."); it.status = x.status; } if (x.actualEbitda != null) it.actualEbitda = +x.actualEbitda; return { text: `Initiative ${it.id}: ${it.status}` }; }
+      const it = W.vc.items.find(i => i.id === x.id); if (!it || it.companyId !== c.id) fail("NOT_FOUND", "Initiative unbekannt."); if (x.status) { if (!["identifiziert", "genehmigt", "laufend", "gefährdet", "abgeschlossen", "verworfen"].includes(x.status)) fail("INPUT", "Unbekannter Status."); it.status = x.status; } if (x.actualEbitda != null) it.actualEbitda = +x.actualEbitda; return { text: `Initiative ${it.id}: ${it.status}` }; }
     if (["onbConfirmDsa", "onbRequest", "onbActivate"].includes(cmd)) { const c = W.companies.find(z => z.id === x.companyId); if (!c) fail("NOT_FOUND", "Unternehmen unbekannt."); const isAdmin = p.role === "pe_admin" && p.orgId === c.orgId; const own = ["portfolio_controller", "company_admin", "portfolio_cfo"].includes(p.role) && p.companyId === c.id;
       if (cmd === "onbConfirmDsa") { if (!isAdmin && !own) fail("FORBIDDEN", "Datenfreigabe bestätigen PE-Administrator oder das Unternehmen."); if (x.level && LEVEL[x.level]) c.dsa.level = x.level; W.onb.dsaOk[c.id] = p.name; return { text: `Datenfreigabe ${c.name}: ${c.dsa.level} bestätigt` }; }
       const o = onboarding(W, Object.assign({}, p, isAdmin || own ? {} : {}), c.id);

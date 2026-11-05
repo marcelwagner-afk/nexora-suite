@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.9.8 – Stresstest (2026-11)
+
+- **Neue Stresstests:** `test/pe.stress.js` (Skalierung bis 2.500 Unternehmen, Engine-Last S/M/L, 3.000 Zufallsbefehle mit Invarianten) und `test/ui.stress.py` (alle PE-Seiten im Browser, auch mit 255 Unternehmen, und 300 Geschäftsvorfälle Dauerlast). Eine verkleinerte Fassung läuft in CI. Ergebnisse: `docs/stresstest.md`.
+- **Behoben:** Absturz bei „Initiative aktualisieren“ mit unbekannter Initiative; jetzt fachlicher Fehler.
+- **Schneller:** Die Engine sichert für die Atomarität nur noch den betroffenen Mandanten (plus Eingangskorb der anderen) statt der ganzen Welt: Größe L rund 5-mal schneller je Befehl. Der PE-Rechenkern speichert umgerechnete Monatswerte zwischen: Risk Intelligence bei 2.500 Unternehmen von 5,9 s auf 0,5 s.
+- **Robuster:** PE-Rechenkern im Strict Mode, zwischengespeicherte Monatswerte sind eingefroren. Neuer Engine-Test zur Atomarität über alle drei Mandanten.
+
 ## v0.9.7 – Modell B mit Engine-Daten (2026-11)
 
 - **Elevon, NovaMart und Aventra im PE-Portfolio:** neuer Demo-Investor „Nordlicht Beteiligungen“ mit Fonds „Nordlicht Plattform I“ und Zugang Nora Lindqvist. Ab Nov 2025 kommen alle Monatswerte aus den Buchungen der NEXORA-Engine (Kontenplan der Engine, kein Mapping). Davor steht eine gekennzeichnete synthetische Fortschreibung ohne Belege.
