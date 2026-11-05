@@ -195,6 +195,16 @@ async def pe(p):
   cl = await pg.evaluate("document.querySelector('#peAiBody .ai-via') && document.querySelector('#peAiBody .ai-via').innerText"); print("Advisor (Claude-Double):", cl); assert cl and "pe_analyse" in cl and "pe_fonds" in cl
   await pg.evaluate("S.pe.principal='p6'; S.pe.chat=[]"); fx = await pg.evaluate("peAiTools(peP()).find(t => t.name === 'pe_fonds').execute({ fund: 'F1' })"); print("Werkzeug mit CFO-Rechten:", fx); assert fx.get("fehler") == "FORBIDDEN"
   await pg.evaluate("BK.sample = null; S.pe.aiMode=null; S.pe.principal='p1'; S.pe.log=[]; PEW=null; peSave()")
+  # PE-Phase 4: ERP Integration Hub – Mapping-Fehler beheben und neu synchronisieren
+  await pg.evaluate("S.pe.principal='p1'; S.pe.log=[]; PEW=null; location.hash='pe-hub'; render()"); await pg.wait_for_timeout(200)
+  h0 = await pg.evaluate("NexoraPE.hubMonitor(peWorld(), peP(), {}).error"); await pg.click("tr[data-id=PC25]"); await pg.wait_for_timeout(150)
+  for acc, cat in (("4730", "REV"), ("6640", "OPEX_OTHER"), ("6805", "OPEX_OTHER")):
+    await pg.select_option(f"#map-{acc}", cat); await pg.click(f"[data-act=peMap][data-acc='{acc}']"); await pg.wait_for_timeout(120)
+  await pg.click("[data-act=peSync][data-mode=voll]"); await pg.wait_for_timeout(200)
+  hs = await pg.evaluate("(() => { const d = NexoraPE.hubDetail(peWorld(), peP(), 'PC25'); return { health: d.health, diff: d.reconDiff, last: d.runs[0].status, by: d.runs[0].by, err: NexoraPE.hubMonitor(peWorld(), peP(), {}).error }; })()"); print("Integration Hub:", h0, "Fehler →", hs); assert hs["health"] == "ok" and hs["diff"] == 0 and hs["err"] == h0 - 1 and hs["by"] == "Dr. Katharina Brandt"
+  await pg.screenshot(path=SP + "pe_hub.png", full_page=True)
+  await pg.evaluate("S.pe.principal='p2'; render()"); await pg.click("tr[data-id=PC01]"); await pg.wait_for_timeout(120); assert await pg.evaluate("document.querySelectorAll('[data-act=peSync]').length") == 0, "Fund Manager ohne Lauf-Schaltflächen"
+  await pg.evaluate("S.pe.principal='p1'; S.pe.log=[]; PEW=null; S.pe.hub=null; peSave()")
   await pg.set_viewport_size({"width": 400, "height": 820}); await pg.evaluate("location.hash='pe'; render()"); await pg.wait_for_timeout(200); sw = await pg.evaluate("document.documentElement.scrollWidth"); print("PE bei 400 px, Seitenbreite:", sw); assert sw <= 400
   await pg.screenshot(path=SP + "pe_mobile.png"); await b.close(); assert not errs, errs; print("PE Command Center ok")
 

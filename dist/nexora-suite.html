@@ -463,6 +463,12 @@ body.layer .app.live .cost-ctr{display:none}
 .pe-wf{position:relative;display:block;height:10px;width:160px;background:linear-gradient(90deg,transparent calc(50% - 1px),var(--line-strong) calc(50% - 1px),var(--line-strong) calc(50% + 1px),transparent calc(50% + 1px))}.pe-wf i{position:absolute;top:1px;height:8px;border-radius:3px}.pe-wf i.neg{background:var(--crit)}.pe-wf i.pos{background:var(--good)}
 .pe-spark{width:120px;height:28px}.pe-spark polyline{fill:none;stroke:var(--accent);stroke-width:2}.pe-spark polyline.neg{stroke:var(--crit)}.pe-spark .z{stroke:var(--line-strong);stroke-dasharray:2 2}
 .pe-ans{display:flex;flex-direction:column;gap:8px}.pe-ev{display:grid;grid-template-columns:100px 1fr;gap:2px 10px;margin:0}.pe-ev dt{color:var(--fg-3)}.pe-ev dd{margin:0}
+/* PE-Phase 4 */
+.pe-tbl tr.sel td{background:var(--accent-soft)}.pe-tbl tr.rej td{background:var(--crit-soft)}
+.pe-hubdet{display:flex;flex-direction:column;gap:12px;border-color:var(--accent-line)}.pe-h4{font-size:13px;margin:4px 0 6px;color:var(--fg-2)}
+.pe-steps{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px}
+.pe-hubgrid{grid-template-columns:minmax(0,1fr) minmax(0,2fr)}@media (max-width:1100px){.pe-hubgrid{grid-template-columns:minmax(0,1fr)}}
+.pe-db.static{cursor:default}.pe-db.static:hover{background:none}
 
 </style>
 <div id="root"></div>
@@ -2351,7 +2357,7 @@ return { MIG_PROJECTS, WORK_CENTERS, CATALOG, CATEGORY_DEFAULT, deriveDrawing, R
     const data = {}; for (const c of companies) { const g = genMonthly(mulberry32(hashStr(c.id) ^ seed), c); data[c.id] = g.months; c.debtInfo = g.debt; }
     const W = { adjust: {}, version: VERSION, seed, valuationDate: VALUATION_DATE, periods: PERIODS.slice(), orgs, funds, portfolios, companies, data, fx, note: DEMO_NOTE };
     for (const c of companies) c.investment = genInvestment(mulberry32(hashStr(c.id + "inv") ^ seed), W, c);
-    W.principals = demoPrincipals(W);
+    W.principals = demoPrincipals(W); hubInit(W);
     return W;
   }
 
@@ -2724,6 +2730,72 @@ return { MIG_PROJECTS, WORK_CENTERS, CATALOG, CATEGORY_DEFAULT, deriveDrawing, R
         rows: l.map(r => ({ id: r.id, Unternehmen: r.name, "EBITDA-Marge": pctS(r.margin) + " (Median " + pctS(cmp.median.margin) + ")", Wachstum: pctS(r.revenueGrowth) + " (Median " + pctS(cmp.median.revenueGrowth) + ")", "Plan EBITDA": pv[r.id] ? pctS(pv[r.id].ebitdaVar) : "–", Health: r.health })), period: "LTM Nov 2025 – Okt 2026; Plan GJ 2026 Jan–Okt", method: "Unter Median bei Marge und Wachstum oder EBITDA-Planabweichung < −5 %", confidence: "hoch (Ist-Daten)", action: "Performance-Review mit Operating Partner und Geschäftsführung" }); }
     return Object.assign(base, { title: "Frage nicht zugeordnet", text: "Ich beantworte Fragen zu Performance, Margen, Liquidität, Working Capital, Risiko, Vergleichen, Planerreichung und Prognosen – immer mit den Zahlen des Rechenkerns. Beispiele siehe unten.", rows: [], period: "–", method: "Regelbasierte Zuordnung", confidence: "–", action: "Frage umformulieren", examples: EXAMPLES }); }
   const perLabel = per => ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"][+per.slice(5) - 1] + " " + per.slice(0, 4);
+
+  /* ===== PE-Phase 4: ERP Integration Hub – Connector-Framework (simuliert, deterministisch) =====
+     Ein Lauf: Authentifizierung → Extraktion → Validierung → Mapping → Abstimmung (Quelle → Harmonisiert → Bericht) → Laden.
+     Das Portfolio-Reporting nutzt immer den letzten abgestimmten Stand; ein fehlerhafter Lauf überschreibt nichts. */
+  const CONNECTOR_SPECS = {
+    "SAP S/4HANA": { methods: ["OData V4 (API_JOURNALENTRYITEMBASIC_SRV u. a.)", "CDS-Views über freigegebene APIs", "Event Mesh (Ereignisse)"], auth: "OAuth 2.0 Client Credentials über Kommunikationsvereinbarung", domains: ["Hauptbuch", "Debitoren", "Kreditoren", "Kostenstellen", "Profitcenter", "Innenaufträge", "Abschluss"], incremental: true, note: "Verfügbarkeit der APIs hängt von Release, Cloud/On-Premise und Lizenz ab; nur freigegebene Schnittstellen." },
+    "SAP ECC": { methods: ["Datei-Export (Summen- und Saldenliste)", "RFC/BAPI über Middleware (je nach Freigabe)"], auth: "Technischer Benutzer bzw. SFTP-Schlüssel", domains: ["Hauptbuch", "Debitoren", "Kreditoren", "Kostenstellen"], incremental: false, note: "Keine einheitliche API: Release-, Add-on- und Lizenzstand bestimmen den Weg; im Zweifel Datei-Export." },
+    "SAP Business One": { methods: ["Service Layer (REST/OData)"], auth: "Session-Login Service Layer", domains: ["Hauptbuch", "Debitoren", "Kreditoren", "Kostenstellen"], incremental: true, note: "Service Layer je Mandantendatenbank." },
+    "Microsoft Dynamics 365": { methods: ["REST/OData (Dataverse bzw. Finance-Entitäten)"], auth: "OAuth 2.0 (Entra ID App-Registrierung)", domains: ["Hauptbuch", "Debitoren", "Kreditoren", "Kostenstellen", "Dimensionen"], incremental: true, note: "Entitäten und Dimensionen je Implementierung unterschiedlich." },
+    "Oracle ERP Cloud": { methods: ["REST", "BI Publisher-Export"], auth: "OAuth 2.0 bzw. Basic über IDCS", domains: ["Hauptbuch", "Debitoren", "Kreditoren", "Kostenstellen"], incremental: true, note: "Große Volumen über Massen-Export." },
+    "Oracle NetSuite": { methods: ["SuiteTalk REST", "SuiteQL"], auth: "Token-based Authentication", domains: ["Hauptbuch", "Debitoren", "Kreditoren", "Abteilungen/Klassen"], incremental: true, note: "Gesellschaften als Subsidiaries." },
+    "DATEV": { methods: ["DATEV-Format-Export (CSV)", "Upload über Steuerberater"], auth: "Datei-Upload, signiert", domains: ["Hauptbuch (Salden)", "Debitoren", "Kreditoren"], incremental: false, note: "Meist monatlicher Export nach Abschluss durch den Steuerberater; keine Einzelposten im Standardexport." },
+    "Sage": { methods: ["CSV-Import", "REST (Sage Business Cloud)"], auth: "Datei-Upload bzw. OAuth", domains: ["Hauptbuch", "Debitoren", "Kreditoren"], incremental: false, note: "Produktlinie bestimmt die Schnittstelle." },
+    "Infor": { methods: ["ION API (REST)", "Datenbank-Replikation (nur mit Freigabe)"], auth: "OAuth 2.0 (ION API Gateway)", domains: ["Hauptbuch", "Debitoren", "Kreditoren", "Kostenstellen"], incremental: true, note: "Je Produkt (M3, LN, CloudSuite) unterschiedlich." },
+    "Eigenentwicklung": { methods: ["SFTP-Datei (CSV)", "Datenbank-View (nur mit Freigabe)"], auth: "SFTP-Schlüssel", domains: ["Hauptbuch (Salden)"], incremental: false, note: "Satzbeschreibung individuell vereinbart." },
+    "NEXORA AI Suite": { methods: ["NEXORA-Engine (Ereignisse, live)"], auth: "Mandantenfreigabe in NEXORA", domains: ["Hauptbuch", "Debitoren", "Kreditoren", "Kostenstellen", "Prozesse"], incremental: true, note: "Modell B: NEXORA ist das operative ERP." }
+  };
+  // Quellkonten, die im Standard-Mapping fehlen (deterministisch je Unternehmen); ihr Betrag ist Teil der Kategorie „truth“
+  const HUB_EXTRA = { PC10: [{ no: "480000", name: "Erlösschmälerungen", truth: "REV", share: -0.02 }, { no: "699900", name: "Sonstige Aufwendungen Altsystem", truth: "OPEX_OTHER", share: 0.1 }],
+    PC25: [{ no: "4730", name: "Gewährte Skonti", truth: "REV", share: -0.01 }, { no: "6640", name: "Bewirtungskosten", truth: "OPEX_OTHER", share: 0.05 }, { no: "6805", name: "Telefon und Internet", truth: "OPEX_OTHER", share: 0.04 }] };
+  const HUB_DATE = "2026-11-02"; const HUB_PERIOD = LAST;
+  function hubInit(W) {
+    W.hub = { runs: {}, map: {}, cred: { PC20: "abgelaufen" }, seq: 0, lastOk: {} };
+    // Startzustand: vorheriger Monat überall abgestimmt; aktueller Lauf je Szenario
+    for (const c of W.companies.filter(x => !x.noData)) { const prev = { id: ++W.hub.seq, companyId: c.id, date: "2026-10-02", period: "2026-09", mode: "inkrementell", by: "Zeitplan", status: "ok", steps: [{ name: "Laden", status: "ok", text: "Monatsabschluss September abgestimmt und geladen (Ausgangszustand der Demo)" }], completeness: 1, records: 0, recon: { diff: 0 } }; W.hub.runs[c.id] = [prev]; W.hub.lastOk[c.id] = prev; hubRun(W, c, { mode: c.id === "PC10" ? "inkrementell" : CONNECTOR_SPECS[c.erp].incremental ? "inkrementell" : "voll", by: "Zeitplan" }); }
+  }
+  function sourceAccounts(W, c, i) { // Quellsicht: lokale Konten inkl. Konten außerhalb des Standard-Mappings
+    const m = W.data[c.id][i].accounts; const map = catOfAccount(c.erpFamily); const extra = HUB_EXTRA[c.id] || []; const rows = Object.entries(m).filter(([no]) => GROUP_COA[map[no]][1] !== "Cashflow").map(([no, v]) => ({ no, name: COA_FAMILY[c.erpFamily][map[no]].find(x => x[0] === no)[1], truth: map[no], amount: v }));
+    for (const x of extra) { const main = rows.find(r => r.truth === x.truth); const amt = r2(main.amount * x.share); main.amount = r2(main.amount - amt); rows.push({ no: x.no, name: x.name, truth: x.truth, amount: amt, extra: true }); }
+    return rows;
+  }
+  function hubRun(W, c, opt) {
+    const i = W.periods.indexOf(HUB_PERIOD); const spec = CONNECTOR_SPECS[c.erp]; const steps = []; const run = { id: ++W.hub.seq, companyId: c.id, date: HUB_DATE, period: HUB_PERIOD, mode: opt.mode, by: opt.by, steps, status: "ok", completeness: 1, records: 0, unmapped: [], recon: null };
+    const step = (name, status, text) => { steps.push({ name, status, text }); if (status === "error") run.status = "error"; else if (status === "warn" && run.status === "ok") run.status = "warn"; };
+    if (W.hub.cred[c.id] === "abgelaufen") { step("Authentifizierung", "error", `${spec.auth}: Zugang abgelaufen – Lauf abgebrochen, Bericht unverändert`); return finishRun(W, c, run); }
+    step("Authentifizierung", "ok", spec.auth + " (simuliert)");
+    const src = sourceAccounts(W, c, i); const nLE = c.entities.length; const missing = c.id === "PC10" && opt.mode !== "voll" && nLE > 1 ? 1 : c.id === "PC10" && opt.mode !== "voll" ? 0.08 : 0;
+    run.records = src.length * nLE * (ERP[c.erp].lineItems ? 9 : 1); run.completeness = missing >= 1 ? (nLE - 1) / nLE : 1 - missing;
+    step("Extraktion", run.completeness < 1 ? "warn" : "ok", `${run.records} Datensätze über ${spec.methods[0]}${run.completeness < 1 ? ` – Vollständigkeit ${Math.round(run.completeness * 100)} %: verspätete Buchungen einer Gesellschaft fehlen im Delta-Export; Vollabzug nötig` : ""}`);
+    const h = harmonizedMonth(W, c, i); const bal = h.CASH + h.AR + h.INV + h.FA - h.AP - h.DEBT - h.EQ; step("Validierung", Math.abs(bal) > 1 ? "error" : "ok", Math.abs(bal) > 1 ? `Bilanz unausgeglichen (${bal.toFixed(2)})` : `Summen- und Saldenliste ausgeglichen, Periode ${HUB_PERIOD} abgeschlossen, Währung ${c.currency} bekannt`);
+    const ov = W.hub.map[c.id] || {}; const map = catOfAccount(c.erpFamily); run.unmapped = src.filter(r => r.extra && !ov[r.no]).map(r => ({ no: r.no, name: r.name, amount: r.amount }));
+    step("Mapping", run.unmapped.length ? "error" : "ok", run.unmapped.length ? `${run.unmapped.length} Konten ohne Zuordnung zum Konzernkontenplan: ${run.unmapped.map(x => x.no + " " + x.name).join(", ")}` : `${src.length} Konten zugeordnet${Object.keys(ov).length ? ` (davon ${Object.keys(ov).length} manuell)` : ""}`);
+    // Abstimmung je Kategorie: Quelle (fachlich richtige Kategorie) → Harmonisiert (Mapping) → Bericht (letzter Stand)
+    const cats = ["REV", "COGS", "OPEX_PERS", "OPEX_OTHER", "DA", "INT", "TAX", "CASH", "AR", "INV", "FA", "AP", "DEBT", "EQ"]; const S = {}, Hm = {}; for (const k of cats) { S[k] = 0; Hm[k] = 0; }
+    for (const r of src) { S[r.truth] += r.amount * run.completeness; const cat = r.extra ? ov[r.no] : r.truth; if (cat) Hm[cat] = (Hm[cat] || 0) + r.amount * run.completeness; }
+    const rows = cats.map(k => ({ category: k, label: GROUP_COA[k][0], source: r2(S[k]), harmonized: r2(Hm[k] || 0), report: r2(h[k]), diffSourceHarm: r2((Hm[k] || 0) - S[k]), diffHarmReport: r2((Hm[k] || 0) - h[k]) }));
+    const diff = r2(rows.reduce((a, x) => a + Math.abs(x.diffSourceHarm) + Math.abs(x.diffHarmReport), 0)); run.recon = { rows, diff, currency: c.currency };
+    step("Abstimmung", diff > 1 ? (run.unmapped.length || run.completeness < 1 ? "error" : "warn") : "ok", diff > 1 ? `Differenz ${diff.toLocaleString("de-DE")} ${c.currency} zwischen Quelle, harmonisierten Daten und Bericht` : "Quelle = Harmonisiert = Bericht je Kategorie");
+    return finishRun(W, c, run);
+  }
+  function finishRun(W, c, run) {
+    if (run.status === "ok") { run.steps.push({ name: "Laden", status: "ok", text: `Bericht auf Stand ${run.period} aktualisiert` }); W.hub.lastOk[c.id] = run; }
+    else run.steps.push({ name: "Laden", status: "skip", text: `Nicht geladen – Bericht bleibt auf dem letzten abgestimmten Stand (${W.hub.lastOk[c.id] ? W.hub.lastOk[c.id].period : "keiner"})` });
+    W.hub.runs[c.id] = (W.hub.runs[c.id] || []).concat([run]).slice(-12); return run;
+  }
+  function hubStatus(W, c) {
+    const runs = (W.hub.runs[c.id] || []); const last = runs[runs.length - 1] || null; const ok = W.hub.lastOk[c.id] || null;
+    const health = !last ? "error" : last.status === "error" ? "error" : last.status === "warn" || !ok || ok.period !== HUB_PERIOD ? "warn" : "ok";
+    return { id: c.id, name: c.name, erp: c.erp, method: CONNECTOR_SPECS[c.erp].methods[0], last, lastSuccess: ok ? { date: ok.date, period: ok.period } : null, completeness: last ? last.completeness : 0, mappingErrors: last ? (last.unmapped || []).length : 0, reconDiff: last && last.recon ? last.recon.diff : null, failures: runs.filter(r => r.status === "error").length, health, credential: W.hub.cred[c.id] || "gültig" };
+  }
+  function hubMonitor(W, p, filter) {
+    const cs = visibleCompanies(W, p, filter).filter(c => !c.noData); const rows = cs.map(c => hubStatus(W, c)); const bySys = {}; for (const r of rows) bySys[r.erp] = (bySys[r.erp] || 0) + 1;
+    return { companies: rows.length, systems: bySys, ok: rows.filter(r => r.health === "ok").length, warn: rows.filter(r => r.health === "warn").length, error: rows.filter(r => r.health === "error").length, mappingErrors: rows.reduce((a, r) => a + r.mappingErrors, 0), reconDiffCompanies: rows.filter(r => r.reconDiff > 1).length, failures: rows.reduce((a, r) => a + r.failures, 0), avgCompleteness: rows.length ? rows.reduce((a, r) => a + r.completeness, 0) / rows.length : null, rows };
+  }
+  function hubDetail(W, p, id) { const c = guard(W, p, W.companies.find(x => x.id === id), "kpi"); if (c.noData) fail("DATA_GAP", "Noch keine ERP-Anbindung."); return Object.assign(hubStatus(W, c), { spec: CONNECTOR_SPECS[c.erp], runs: (W.hub.runs[c.id] || []).slice().reverse(), mapping: Object.assign({}, W.hub.map[c.id] || {}), lineItems: ERP[c.erp].lineItems }); }
+  const HUB_ROLES = (W, p, c) => (p.role === "pe_admin" && p.orgId === c.orgId && access(W, p, c, "kpi")) || (["portfolio_controller", "company_admin", "portfolio_cfo"].includes(p.role) && p.companyId === c.id);
   /* ---------- Verwaltung: Organisation, Fonds, Unternehmen anlegen (Befehle mit Rechteprüfung, wiederholbar aus einem Protokoll) ---------- */
   const slug = s => String(s || "").toLowerCase().normalize("NFD").replace(/[^a-z0-9]+/g, "").slice(0, 10);
   function apply(W, p, cmd, x) {
@@ -2745,13 +2817,19 @@ return { MIG_PROJECTS, WORK_CENTERS, CATALOG, CATEGORY_DEFAULT, deriveDrawing, R
     if (cmd === "approveAdjustment" || cmd === "rejectAdjustment") { const c = W.companies.find(z => z.id === x.companyId); if (!c || c.standard !== "HGB") fail("NOT_FOUND", "Keine Anpassung für dieses Unternehmen.");
       const okRole = (p.role === "pe_admin" && p.orgId === c.orgId) || (["portfolio_controller", "portfolio_cfo"].includes(p.role) && p.companyId === c.id); if (!okRole || !access(W, p, c, "statements")) fail("FORBIDDEN", "GAAP-Anpassungen geben nur der PE Group Administrator (mit Abschlussfreigabe) oder Controller/CFO des Unternehmens frei.");
       W.adjust[c.id] = { status: cmd === "approveAdjustment" ? "freigegeben" : "abgelehnt", by: p.name }; return { text: `IFRS-16-Anpassung ${c.name}: ${W.adjust[c.id].status} (${p.name})` }; }
+    if (["syncRun", "mapAccount", "renewCredential"].includes(cmd)) { const c = W.companies.find(z => z.id === x.companyId); if (!c || c.noData) fail("NOT_FOUND", "Unternehmen ohne ERP-Anbindung.");
+      if (!HUB_ROLES(W, p, c)) fail("FORBIDDEN", "Integrationen steuern nur der PE Group Administrator und Controller, CFO bzw. Administrator des eigenen Unternehmens.");
+      if (cmd === "renewCredential") { delete W.hub.cred[c.id]; return { text: `Zugang für ${c.erp} bei ${c.name} erneuert (simuliert)` }; }
+      if (cmd === "mapAccount") { if (!GROUP_COA[x.category] || GROUP_COA[x.category][1] === "Cashflow") fail("INPUT", "Unbekannte Konzernkategorie."); if (!(HUB_EXTRA[c.id] || []).some(e => e.no === x.account) && !Object.keys(W.data[c.id][0].accounts).includes(x.account)) fail("NOT_FOUND", "Konto im Quellsystem unbekannt.");
+        W.hub.map[c.id] = Object.assign({}, W.hub.map[c.id] || {}, { [x.account]: x.category }); return { text: `Konto ${x.account} → ${x.category} (${GROUP_COA[x.category][0]})` }; }
+      const run = hubRun(W, c, { mode: x.mode === "voll" ? "voll" : "inkrementell", by: p.name }); return { text: `Synchronisation ${c.name}: ${run.status === "ok" ? "erfolgreich" : run.status === "warn" ? "mit Warnungen" : "fehlgeschlagen"}`, run }; }
     fail("CMD", "Unbekannter Befehl.");
   }
   /* Konsistenzprüfung der Demodaten (für Tests und Anzeige) */
   function checkConsistency(W, c) { const errs = []; for (let i = 0; i < W.periods.length; i++) { const h = harmonizedMonth(W, c, i); const d = h.CASH + h.AR + h.INV + h.FA - h.AP - h.DEBT - h.EQ; if (Math.abs(d) > 1) errs.push(`${W.periods[i]}: Bilanzdifferenz ${d.toFixed(2)}`); } return errs; }
 
   return { VERSION, SEED, VALUATION_DATE, PERIODS, PERIOD_SETS, DEMO_NOTE, GROUP_COA, COA_FAMILY, ERP, FX_BASE, SECTOR_MULT, KPI_DEFS, HEALTH_FORMULA, ROLES, LEVEL,
-    createWorld, apply, xirr, access, adjustments, compare, marginBridge, forecast, liquidityForecast, wcPotential, planVariance, anomalies, advise, EXAMPLES, WC_METHOD, FC_METHOD, principal, companies, company, portfolioKpis, fundMetrics, funds, series, drill, insights, visibleCompanies,
+    createWorld, apply, xirr, access, hubMonitor, hubDetail, CONNECTOR_SPECS, HUB_PERIOD, adjustments, compare, marginBridge, forecast, liquidityForecast, wcPotential, planVariance, anomalies, advise, EXAMPLES, WC_METHOD, FC_METHOD, principal, companies, company, portfolioKpis, fundMetrics, funds, series, drill, insights, visibleCompanies,
     _internal: { gaapAdjust, seasonalForecast, harmonizedMonth, eurMonth, companyKpis, dealMetrics, fundCalc, checkConsistency, flowsSum, statements, budgetVsActual } };
 });
 
@@ -4573,7 +4651,7 @@ const PE_NAV = [
   ["pe", "PE Command Center", "bars", "live"], ["pecos", "Portfolio Companies", "building", "live"],
   ["pe-fin", "Financial Intelligence", "an", "live", 3], ["pe-cons", "Financial Consolidation", "pie", "plan", 5], ["pe-cash", "Cash & Liquidity", "gauge", "live", 3],
   ["pe-inv", "Investment Performance", "rocket", "plan", 5], ["pe-vc", "Value Creation", "check", "plan", 5], ["pe-risk", "Risk Intelligence", "shield", "plan", 5],
-  ["pe-ai", "AI Financial Advisor", "ai", "live", 3], ["pe-hub", "ERP Integration Hub", "db", "plan", 4], ["pe-onb", "Portfolio Onboarding", "users", "plan", 5],
+  ["pe-ai", "AI Financial Advisor", "ai", "live", 3], ["pe-hub", "ERP Integration Hub", "db", "live", 4], ["pe-onb", "Portfolio Onboarding", "users", "plan", 5],
   ["pe-trans", "ERP Transformation", "flag", "plan", 6], ["peadmin", "Administration", "set", "live"]
 ];
 const PE_PLAN = { 3: "PE-Phase 3 – Financial Intelligence", 4: "PE-Phase 4 – ERP Connectivity", 5: "PE-Phase 5 – Advanced PE Capabilities", 6: "PE-Phase 6 – ERP Transformation" };
@@ -4852,6 +4930,35 @@ VIEWS["pe-ai"] = () => {
      <form class="ai-f" data-form="peChat"><div class="composer"><input id="peChatIn" placeholder="Frage zum Portfolio …" aria-label="Frage an den AI Financial Advisor"><div class="tools">${S.pe.chat.length ? `<button type="button" class="btn sm" data-act="peAiClear">Neu</button>` : ""}<button class="send" type="submit" aria-label="Senden">${ic("send", 17)}</button></div></div></form></section>`;
 };
 // Detail-Tab „Insights“ verweist auf den Advisor
+
+/* ===== PE-Phase 4: ERP Integration Hub – Monitoring, Läufe, Mapping-Editor, Abstimmung (alle Verbindungen simuliert) ===== */
+S.pe.hub = S.pe.hub || null;
+const hubPill = h => h === "ok" ? pill("p-good", "in Ordnung") : h === "warn" ? pill("p-warn", "Warnung") : pill("p-crit", "Fehler");
+const stepPill = s => s === "ok" ? pill("p-good", "ok") : s === "warn" ? pill("p-warn", "Warnung") : s === "skip" ? pill("p-neu", "übersprungen") : pill("p-crit", "Fehler");
+Object.assign(ACT, {
+  peHubOpen(d) { S.pe.hub = d.id; render(); }, peHubClose() { S.pe.hub = null; render(); },
+  peSync(d) { peCmd("syncRun", { companyId: d.id, mode: d.mode || "inkrementell" }); }, peRenew(d) { peCmd("renewCredential", { companyId: d.id }); },
+  peMap(d) { const sel = document.getElementById("map-" + d.acc); if (!sel || !sel.value) return toast("Kategorie wählen.", true); peCmd("mapAccount", { companyId: d.id, account: d.acc, category: sel.value }); }
+});
+VIEWS["pe-hub"] = () => {
+  const w = peWorld(), p = peP(); const f = S.pe.filter; const all = PE.companies(w, p, { period: f.period }); const m = PE.hubMonitor(w, p, f);
+  if (!m.companies) return peHead("ERP Integration Hub") + peDemo() + `<section class="card card-pad"><p class="muted">Keine sichtbaren Anbindungen für ${esc(p.name)}.</p></section>`;
+  const det = S.pe.hub && m.rows.some(r => r.id === S.pe.hub) ? PE.hubDetail(w, p, S.pe.hub) : null; const canRun = id => { const c = w.companies.find(x => x.id === id); return (p.role === "pe_admin" && p.orgId === c.orgId) || (["portfolio_controller", "company_admin", "portfolio_cfo"].includes(p.role) && p.companyId === id); };
+  const tiles = `<div class="pe-kpis"><div class="pe-kpi"><span class="eyebrow">Angebundene Unternehmen</span><b class="num">${m.companies}</b><span class="small muted">${Object.keys(m.systems).length} ERP-Systeme</span></div><div class="pe-kpi"><span class="eyebrow">Systemzustand</span><b class="num">${m.ok} / ${m.warn} / ${m.error}</b><span class="small muted">in Ordnung / Warnung / Fehler</span></div><div class="pe-kpi"><span class="eyebrow">Ø Datenvollständigkeit</span><b class="num">${pePct(m.avgCompleteness)}</b><span class="small muted">letzter Lauf je Unternehmen</span></div><div class="pe-kpi"><span class="eyebrow">Mapping-Fehler</span><b class="num">${m.mappingErrors}</b><span class="small muted">Konten ohne Zuordnung</span></div><div class="pe-kpi"><span class="eyebrow">Abstimmungsdifferenzen</span><b class="num">${m.reconDiffCompanies}</b><span class="small muted">Unternehmen mit Differenz</span></div><div class="pe-kpi"><span class="eyebrow">Fehlgeschlagene Läufe</span><b class="num">${m.failures}</b><span class="small muted">in der Lauf-Historie</span></div></div>`;
+  const sysMax = Math.max(...Object.values(m.systems)); const sys = `<section class="card card-pad"><h3>ERP-Landschaft</h3><div class="pe-dist">${Object.entries(m.systems).sort((a, b) => b[1] - a[1]).map(([k, v]) => `<div class="pe-db static"><span class="lab">${esc(k)}</span><span class="bar"><i style="width:${v / sysMax * 100}%"></i></span><span class="num small">${v} Unt.</span><span></span></div>`).join("")}</div><p class="small faint">Alle Verbindungen sind simuliert; Methoden und Authentifizierung zeigen den vorgesehenen Weg je System.</p></section>`;
+  const table = `<section class="card" style="overflow:auto"><table class="small pe-tbl"><thead><tr><th>Unternehmen</th><th>ERP · Methode</th><th>Zustand</th><th>Letzte erfolgreiche Synchronisation</th><th class="r">Vollständigkeit</th><th class="r">Mapping-Fehler</th><th class="r">Abstimmungsdifferenz</th><th class="r">Fehlläufe</th></tr></thead><tbody>${m.rows.slice().sort((a, b) => ({ error: 0, warn: 1, ok: 2 })[a.health] - ({ error: 0, warn: 1, ok: 2 })[b.health]).map(r => `<tr class="click ${S.pe.hub === r.id ? "sel" : ""}" data-act="peHubOpen" data-id="${r.id}"><td><b>${esc(r.name)}</b></td><td>${esc(r.erp)}<div class="faint">${esc(r.method)} · simuliert</div></td><td>${hubPill(r.health)}</td><td>${r.lastSuccess ? `${esc(dDe(r.lastSuccess.date))} · Periode ${esc(perDe(r.lastSuccess.period))}` : "–"}</td><td class="r num">${pePct(r.completeness)}</td><td class="r num">${r.mappingErrors}</td><td class="r num">${r.reconDiff == null ? "–" : r.reconDiff > 1 ? num(Math.round(r.reconDiff)) : "0"}</td><td class="r num">${r.failures}</td></tr>`).join("")}</tbody></table></section>`;
+  let detail = "";
+  if (det) { const last = det.runs[0]; const can = canRun(det.id);
+    detail = `<section class="card card-pad pe-hubdet"><div class="row between" style="flex-wrap:wrap;gap:8px"><div><h3>${esc(det.name)} · ${esc(det.erp)}</h3><span class="small muted">${esc(det.spec.auth)} · Zugang ${esc(det.credential)}</span></div><div class="row" style="gap:6px">${can ? `${det.credential === "abgelaufen" ? `<button class="btn sm" data-act="peRenew" data-id="${det.id}">Zugang erneuern</button>` : ""}<button class="btn sm" data-act="peSync" data-id="${det.id}">Delta-Lauf</button><button class="btn sm pri" data-act="peSync" data-id="${det.id}" data-mode="voll">Vollabzug</button>` : `<span class="small faint">Läufe starten: PE-Administrator oder Controller/CFO/Admin des Unternehmens</span>`}<button class="btn sm ghost" data-act="peHubClose">Schließen</button></div></div>
+      <div class="grid g2"><div><h4 class="pe-h4">Connector</h4><div class="kv small"><span>Methoden</span><span>${det.spec.methods.map(esc).join("<br>")}</span><span>Datenbereiche</span><span>${det.spec.domains.map(esc).join(", ")}</span><span>Einzelposten</span><span>${det.lineItems ? "ja" : "nein (Salden)"}</span><span>Delta-Fähigkeit</span><span>${det.spec.incremental ? "ja" : "nein – Vollabzug je Periode"}</span><span>Hinweis</span><span>${esc(det.spec.note)}</span></div></div>
+      <div><h4 class="pe-h4">Letzter Lauf #${last.id} · ${esc(dDe(last.date))} · ${esc(last.mode)} · ${esc(last.by)}</h4><ol class="pe-steps">${last.steps.map(s => `<li>${stepPill(s.status)} <b>${esc(s.name)}</b><div class="small">${esc(s.text)}</div></li>`).join("")}</ol></div></div>
+      ${last.unmapped && last.unmapped.length ? `<h4 class="pe-h4">Mapping-Editor · Konten ohne Zuordnung</h4><table class="small pe-tbl"><thead><tr><th>Konto</th><th>Bezeichnung</th><th class="r">Betrag (${esc(last.recon ? last.recon.currency : "")})</th><th>Konzernkategorie</th><th></th></tr></thead><tbody>${last.unmapped.map(u => `<tr><td class="mono">${esc(u.no)}</td><td>${esc(u.name)}</td><td class="r num">${num(Math.round(u.amount))}</td><td><select class="input" id="map-${esc(u.no)}"><option value="">wählen …</option>${Object.entries(PE.GROUP_COA).filter(([, v]) => v[1] !== "Cashflow").map(([k, v]) => `<option value="${k}" ${det.mapping[u.no] === k ? "selected" : ""}>${k} · ${esc(v[0])}</option>`).join("")}</select></td><td>${can ? `<button class="btn sm pri" data-act="peMap" data-id="${det.id}" data-acc="${esc(u.no)}">Zuordnen</button>` : ""}</td></tr>`).join("")}</tbody></table><p class="small faint">Nach dem Zuordnen einen neuen Lauf starten. Eine falsche Zuordnung bleibt in der Abstimmung als Kategorie-Differenz sichtbar.</p>` : ""}
+      ${Object.keys(det.mapping).length ? `<p class="small">Manuelle Zuordnungen: ${Object.entries(det.mapping).map(([a, c]) => `<span class="mono">${esc(a)}</span> → ${esc(c)}`).join(" · ")}</p>` : ""}
+      ${last.recon ? `<h4 class="pe-h4">Abstimmung Quelle → Harmonisiert → Bericht · Periode ${esc(perDe(last.period))} (${esc(last.recon.currency)})</h4><div style="overflow:auto"><table class="small pe-tbl"><thead><tr><th>Kategorie</th><th class="r">Quelle (ERP)</th><th class="r">Harmonisiert</th><th class="r">Bericht</th><th class="r">Δ Quelle/Harm.</th><th class="r">Δ Harm./Bericht</th></tr></thead><tbody>${last.recon.rows.map(r => `<tr class="${Math.abs(r.diffSourceHarm) > 1 || Math.abs(r.diffHarmReport) > 1 ? "rej" : ""}"><td>${esc(r.label)}</td><td class="r num">${num(Math.round(r.source))}</td><td class="r num">${num(Math.round(r.harmonized))}</td><td class="r num">${num(Math.round(r.report))}</td><td class="r num">${num(Math.round(r.diffSourceHarm))}</td><td class="r num">${num(Math.round(r.diffHarmReport))}</td></tr>`).join("")}</tbody></table></div><p class="small faint">Quelle = Konten nach fachlicher Kategorie im ERP; Harmonisiert = nach Mapping; Bericht = Stand im Portfolio-Reporting. Bei Differenzen wird nicht geladen.</p>` : ""}
+      <h4 class="pe-h4">Lauf-Historie</h4><table class="small pe-tbl"><tbody>${det.runs.map(r => `<tr><td class="num">#${r.id}</td><td class="num">${esc(dDe(r.date))}</td><td>${esc(perDe(r.period))}</td><td>${esc(r.mode)}</td><td>${esc(r.by)}</td><td>${stepPill(r.status)}</td></tr>`).join("")}</tbody></table></section>`; }
+  const sap = `<section class="card card-pad"><h3>SAP-Anbindung: vorgesehene Wege</h3><table class="small pe-tbl"><thead><tr><th>System</th><th>Weg</th><th>Finanzdomänen</th><th>Hinweis</th></tr></thead><tbody>${["SAP S/4HANA", "SAP ECC", "SAP Business One"].map(e => `<tr><td>${esc(e)}</td><td>${PE.CONNECTOR_SPECS[e].methods.map(esc).join("<br>")}</td><td>${esc(PE.CONNECTOR_SPECS[e].domains.join(", "))}</td><td>${esc(PE.CONNECTOR_SPECS[e].note)}</td></tr>`).join("")}</tbody></table><p class="small faint">Nur unterstützte und freigegebene Schnittstellen; nicht jede SAP-Umgebung bietet denselben Zugang. ${esc(window.NexoraConnectors ? NexoraConnectors.SAP_POLICY_NOTE : "")}</p></section>`;
+  return peHead("ERP Integration Hub") + peDemo() + peFilters(all) + tiles + (det ? detail : "") + table + `<div class="grid g2 pe-hubgrid">${sys}${sap}</div>`;
+};
 
 /* ---------- Start ---------- */
 boot(); adoptAccounts(); if (window.innerWidth < 700 && route() === "home" && !location.search.includes("story=")) location.hash = "tasks"; render(); startBackend(); startRoom();

@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.9.4 – PE ERP Integration Hub (2026-11)
+
+- **Connector-Framework:** Jede ERP-Familie ist mit Methoden, Authentifizierung, Finanzdomänen, Einzelposten und Delta-Fähigkeit beschrieben, inklusive Hinweis. SAP S/4HANA, ECC und Business One haben bewusst unterschiedliche Wege. Alle Verbindungen sind simuliert.
+- **Synchronisationslauf:** Authentifizierung → Extraktion → Validierung → Mapping → Abstimmung (Quelle → Harmonisiert → Bericht) → Laden. Bei Fehlern wird nicht geladen; der Bericht behält den letzten abgestimmten Stand.
+- **Monitoring:** angebundene Unternehmen und Systeme, letzte erfolgreiche Synchronisation, Vollständigkeit, Mapping-Fehler, Abstimmungsdifferenzen, Fehlläufe, Zustand.
+- **Fehlerbilder im Startzustand:**
+  - verspäteter Delta-Export mit fehlender Gesellschaft (SAP ECC),
+  - abgelaufener SFTP-Zugang (Eigenentwicklung),
+  - offenes Mapping beim Neuerwerb (DATEV).
+- **Mapping-Editor** mit Abstimmung je Kategorie: Eine falsche Zuordnung bleibt als Kategorie-Differenz sichtbar.
+- **Rechte:** Läufe und Mapping steuern nur der PE-Administrator sowie Controller, CFO bzw. Admin des eigenen Unternehmens. Jeder Lauf wird mit Auslöser protokolliert.
+- **Tests:** `test/pe.test.js` hat jetzt 42 Tests; der e2e-Block behebt ein Mapping über die Oberfläche.
+
 ## v0.9.3 – PE Financial Intelligence (2026-11)
 
 - **Financial Intelligence:**

@@ -15,7 +15,7 @@ const PE_NAV = [
   ["pe", "PE Command Center", "bars", "live"], ["pecos", "Portfolio Companies", "building", "live"],
   ["pe-fin", "Financial Intelligence", "an", "live", 3], ["pe-cons", "Financial Consolidation", "pie", "plan", 5], ["pe-cash", "Cash & Liquidity", "gauge", "live", 3],
   ["pe-inv", "Investment Performance", "rocket", "plan", 5], ["pe-vc", "Value Creation", "check", "plan", 5], ["pe-risk", "Risk Intelligence", "shield", "plan", 5],
-  ["pe-ai", "AI Financial Advisor", "ai", "live", 3], ["pe-hub", "ERP Integration Hub", "db", "plan", 4], ["pe-onb", "Portfolio Onboarding", "users", "plan", 5],
+  ["pe-ai", "AI Financial Advisor", "ai", "live", 3], ["pe-hub", "ERP Integration Hub", "db", "live", 4], ["pe-onb", "Portfolio Onboarding", "users", "plan", 5],
   ["pe-trans", "ERP Transformation", "flag", "plan", 6], ["peadmin", "Administration", "set", "live"]
 ];
 const PE_PLAN = { 3: "PE-Phase 3 – Financial Intelligence", 4: "PE-Phase 4 – ERP Connectivity", 5: "PE-Phase 5 – Advanced PE Capabilities", 6: "PE-Phase 6 – ERP Transformation" };
