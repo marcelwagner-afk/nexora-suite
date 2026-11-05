@@ -160,10 +160,12 @@
     for (let j = 0; j < 2; j++) { const c = genCompany(rng, 30 + j, rtcFund, "rtc", 0.4); c.name = ["Rheinauen Metallbau", "Kaiserstuhl Handelshaus"][j]; c.status = "Halten"; c.onboarding = "Aktiv"; companies.push(c); }
     // Umsatz auf rund 3,2 Mrd. € (NGEP, 25 Unternehmen) normieren – vor der Erzeugung der Monatswerte
     const ngep = companies.filter(c => c.orgId === "ngep"); const target = 3.08e9 * mult; const f0 = target / sum(ngep.map(c => c.size)); for (const c of ngep) c.size *= f0;
+    // Beteiligungsstruktur der Plattform-Holding (Fund I): Gemeinschaftsunternehmen 50 %, Minderheitsbeteiligung 30 %
+    for (const c of companies) { if (c.id === "PC07") { c.ownership = 0.5; c.jointControl = true; } if (c.id === "PC09") c.ownership = 0.3; }
     const data = {}; for (const c of companies) { const g = genMonthly(mulberry32(hashStr(c.id) ^ seed), c); data[c.id] = g.months; c.debtInfo = g.debt; }
     const W = { adjust: {}, version: VERSION, seed, valuationDate: VALUATION_DATE, periods: PERIODS.slice(), orgs, funds, portfolios, companies, data, fx, note: DEMO_NOTE };
     for (const c of companies) c.investment = genInvestment(mulberry32(hashStr(c.id + "inv") ^ seed), W, c);
-    W.principals = demoPrincipals(W); hubInit(W);
+    W.principals = demoPrincipals(W); hubInit(W); W.ic = { resolved: {} }; W.vc = seedInitiatives(W); W.onb = { req: {}, dsaOk: {} };
     return W;
   }
 
@@ -305,6 +307,7 @@
     return [
       { id: "p0", name: "Plattform-Betrieb (Demo)", role: "platform_admin" },
       { id: "p1", name: "Dr. Katharina Brandt", role: "pe_admin", orgId: "ngep" },
+      { id: "p11", name: "Dr. Jan Berger", role: "pe_admin", orgId: "ngep" }, // zweiter Administrator (Vier-Augen bei Aktivierungen)
       { id: "p2", name: "Michael Roth", role: "fund_manager", orgId: "ngep", funds: ["F1"] },
       { id: "p3", name: "Sophie Lindner", role: "fund_manager", orgId: "ngep", funds: ["F2"] },
       { id: "p4", name: "Jonas Weber", role: "operating_partner", orgId: "ngep", companies: [byScen("margin"), byScen("wc"), byScen("liquidity")] },
@@ -477,7 +480,7 @@
       const flowLow = m.ebitdaLow - Math.max(0, m.ebitdaLow - daM - intM) * 0.28 - capex - intM + debtM - dNwc; cash += flow; prevRev = m.revenue;
       months.push({ period: m.period, flow, cash, cashLow: (months.length ? months[months.length - 1].cashLow : last.CASH) + flowLow }); if (first === null && cash < 0) first = m.period; }
     const firstLow = (months.find(m => m.cashLow < 0) || {}).period || null;
-    return { company: c.name, id: c.id, startCash: last.CASH, months, shortfall: first, shortfallPessimistic: firstLow, minCash: Math.min(...months.map(m => m.cash)), method: "Kasse + Σ (Prognose-EBITDA − Steuern 28 % − Capex-Quote LTM − Ø Zins LTM − Ø Tilgung LTM − ΔNWC zur aktuellen NWC-Quote); pessimistisch: EBITDA an der unteren Prognosegrenze. Konstante Wechselkurse, keine Neufinanzierung unterstellt.", mape: f.mape };
+    return { company: c.name, id: c.id, startCash: last.CASH, debtMonthly: debtM, months, shortfall: first, shortfallPessimistic: firstLow, minCash: Math.min(...months.map(m => m.cash)), method: "Kasse + Σ (Prognose-EBITDA − Steuern 28 % − Capex-Quote LTM − Ø Zins LTM − Ø Tilgung LTM − ΔNWC zur aktuellen NWC-Quote); pessimistisch: EBITDA an der unteren Prognosegrenze. Konstante Wechselkurse, keine Neufinanzierung unterstellt.", mape: f.mape };
   }
   /* Working-Capital-Potenzial gegen Branchen-Richtwerte (Annahmen, gekennzeichnet) */
   const WC_BENCH = { Industrie: [50, 55, 45], Maschinenbau: [55, 70, 45], Logistik: [40, 10, 35], Software: [45, 5, 35], "IT-Services": [50, 5, 35], Medizintechnik: [55, 60, 40], Pharma: [50, 65, 40], Konsumgüter: [40, 50, 45], Lebensmittel: [30, 30, 40], Handel: [20, 45, 45] };
@@ -602,6 +605,109 @@
   }
   function hubDetail(W, p, id) { const c = guard(W, p, W.companies.find(x => x.id === id), "kpi"); if (c.noData) fail("DATA_GAP", "Noch keine ERP-Anbindung."); return Object.assign(hubStatus(W, c), { spec: CONNECTOR_SPECS[c.erp], runs: (W.hub.runs[c.id] || []).slice().reverse(), mapping: Object.assign({}, W.hub.map[c.id] || {}), lineItems: ERP[c.erp].lineItems }); }
   const HUB_ROLES = (W, p, c) => (p.role === "pe_admin" && p.orgId === c.orgId && access(W, p, c, "kpi")) || (["portfolio_controller", "company_admin", "portfolio_cfo"].includes(p.role) && p.companyId === c.id);
+
+  /* ===== PE-Phase 5a: Konsolidierung – getrennt von der Management-Aggregation =====
+     Fonds als Investmentgesellschaften konsolidieren nach IFRS 10 nicht, sondern bewerten zum beizulegenden Zeitwert.
+     Konsolidiert wird hier eine Plattform-Holding (keine Investmentgesellschaft) mit vier Beteiligungen. */
+  const GROUPS = { "HOLD-1": { id: "HOLD-1", name: "Industrial Platform Holding GmbH", fundId: "F1", members: ["PC01", "PC03", "PC07", "PC09"], seller: "PC01", buyer: "PC03", icShare: 0.04, transit: 85000 } };
+  const methodOf = c => c.ownership > 0.5 ? "voll" : c.jointControl && c.ownership === 0.5 ? "quotal" : c.ownership >= 0.2 ? "equity" : "fair value";
+  const METHOD_LABEL = { voll: "Vollkonsolidierung", quotal: "Quotenkonsolidierung (gemeinschaftliche Tätigkeit)", equity: "Equity-Methode (assoziiertes Unternehmen)", "fair value": "Beizulegender Zeitwert" };
+  function translation(W, c) { // Umrechnungsdifferenz: Nettovermögen zum Stichtagskurs − Eigenkapital zu historischen Kursen
+    const n = W.periods.length - 1; const map = catOfAccount(c.erpFamily); let hist = harmonizedMonth(W, c, 0).EQ / rateOf(W, c.currency, W.periods[0]).close;
+    for (let i = 1; i <= n; i++) { const h = harmonizedMonth(W, c, i); const ni = h.REV - h.COGS - h.OPEX_PERS - h.OPEX_OTHER - h.DA - h.INT - h.TAX; hist += (ni - h.DIV + h.EQIN) / rateOf(W, c.currency, W.periods[i]).avg; }
+    const close = harmonizedMonth(W, c, n).EQ / rateOf(W, c.currency, W.periods[n]).close; return { equityClose: close, equityHist: hist, cta: close - hist };
+  }
+  function icData(W, g, key) { const r = rangeIdx(W, key || "LTM"); const buyer = W.companies.find(c => c.id === g.buyer); let sales = 0, rec = 0; const n = W.periods.length - 1;
+    for (let i = r.a; i <= r.b; i++) { const v = eurMonth(W, buyer, i).COGS * g.icShare; sales += v; rec += i === n && !W.ic.resolved[g.id] ? v - g.transit : v; }
+    const last = eurMonth(W, buyer, n).COGS * g.icShare; const recv = last, pay = W.ic.resolved[g.id] ? last : last - g.transit; return { sales, purchases: rec, receivable: recv, payable: pay, diffPL: sales - rec, diffBS: recv - pay, resolved: !!W.ic.resolved[g.id] }; }
+  function consolidate(W, p, groupId, key) {
+    const g = GROUPS[groupId]; if (!g) fail("NOT_FOUND", "Konsolidierungskreis unbekannt."); key = key || "LTM";
+    const ms = g.members.map(id => W.companies.find(c => c.id === id)); const denied = ms.filter(c => !access(W, p, c, "statements")); if (denied.length) fail("FORBIDDEN", `Konsolidierung braucht Abschlussfreigabe für alle Mitglieder; fehlt für ${denied.map(c => c.name).join(", ")}.`);
+    const PL = ["REV", "COGS", "OPEX_PERS", "OPEX_OTHER", "DA", "INT", "TAX"], BS = ["CASH", "AR", "INV", "FA", "AP", "DEBT"]; const cols = []; const entries = []; let nr = 0; const E = (type, member, amount, text) => entries.push({ nr: ++nr, type, member, amount, text });
+    for (const c of ms) { const st = statements(W, c, key); const m = methodOf(c); const tr = translation(W, c); const q = m === "voll" ? 1 : m === "quotal" ? c.ownership : 0; const ni = st.pl.REV - st.pl.COGS - st.pl.OPEX_PERS - st.pl.OPEX_OTHER - st.pl.DA - st.pl.INT - st.pl.TAX;
+      const col = { id: c.id, name: c.name, method: m, methodLabel: METHOD_LABEL[m], share: c.ownership, currency: c.currency, pl: {}, bs: {}, ni: ni * q, cta: tr.cta * q, equity: tr.equityClose * q, nciShare: m === "voll" ? 1 - c.ownership : 0, equityMethod: 0, investmentAtEquity: 0 };
+      for (const k of PL) col.pl[k] = st.pl[k] * q; for (const k of BS) col.bs[k] = st.bs[k] * q;
+      if (m === "equity") { col.equityMethod = ni * c.ownership; col.investmentAtEquity = tr.equityClose * c.ownership; E("Equity-Methode", c.name, col.equityMethod, `${Math.round(c.ownership * 100)} % des Jahresergebnisses als Ergebnis aus at-equity bewerteten Beteiligungen; Beteiligungsbuchwert ${Math.round(col.investmentAtEquity)} €`); }
+      else E(METHOD_LABEL[m], c.name, q, m === "voll" ? `Einbeziehung zu 100 %${col.nciShare ? `, Minderheitenanteil ${Math.round(col.nciShare * 100)} %` : ""}` : `Einbeziehung zu ${Math.round(q * 100)} % je Posten`);
+      if (Math.abs(tr.cta) > 1 && q) E("Währungsumrechnung", c.name, tr.cta * q, `${c.currency}: Bilanz zum Stichtagskurs, GuV zum Durchschnittskurs, Eigenkapital historisch – Differenz in die Rücklage aus Währungsumrechnung`);
+      cols.push(col); }
+    const ic = icData(W, g, key); const elim = { pl: { REV: -ic.sales, COGS: -ic.purchases }, bs: { AR: -ic.receivable, AP: -ic.payable } };
+    E("IC-Eliminierung Umsatz/Aufwand", "Albris → Nordmark", -ic.purchases, `Innenumsatz ${Math.round(ic.sales)} € gegen Materialaufwand des Käufers ${Math.round(ic.purchases)} € eliminiert`);
+    E("IC-Eliminierung Salden", "Albris → Nordmark", -ic.payable, `Forderung ${Math.round(ic.receivable)} € gegen Verbindlichkeit ${Math.round(ic.payable)} € eliminiert`);
+    const sumPL = k => cols.reduce((a, c) => a + c.pl[k], 0) + (elim.pl[k] || 0), sumBS = k => cols.reduce((a, c) => a + c.bs[k], 0) + (elim.bs[k] || 0);
+    const pl = Object.fromEntries(PL.map(k => [k, sumPL(k)])); const eqRes = cols.reduce((a, c) => a + c.equityMethod, 0); const ebitda = pl.REV - pl.COGS - pl.OPEX_PERS - pl.OPEX_OTHER; const ni = ebitda - pl.DA - pl.INT - pl.TAX + eqRes - (ic.diffPL); // offene IC-Differenz bleibt bis zur Klärung im Ergebnis
+    const nciNi = cols.reduce((a, c) => a + c.ni * c.nciShare, 0); const bs = Object.fromEntries(BS.map(k => [k, sumBS(k)])); bs.INV_EQ = cols.reduce((a, c) => a + c.investmentAtEquity, 0);
+    const assets = bs.CASH + bs.AR + bs.INV + bs.FA + bs.INV_EQ, liab = bs.AP + bs.DEBT; const equity = assets - liab; const nci = cols.reduce((a, c) => a + c.equity * c.nciShare, 0); const cta = cols.reduce((a, c) => a + c.cta * (1 - c.nciShare), 0);
+    E("Minderheitenanteile", cols.filter(c => c.nciShare).map(c => c.name).join(", "), nci, `Anteil fremder Gesellschafter am Nettovermögen ${Math.round(nci)} € und am Ergebnis ${Math.round(nciNi)} €`);
+    E("Kapitalkonsolidierung", "alle Tochterunternehmen", -cols.filter(c => c.method !== "equity").reduce((a, c) => a + c.equity * (1 - c.nciShare), 0), "Beteiligungsbuchwerte der Holding gegen anteiliges Eigenkapital; Geschäfts- oder Firmenwert: Datenlücke (Kaufpreisallokation nicht im Datenbestand)");
+    const mgmt = { revenue: ms.reduce((a, c) => a + statements(W, c, key).pl.REV, 0) };
+    return { group: g.name, id: g.id, period: rangeIdx(W, key).label, members: cols, ic, elim, pl, ebitda, equityResult: eqRes, netIncome: ni, nciNetIncome: nciNi, ownersNetIncome: ni - nciNi, bs, assets, liabilities: liab, equity, nci, ownersEquity: equity - nci, cta, entries, management: mgmt,
+      bridge: { management: mgmt.revenue, proportionalOut: -cols.filter(c => c.method === "quotal").reduce((a, c) => a + c.pl.REV / c.share * (1 - c.share), 0), equityOut: -cols.filter(c => c.method === "equity").reduce((a, c) => a + statements(W, W.companies.find(x => x.id === c.id), key).pl.REV, 0), ic: -ic.sales, consolidated: pl.REV },
+      note: "Investmentgesellschaften (Fonds) konsolidieren nach IFRS 10 nicht; diese Konsolidierung gilt der Plattform-Holding. Management-Aggregation (100 %, ohne Eliminierung) und Konsolidierung sind getrennte Rechnungen." };
+  }
+
+  /* ===== PE-Phase 5b: Investment Performance – Lebenszyklus und Exit-Simulation ===== */
+  const LIFECYCLE = ["Erwerb", "Halten", "Wertsteigerung", "Exit-Vorbereitung", "Veräußerung"];
+  function lifecycleOf(c) { if (c.status === "Onboarding") return "Erwerb"; if (c.status === "Exit-Vorbereitung") return "Exit-Vorbereitung"; const yrs = daysBetween(c.acquired, VALUATION_DATE) / 365; return yrs < 1.5 ? "Halten" : "Wertsteigerung"; }
+  function investments(W, p, filter) { return visibleCompanies(W, p, filter).filter(c => !c.noData && ROLES[p.role].fund && p.orgId === c.orgId).map(c => Object.assign({ id: c.id, name: c.name, fundId: c.fundId, stage: lifecycleOf(c), acquired: c.acquired, entryEV: c.investment.acquiredEV, entryMultiple: c.investment.entryMultiple }, dealMetrics(W, c))); }
+  function exitSim(W, p, id, x) {
+    const c = W.companies.find(z => z.id === id); if (!c) fail("NOT_FOUND", "Unternehmen nicht gefunden."); const R = ROLES[p.role]; if (!R || !R.fund || p.orgId !== c.orgId || (R.scope === "funds" && !(p.funds || []).includes(c.fundId))) fail("FORBIDDEN", "Exit-Simulation nur mit Fondsberechtigung.");
+    const k = companyKpis(W, c, "LTM"); x = x || {}; const year = Math.min(2032, Math.max(2027, +x.year || 2029)); const yrs = year - 2026 + (6 / 12) - 10 / 12 + 1 - 0.5; const g = x.growth != null ? +x.growth : Math.max(-0.05, Math.min(0.15, k.revenueGrowth || 0.03));
+    const exitDate = `${year}-06-30`; const t = daysBetween(VALUATION_DATE, exitDate) / 365; const ebitda = x.ebitda != null ? +x.ebitda : Math.max(0, k.ltmEbitda) * Math.pow(1 + g, t); const mult = x.multiple != null ? +x.multiple : SECTOR_MULT[c.industry];
+    const netDebt = x.netDebt != null ? +x.netDebt : k.netDebt * Math.pow(0.85, t); const costs = x.costs != null ? +x.costs : 0.02; const own = x.ownership != null ? +x.ownership : c.ownership;
+    const ev = ebitda * mult, equity = Math.max(0, ev * (1 - costs) - netDebt), proceeds = equity * own; const flows = c.investment.flows.concat([{ date: exitDate, amount: proceeds, type: "Exit-Erlös (Simulation)" }]);
+    const invested = -sum(c.investment.flows.filter(f => f.amount < 0).map(f => f.amount)), realized = sum(c.investment.flows.filter(f => f.amount > 0).map(f => f.amount));
+    return { company: c.name, id: c.id, inputs: { year, exitDate, ebitda, growth: g, multiple: mult, netDebt, costs, ownership: own }, ev, equity, proceeds, moic: (realized + proceeds) / invested, irr: xirr(flows), invested, realized, flows, method: "EV = Exit-EBITDA × Multiple; Eigenkapital = EV × (1 − Transaktionskosten) − Net Debt; Erlös = Eigenkapital × Anteil; IRR per XIRR über alle datierten Cashflows inkl. Exit-Erlös. Annahmen sind Eingaben, keine Prognose." };
+  }
+
+  /* ===== PE-Phase 5c: Value Creation – Initiativen ohne Doppelzählung ===== */
+  const VC_CATS = { umsatz: "Umsatzwachstum", kosten: "Kostenoptimierung", wc: "Working Capital", finanz: "Finanzierung" };
+  function seedInitiatives(W) {
+    const L = [["PC01", "kosten", "einkauf-material", "Materialeinkauf neu ausschreiben", "Rahmenverträge Gussteile und Elektronik neu verhandeln", "Jonas Weber", 0, 3.2e6, 0.4e6, "2027-06-30", 1.1e6, "laufend"],
+      ["PC01", "kosten", "einkauf-material", "Lieferantenkonsolidierung Elektronik", "Von 14 auf 5 Lieferanten (überschneidet sich mit der Neuausschreibung)", "Thomas Keller", 0, 1.4e6, 0.1e6, "2027-03-31", 0.2e6, "laufend"],
+      ["PC01", "umsatz", "preis", "Preiserhöhung Ersatzteile", "Listenpreise +6 % für Ersatzteile", "Jonas Weber", 0, 1.8e6, 0.05e6, "2026-12-31", 1.2e6, "laufend"],
+      ["PC06", "wc", "forderungen", "Forderungsmanagement", "Mahnwesen automatisieren, Zahlungsziele vereinheitlichen; Ziel DSO 60 Tage", "Ben Schuster", 0, 0, 0.15e6, "2027-03-31", 0, "genehmigt", 14e6],
+      ["PC06", "wc", "vorraete", "Bestandsreduktion", "Sicherheitsbestände neu berechnen; Ziel DIO 80 Tage", "Ben Schuster", 0, 0, 0.2e6, "2027-06-30", 0, "identifiziert", 12e6],
+      ["PC04", "finanz", "refinanzierung", "Refinanzierung Senior-Darlehen", "Laufzeitverlängerung und Covenant-Reset", "Anja Vogt", 0, 0, 0.3e6, "2027-01-31", 0, "gefährdet", 4e6],
+      ["PC04", "kosten", "standorte", "Standortkonsolidierung Logistik", "Zwei Lager zusammenlegen", "Anja Vogt", 0, 2.1e6, 1.5e6, "2027-09-30", 0, "gefährdet"],
+      ["PC15", "kosten", "automatisierung", "Prozessautomatisierung Backoffice", "RPA für Rechnungsprüfung und Reisekosten", "Sophie Lindner", 0, 2.4e6, 0.8e6, "2027-06-30", 0.6e6, "laufend"],
+      ["PC17", "umsatz", "pricing", "Pricing-Optimierung Abos", "Paketstruktur und Staffelpreise", "Sophie Lindner", 0, 4.5e6, 0.3e6, "2027-03-31", 2.2e6, "laufend"],
+      ["PC21", "wc", "vorraete", "Bestandsoptimierung Frischware", "Bedarfsprognose je Filiale; Abschriften auf Verderb separat zu bewerten", "Lea Hoffmann", 0, 0, 0.4e6, "2027-06-30", 0, "genehmigt", 9e6],
+      ["PC10", "kosten", "it", "IT-Kostensenkung ERP-Wartung", "Wartungsvertrag Altsystem nachverhandeln (siehe ERP-Transformation)", "Michael Roth", 0, 0.9e6, 0.1e6, "2027-01-31", 0, "identifiziert"],
+      ["PC12", "finanz", "cashpool", "Cash Pooling Gruppe", "Physisches Cash Pooling der Gesellschaften", "Sophie Lindner", 0, 0.3e6, 0.05e6, "2027-03-31", 0, "identifiziert", 6e6]];
+    return { items: L.map((x, i) => ({ id: "VC-" + String(i + 1).padStart(3, "0"), companyId: x[0], category: x[1], lever: x[0] + ":" + x[1] + ":" + x[2], name: x[3], description: x[4], owner: x[5], baseline: x[6], ebitdaImpact: x[7], costs: x[8], due: x[9], actualEbitda: x[10], status: x[11], cashImpact: x[12] || 0, evidence: x[1] === "wc" ? "Working-Capital-Analyse (Cash & Liquidity)" : x[0] === "PC01" ? "EBITDA-Brücke: Materialquote" : "Business Case des Unternehmens (synthetisch)" })), seq: L.length };
+  }
+  function vcSummary(W, p, filter) {
+    const vis = new Set(visibleCompanies(W, p, filter).map(c => c.id)); const items = W.vc.items.filter(i => vis.has(i.companyId) && i.status !== "verworfen");
+    // Doppelzählung: Initiativen am selben Hebel werden nur einmal gezählt (größte Wirkung), die übrigen als Überschneidung markiert
+    const byLever = {}; for (const i of items) (byLever[i.lever] = byLever[i.lever] || []).push(i); const counted = new Set(); const overlaps = [];
+    for (const list of Object.values(byLever)) { const top = list.slice().sort((a, b) => (b.ebitdaImpact + b.cashImpact) - (a.ebitdaImpact + a.cashImpact))[0]; counted.add(top.id); for (const o of list) if (o.id !== top.id) overlaps.push({ id: o.id, with: top.id, lever: o.lever }); }
+    const C = items.filter(i => counted.has(i.id)); const S = (l, f) => l.reduce((a, i) => a + (i[f] || 0), 0);
+    const realized = items.filter(i => counted.has(i.id)).reduce((a, i) => a + i.actualEbitda, 0);
+    return { items: items.map(i => Object.assign({ counted: counted.has(i.id), company: (W.companies.find(c => c.id === i.companyId) || {}).name }, i)), overlaps, identified: S(C, "ebitdaImpact"), identifiedCash: S(C, "cashImpact"), approved: S(C.filter(i => ["genehmigt", "laufend", "abgeschlossen"].includes(i.status)), "ebitdaImpact"),
+      realizedEbitda: realized, realizedCash: S(C.filter(i => i.status === "abgeschlossen"), "cashImpact"), atRisk: C.filter(i => i.status === "gefährdet").length, atRiskValue: S(C.filter(i => i.status === "gefährdet"), "ebitdaImpact"), forecast: S(C.filter(i => i.status !== "identifiziert"), "ebitdaImpact") - S(C.filter(i => i.status === "gefährdet"), "ebitdaImpact") * 0.5, costs: S(C, "costs"),
+      method: "Je Hebel (Unternehmen + Kategorie + Ansatz) zählt nur die Initiative mit der größten Wirkung; Working-Capital-Initiativen wirken auf Cash, nicht auf EBITDA; Prognose = genehmigte und laufende Wirkung, gefährdete zu 50 %" };
+  }
+
+  /* ===== PE-Phase 5d: Risk Intelligence – Covenant-Prognose ===== */
+  function covenantForecast(W, p, id) {
+    const c = guard(W, p, W.companies.find(x => x.id === id), "kpi"); if (c.noData) fail("DATA_GAP", "Keine Finanzdaten."); const k = companyKpis(W, c, "LTM"); const lf = liquidityForecast(W, p, id, 3); const f = seasonalForecast(W, c, 3); const n = W.periods.length;
+    const drop = sum(W.periods.slice(n - 12, n - 9).map((_, j) => { const e = eurMonth(W, c, n - 12 + j); return e.REV - e.COGS - e.OPEX_PERS - e.OPEX_OTHER; })); const ltmNext = k.ltmEbitda - drop + sum(f.months.map(m => m.ebitda));
+    const ndNext = k.netDebt - (lf.months[2].cash - lf.startCash) + lf.debtMonthly * 3; /* Tilgung senkt Kasse und Darlehen gleichermaßen */ const lev = ltmNext > 0 ? ndNext / ltmNext : null;
+    return { company: c.name, id: c.id, testDate: "2027-01-31", leverageNow: k.leverage, leverageNext: lev, covenant: k.covenantMax, breach: lev == null ? ndNext > 0 : lev > k.covenantMax, headroomNext: lev == null ? null : (k.covenantMax - lev) / k.covenantMax, method: "EBITDA LTM rollierend mit Prognose Nov–Jan; Nettoverschuldung = heute − Kassenveränderung laut Liquiditätsprognose; Test zum 31.01.2027" };
+  }
+  function riskRegister(W, p, filter) { return visibleCompanies(W, p, filter).filter(c => reportingActive(c) && !c.noData).map(c => { const k = companyKpis(W, c, "LTM"); const cf = covenantForecast(W, p, c.id); const lf = liquidityForecast(W, p, c.id, 6);
+    return { id: c.id, name: c.name, health: k.health, crit: k.risks.filter(r => r.level === "crit").map(r => r.dim), warn: k.risks.filter(r => r.level === "warn").map(r => r.dim), covenantBreach: cf.breach, leverageNext: cf.leverageNext, covenant: cf.covenant, liquidityGap: lf.shortfall, hub: hubStatus(W, c).health }; }).sort((a, b) => a.health - b.health); }
+
+  /* ===== PE-Phase 5e: Portfolio-Onboarding – 10 Schritte, Aktivierung nur nach Validierung und Freigabe ===== */
+  const ONB_STEPS = ["Unternehmen angelegt", "Beteiligungsstruktur", "Finanzberichterstattung konfiguriert", "ERP-System gewählt", "ERP-Verbindung", "Finanzdaten importiert", "Kontenplan zugeordnet", "Abschlüsse validiert", "Datenzugriff konfiguriert", "Reporting aktiviert"];
+  function onboarding(W, p, id) {
+    const c = guard(W, p, W.companies.find(x => x.id === id), "kpi"); const hs = c.noData ? null : hubStatus(W, c); const last = hs && hs.last; const req = W.onb.req[c.id] || null;
+    const done = [true, c.ownership > 0, !!(c.standard && c.currency && c.fyStart), !!c.erp, !c.noData && W.hub.cred[c.id] !== "abgelaufen", !!(last && last.records > 0 && last.completeness === 1), !!(last && !(last.unmapped || []).length && last.steps.some(s => s.name === "Mapping")), !!(last && last.status === "ok" && last.recon && last.recon.diff === 0), !!W.onb.dsaOk[c.id] || c.onboarding === "Aktiv", c.onboarding === "Aktiv"];
+    const firstOpen = done.indexOf(false); const status = c.onboarding === "Aktiv" ? "Aktiv" : req ? "Bereit zur Freigabe" : firstOpen <= 0 ? "Nicht gestartet" : firstOpen <= 3 ? "Konfiguration" : firstOpen <= 5 ? "Datenintegration" : firstOpen === 6 ? "Finanz-Mapping" : firstOpen === 7 ? "Validierung" : "Validierung";
+    return { id: c.id, name: c.name, steps: ONB_STEPS.map((s, i) => ({ step: i + 1, name: s, done: done[i] })), status, request: req, ready: done.slice(0, 9).every(Boolean), blocking: firstOpen >= 0 ? ONB_STEPS[firstOpen] : null };
+  }
+  function onboardingList(W, p) { return visibleCompanies(W, p, {}).filter(c => c.onboarding !== "Aktiv" || W.onb.req[c.id] || c.created).map(c => onboarding(W, p, c.id)); }
   /* ---------- Verwaltung: Organisation, Fonds, Unternehmen anlegen (Befehle mit Rechteprüfung, wiederholbar aus einem Protokoll) ---------- */
   const slug = s => String(s || "").toLowerCase().normalize("NFD").replace(/[^a-z0-9]+/g, "").slice(0, 10);
   function apply(W, p, cmd, x) {
@@ -629,12 +735,24 @@
       if (cmd === "mapAccount") { if (!GROUP_COA[x.category] || GROUP_COA[x.category][1] === "Cashflow") fail("INPUT", "Unbekannte Konzernkategorie."); if (!(HUB_EXTRA[c.id] || []).some(e => e.no === x.account) && !Object.keys(W.data[c.id][0].accounts).includes(x.account)) fail("NOT_FOUND", "Konto im Quellsystem unbekannt.");
         W.hub.map[c.id] = Object.assign({}, W.hub.map[c.id] || {}, { [x.account]: x.category }); return { text: `Konto ${x.account} → ${x.category} (${GROUP_COA[x.category][0]})` }; }
       const run = hubRun(W, c, { mode: x.mode === "voll" ? "voll" : "inkrementell", by: p.name }); return { text: `Synchronisation ${c.name}: ${run.status === "ok" ? "erfolgreich" : run.status === "warn" ? "mit Warnungen" : "fehlgeschlagen"}`, run }; }
+    if (cmd === "icResolve") { const g = GROUPS[x.groupId]; if (!g) fail("NOT_FOUND", "Konsolidierungskreis unbekannt."); const buyer = W.companies.find(c => c.id === g.buyer);
+      if (!((p.role === "pe_admin" && p.orgId === buyer.orgId) || (p.role === "portfolio_controller" && p.companyId === buyer.id))) fail("FORBIDDEN", "IC-Differenzen klärt der PE-Administrator oder der Controller des Käufers."); W.ic.resolved[g.id] = p.name; return { text: `IC-Differenz geklärt: Ware unterwegs bei ${buyer.name} gebucht (${p.name})` }; }
+    if (["vcAdd", "vcUpdate"].includes(cmd)) { const c = W.companies.find(z => z.id === (x.companyId || (W.vc.items.find(i => i.id === x.id) || {}).companyId)); if (!c) fail("NOT_FOUND", "Unternehmen oder Initiative unbekannt.");
+      const okR = (["pe_admin", "fund_manager"].includes(p.role) && access(W, p, c, "kpi")) || (p.role === "operating_partner" && access(W, p, c, "kpi")) || (["portfolio_cfo", "portfolio_controller"].includes(p.role) && p.companyId === c.id); if (!okR) fail("FORBIDDEN", "Initiativen pflegen PE-Team, Operating Partner und CFO/Controller des Unternehmens.");
+      if (cmd === "vcAdd") { if (!VC_CATS[x.category]) fail("INPUT", "Kategorie fehlt."); const id = "VC-" + String(++W.vc.seq).padStart(3, "0"); W.vc.items.push({ id, companyId: c.id, category: x.category, lever: c.id + ":" + x.category + ":" + slug(x.lever || x.name), name: String(x.name || "").slice(0, 80), description: String(x.description || ""), owner: p.name, baseline: +x.baseline || 0, ebitdaImpact: x.category === "wc" ? 0 : +x.ebitdaImpact || 0, cashImpact: +x.cashImpact || 0, costs: +x.costs || 0, due: x.due || "2027-12-31", actualEbitda: 0, status: "identifiziert", evidence: x.evidence || "manuell erfasst" }); return { text: `Initiative ${id} angelegt`, id }; }
+      const it = W.vc.items.find(i => i.id === x.id); if (x.status) { if (!["identifiziert", "genehmigt", "laufend", "gefährdet", "abgeschlossen", "verworfen"].includes(x.status)) fail("INPUT", "Unbekannter Status."); it.status = x.status; } if (x.actualEbitda != null) it.actualEbitda = +x.actualEbitda; return { text: `Initiative ${it.id}: ${it.status}` }; }
+    if (["onbConfirmDsa", "onbRequest", "onbActivate"].includes(cmd)) { const c = W.companies.find(z => z.id === x.companyId); if (!c) fail("NOT_FOUND", "Unternehmen unbekannt."); const isAdmin = p.role === "pe_admin" && p.orgId === c.orgId; const own = ["portfolio_controller", "company_admin", "portfolio_cfo"].includes(p.role) && p.companyId === c.id;
+      if (cmd === "onbConfirmDsa") { if (!isAdmin && !own) fail("FORBIDDEN", "Datenfreigabe bestätigen PE-Administrator oder das Unternehmen."); if (x.level && LEVEL[x.level]) c.dsa.level = x.level; W.onb.dsaOk[c.id] = p.name; return { text: `Datenfreigabe ${c.name}: ${c.dsa.level} bestätigt` }; }
+      const o = onboarding(W, Object.assign({}, p, isAdmin || own ? {} : {}), c.id);
+      if (cmd === "onbRequest") { if (!isAdmin && !own) fail("FORBIDDEN", "Keine Berechtigung."); if (!o.ready) fail("NOT_READY", `Aktivierung erst nach Validierung – offen: ${o.blocking}.`); W.onb.req[c.id] = { by: p.id, byName: p.name }; return { text: `Aktivierung ${c.name} zur Freigabe vorgelegt` }; }
+      if (!isAdmin) fail("FORBIDDEN", "Aktivieren darf nur der PE Group Administrator."); const rq = W.onb.req[c.id]; if (!rq) fail("ORDER", "Keine vorgelegte Aktivierung."); if (rq.by === p.id) fail("FOUR_EYES", "Vier-Augen-Prinzip: Wer vorlegt, darf nicht selbst aktivieren.");
+      c.onboarding = "Aktiv"; c.status = "Halten"; c.integration = "Synchron"; delete W.onb.req[c.id]; return { text: `${c.name} ins Portfolio-Reporting aufgenommen (freigegeben von ${p.name})` }; }
     fail("CMD", "Unbekannter Befehl.");
   }
   /* Konsistenzprüfung der Demodaten (für Tests und Anzeige) */
   function checkConsistency(W, c) { const errs = []; for (let i = 0; i < W.periods.length; i++) { const h = harmonizedMonth(W, c, i); const d = h.CASH + h.AR + h.INV + h.FA - h.AP - h.DEBT - h.EQ; if (Math.abs(d) > 1) errs.push(`${W.periods[i]}: Bilanzdifferenz ${d.toFixed(2)}`); } return errs; }
 
   return { VERSION, SEED, VALUATION_DATE, PERIODS, PERIOD_SETS, DEMO_NOTE, GROUP_COA, COA_FAMILY, ERP, FX_BASE, SECTOR_MULT, KPI_DEFS, HEALTH_FORMULA, ROLES, LEVEL,
-    createWorld, apply, xirr, access, hubMonitor, hubDetail, CONNECTOR_SPECS, HUB_PERIOD, adjustments, compare, marginBridge, forecast, liquidityForecast, wcPotential, planVariance, anomalies, advise, EXAMPLES, WC_METHOD, FC_METHOD, principal, companies, company, portfolioKpis, fundMetrics, funds, series, drill, insights, visibleCompanies,
-    _internal: { gaapAdjust, seasonalForecast, harmonizedMonth, eurMonth, companyKpis, dealMetrics, fundCalc, checkConsistency, flowsSum, statements, budgetVsActual } };
+    createWorld, apply, xirr, access, consolidate, GROUPS, METHOD_LABEL, investments, exitSim, LIFECYCLE, vcSummary, VC_CATS, covenantForecast, riskRegister, onboarding, onboardingList, ONB_STEPS, hubMonitor, hubDetail, CONNECTOR_SPECS, HUB_PERIOD, adjustments, compare, marginBridge, forecast, liquidityForecast, wcPotential, planVariance, anomalies, advise, EXAMPLES, WC_METHOD, FC_METHOD, principal, companies, company, portfolioKpis, fundMetrics, funds, series, drill, insights, visibleCompanies,
+    _internal: { translation, icData, lifecycleOf, gaapAdjust, seasonalForecast, harmonizedMonth, eurMonth, companyKpis, dealMetrics, fundCalc, checkConsistency, flowsSum, statements, budgetVsActual } };
 });

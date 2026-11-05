@@ -1,5 +1,22 @@
 # Changelog
 
+## v0.9.5 – PE Advanced Capabilities (2026-11)
+
+- **Financial Consolidation:**
+  - Die „Industrial Platform Holding“ (Fund I) wird mit vier Beteiligungen konsolidiert: zwei voll (eine davon mit 25 % Minderheiten), eine quotal (gemeinschaftliche Tätigkeit 50 %), eine at equity (30 %).
+  - Dazu gehören Intercompany-Abstimmung und -Eliminierung mit offener Differenz („Ware unterwegs“) und Klärung per Freigabe, Währungsumrechnung mit Umrechnungsdifferenz sowie Konzern-GuV, Konzernbilanz und Konsolidierungsprotokoll.
+  - Eine Überleitung zeigt den Unterschied zwischen Management-Aggregation und Konsolidierung.
+  - Hinweis: Fonds als Investmentgesellschaften konsolidieren nach IFRS 10 nicht.
+- **Investment Performance:** Lebenszyklus, Fonds- und Deal-Kennzahlen, Exit-Simulation (Jahr, Multiple, Wachstum, Kosten) mit Abwärts-, Basis- und Aufwärts-Szenario. Für Haltedauern unter 12 Monaten wird keine annualisierte IRR ausgewiesen.
+- **Value Creation:**
+  - Initiativen mit Baseline, Wirkung, Kosten, Termin, Ist und Beleg sowie Statusfluss.
+  - Doppelzählung je Hebel wird verhindert; Working Capital wirkt auf Cash, nicht auf EBITDA.
+- **Risk Intelligence:** Covenant-Prognose zum 31.01.2027, Liquiditätslücken, kritische Indikatoren, Anomalien und Datenqualität aus dem Integration Hub.
+- **Portfolio Onboarding:**
+  - Zehn Schritte, deren Status aus Daten und Hub abgeleitet wird.
+  - Aktivierung erst nach Validierung, mit Vier-Augen-Freigabe durch einen zweiten PE-Administrator (neuer Demo-Zugang Dr. Jan Berger).
+- **Tests:** `test/pe.test.js` hat jetzt 52 Tests. Der e2e-Block durchläuft IC-Klärung, Exit-Szenario, Doppelzählung, Covenant-Bruch und das Onboarding bis zur Aktivierung.
+
 ## v0.9.4 – PE ERP Integration Hub (2026-11)
 
 - **Connector-Framework:** Jede ERP-Familie ist mit Methoden, Authentifizierung, Finanzdomänen, Einzelposten und Delta-Fähigkeit beschrieben, inklusive Hinweis. SAP S/4HANA, ECC und Business One haben bewusst unterschiedliche Wege. Alle Verbindungen sind simuliert.

@@ -205,6 +205,21 @@ async def pe(p):
   await pg.screenshot(path=SP + "pe_hub.png", full_page=True)
   await pg.evaluate("S.pe.principal='p2'; render()"); await pg.click("tr[data-id=PC01]"); await pg.wait_for_timeout(120); assert await pg.evaluate("document.querySelectorAll('[data-act=peSync]').length") == 0, "Fund Manager ohne Lauf-Schaltflächen"
   await pg.evaluate("S.pe.principal='p1'; S.pe.log=[]; PEW=null; S.pe.hub=null; peSave()")
+  # PE-Phase 5: Konsolidierung (IC-Klärung), Exit-Simulation, Value Creation, Risiko, Onboarding bis zur Aktivierung
+  await pg.evaluate("S.pe.principal='p1'; S.pe.log=[]; PEW=null; location.hash='pe-cons'; render()"); await pg.wait_for_timeout(200)
+  await pg.click("[data-act=peIcResolve]"); await pg.wait_for_timeout(150); ic = await pg.evaluate("NexoraPE.consolidate(peWorld(), peP(), 'HOLD-1').ic.diffPL"); print("Konsolidierung IC-Differenz nach Klärung:", ic); assert ic == 0
+  await pg.screenshot(path=SP + "pe_consolidation.png", full_page=True)
+  await pg.evaluate("location.hash='pe-inv'"); await pg.wait_for_timeout(200); await pg.click("[data-act=peExitPreset][data-k=up]"); await pg.wait_for_timeout(150)
+  ex = await pg.evaluate("[...document.querySelectorAll('.pe-exit .pe-kpi b')].map(b => b.innerText)"); print("Exit-Simulation (Aufwärts):", ex); assert len(ex) == 6; await pg.screenshot(path=SP + "pe_investment.png", full_page=True)
+  await pg.evaluate("location.hash='pe-vc'"); await pg.wait_for_timeout(200); assert await pg.evaluate("document.querySelectorAll('tr.dup').length") == 1, "Überschneidung markiert"; await pg.screenshot(path=SP + "pe_value_creation.png", full_page=True)
+  await pg.evaluate("location.hash='pe-risk'"); await pg.wait_for_timeout(200); assert "Bruch erwartet" in await pg.evaluate("document.querySelector('.pe-tbl tbody tr').innerText")
+  # Onboarding Clearpath: Mapping im Hub, Vollabzug, Datenfreigabe, Vorlage, Aktivierung durch zweiten Administrator
+  await pg.evaluate("""(() => { const A = peP(); for (const [a, c] of [["4730","REV"],["6640","OPEX_OTHER"],["6805","OPEX_OTHER"]]) peCmd("mapAccount", { companyId: "PC25", account: a, category: c }); peCmd("syncRun", { companyId: "PC25", mode: "voll" }); })()""")
+  await pg.evaluate("location.hash='pe-onb'"); await pg.wait_for_timeout(200); await pg.click("[data-act=peOnbDsa]"); await pg.wait_for_timeout(120); await pg.click("[data-act=peOnbReq]"); await pg.wait_for_timeout(120)
+  await pg.select_option("[data-on=pePrin]", "p11"); await pg.wait_for_timeout(100)
+  n0 = await pg.evaluate("NexoraPE.portfolioKpis(peWorld(), peP(), {}).companies"); await pg.click("[data-act=peOnbAct]"); await pg.wait_for_timeout(150); n1 = await pg.evaluate("NexoraPE.portfolioKpis(peWorld(), peP(), {}).companies"); print("Onboarding aktiviert: Unternehmen im Reporting", n0, "→", n1); assert n1 == n0 + 1
+  await pg.screenshot(path=SP + "pe_onboarding.png", full_page=True)
+  await pg.evaluate("S.pe.principal='p1'; S.pe.log=[]; PEW=null; peSave()")
   await pg.set_viewport_size({"width": 400, "height": 820}); await pg.evaluate("location.hash='pe'; render()"); await pg.wait_for_timeout(200); sw = await pg.evaluate("document.documentElement.scrollWidth"); print("PE bei 400 px, Seitenbreite:", sw); assert sw <= 400
   await pg.screenshot(path=SP + "pe_mobile.png"); await b.close(); assert not errs, errs; print("PE Command Center ok")
 
