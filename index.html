@@ -396,6 +396,21 @@ body.embed .ly-grid{grid-template-columns:minmax(0,1fr)!important}
 .emb-tabs a.on{background:var(--accent-soft);border-color:var(--accent-line);color:var(--accent)}
 body.embed .inline-live,body.embed .page-head,body.embed .page>.note.sn,body.embed .page>.sn{display:none!important}
 body.embed .page{padding-top:12px}
+/* Dashboard */
+.dash-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.dash-tile{display:flex;flex-direction:column;gap:10px}
+.dt-kpi{font-size:24px;font-weight:700;color:var(--fg)}
+.dt-row{display:flex;gap:8px;align-items:center;width:100%;background:none;border:0;border-top:1px solid var(--line);padding:7px 0;text-align:left;font:inherit;color:var(--fg);cursor:pointer}
+.dt-row.static{cursor:default}.dt-row .grow{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dt-trend{width:100%;height:auto}.dt-trend .b{fill:var(--accent-soft);stroke:var(--accent-line)}.dt-trend .l{fill:none;stroke:var(--accent);stroke-width:2}.dt-trend .tx{font-size:9px;fill:var(--fg-3)}
+.icon-btn.sm{width:26px;height:26px;font-size:13px}
+/* Ablöse-Cockpit */
+.tr-tbl td{vertical-align:middle}
+.tr-bar{display:inline-block;width:70px;height:6px;border-radius:3px;background:var(--sunk);margin-right:6px;vertical-align:middle;overflow:hidden}.tr-bar i{display:block;height:100%;background:var(--good)}
+.tr-step{display:flex;flex-direction:column;gap:10px}.tr-step:not(.active):not(.done){opacity:.75}
+.tr-step.active{border-color:var(--accent-line)}
+.tr-n{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--accent-soft);color:var(--accent);font-size:12px;margin-right:4px}
+.tr-tbl td:nth-child(4){white-space:nowrap}
 
 </style>
 <div id="root"></div>
@@ -1206,8 +1221,8 @@ function migApply(t, obj, valid, src, rules, user) {
 }
 function migReconcile(obj, src, res) {
   const srcCount = src[obj].length; const tgt = res.ok.length; const sum = a => r2(a.reduce((x, r) => x + (r.BETRAG || r.WERT || 0), 0));
-  const excl = res.warns.filter(w => /ausgeschlossen/.test(w[1])).map(w => w[0]); const exRows = src[obj].filter(r => excl.includes(r.ANLNR || r.BELNR || r.MATNR || r.KUNNR));
-  const money = ["openItems", "stock"].includes(obj);
+  const excl = res.warns.filter(w => /ausgeschlossen/.test(w[1])).map(w => w[0]); const exRows = src[obj].filter(r => excl.includes(r.ANLNR || r.BELNR || r.MATNR || r.BANFN || r.KUNNR));
+  const money = ["openItems", "stock", "requisitions"].includes(obj);
   return { object: obj, source: srcCount, loaded: tgt, merged: res.warns.filter(w => /Dublette/.test(w[1])).length, excluded: excl.length, errors: res.errs.length, sourceSum: money ? sum(src[obj]) : null, loadedSum: money ? sum(res.ok) : null, excludedSum: money ? sum(exRows) : null };
 }
 
@@ -1678,7 +1693,79 @@ Object.assign(CMD, {
   }
 });
 
-return { WORK_CENTERS, CATALOG, CATEGORY_DEFAULT, deriveDrawing, ROLE_DESC, dueMaintenance, returnRate, personnelCost, cutoverStatus, legacyData, MIG_OBJECTS, MIG_LABEL, isAbsent, absHoursInPeriod, SERVICE_RATE, VERSION, START_DATE, TENANT_IDS, COA, SIZES, E5, createWorld, resetTenant, resetAll, dispatch, kpis, plOf, trialBalance, balance, projectMetrics, replenishmentProposals, processInstances, tenantHash, costing, avail, periodOf, customerName, supplierName, articleName, materialOf, QUERY_ONLY, _internal: { HIST, crossHistory } };
+/* ===== v0.8: Migrationsprojekte – Ablösung eines Prozesses aus einem (simulierten) Altsystem =====
+   Nutzt das bestehende Migrationsmodul (Testlauf auf Kopie, Fehlerliste, Vier-Augen-Freigabe, Abstimmung).
+   Die Übernahme Liftservice Nord bleibt unverändert; Projekte werden über p.project angesprochen.
+   Das Extrakt aus dem Altsystem kommt als Parameter (Teil des Ereignisprotokolls, damit reproduzierbar). */
+const MIG_PROJECTS = { "sap-pr": { label: "Bestellanforderungen aus SAP S/4HANA (simuliert)", objects: ["requisitions"], process: "bestellanforderung", system: "SAP S/4HANA (simuliert)" } };
+MIG_LABEL.requisitions = "Bestellanforderungen";
+function migProject(t, id, create) {
+  if (!MIG_PROJECTS[id]) fail("PROJECT", "Unbekanntes Migrationsprojekt."); t.migProjects = t.migProjects || {};
+  if (!t.migProjects[id] && create) t.migProjects[id] = { id, label: MIG_PROJECTS[id].label, source: null, tests: {}, done: {}, rules: { fillCostCenter: false, excludeUnmapped: false }, approval: null, tested: false, map: {}, log: [] };
+  const M = t.migProjects[id]; if (!M) fail("ORDER", "Migrationsprojekt noch nicht begonnen."); return M;
+}
+const ccFallback = t => (t.master.costCenters.find(c => /Einkauf/.test(c.name)) || t.master.costCenters[0] || {}).id;
+function prValidate(t, src, rules) {
+  const ok = [], errs = [], warns = [];
+  for (const r0 of src.requisitions) { const r = Object.assign({}, r0);
+    if (t.reqs.some(q => q.legacy === r.BANFN && q.status !== "zurückgezogen")) { errs.push([r.BANFN, "bereits übernommen"]); continue; }
+    if (!(r.MENGE > 0) || !(r.PREIS > 0)) { errs.push([r.BANFN, "Menge oder Preis fehlt"]); continue; }
+    if (!t.master.costCenters.some(c => c.id === r.KOSTL)) {
+      if (rules.fillCostCenter) { warns.push([r.BANFN, `Kostenstelle „${r.KOSTL || "–"}“ unbekannt, ${ccFallback(t)} (Einkauf) gesetzt`]); r.KOSTL = ccFallback(t); }
+      else if (rules.excludeUnmapped) { warns.push([r.BANFN, `ausgeschlossen, Klärungsliste: Kostenstelle „${r.KOSTL || "–"}“ unbekannt`]); continue; }
+      else { errs.push([r.BANFN, `Kostenstelle „${r.KOSTL || "–"}“ im Ziel unbekannt`]); continue; } }
+    ok.push(r); }
+  return { ok, errs, warns };
+}
+function prApply(t, M, valid, user) {
+  const made = [];
+  for (const r of valid) { const cat = r.KATALOG ? t.catalog.find(c => c.id === r.KATALOG) : null; const def = CATEGORY_DEFAULT[r.WARENGRUPPE] || CATEGORY_DEFAULT.IT; const net = r2(r.MENGE * r.PREIS);
+    const q = { no: nextNo(t, "BANF"), date: t.date, due: r.FAELLIG || t.date, requester: "legacy:" + r.BANFN, requesterName: r.AFNAM, net, status: "zur Freigabe", level: reqApprovalLevel(net) || "übernommen", approvedBy: null, po: null,
+      type: "indirekt", text: r.TXZ01, qty: r.MENGE, unit: r.MEINS || "Stk", price: r.PREIS, supplier: cat ? cat.supplier : def[0], acct: cat ? cat.acct : def[1], category: cat ? cat.category : (r.WARENGRUPPE || "IT"), catalog: cat ? cat.id : undefined, costCenter: r.KOSTL, legacy: r.BANFN, legacySys: MIG_PROJECTS[M.id].system, migProject: M.id, migratedBy: user };
+    t.reqs.push(q); M.map[r.BANFN] = q.no; made.push(q.no); }
+  return made;
+}
+function prSource(p) { if (!p || !Array.isArray(p.requisitions)) fail("SOURCE", "Extrakt aus dem Altsystem fehlt."); return { requisitions: p.requisitions.map(r => ({ BANFN: String(r.BANFN), TXZ01: String(r.TXZ01 || ""), MENGE: +r.MENGE, MEINS: r.MEINS || "Stk", PREIS: +r.PREIS, WERT: r2(+r.MENGE * +r.PREIS), KOSTL: r.KOSTL || "", AFNAM: String(r.AFNAM || ""), FAELLIG: r.FAELLIG || null, KATALOG: r.KATALOG || null, WARENGRUPPE: r.WARENGRUPPE || null })) }; }
+(function () {
+  const base = { test: CMD.migrationTest, req: CMD.migrationRequestApproval, appr: CMD.migrationApprove, run: CMD.migrationRun };
+  CMD.migrationTest = function (w, t, p, ctx) {
+    if (!p.project) return base.test(w, t, p, ctx);
+    need(t, ctx, "view"); const M = migProject(t, p.project, true); if (M.done.requisitions) fail("DONE", "Bestellanforderungen bereits übernommen.");
+    if (p.source) M.source = prSource(p.source); if (!M.source) fail("SOURCE", "Extrakt aus dem Altsystem fehlt."); Object.assign(M.rules, p.rules || {});
+    const res = prValidate(t, M.source, M.rules); M.tests.requisitions = migReconcile("requisitions", M.source, res); M.tests.requisitions.issues = res.errs.slice(0, 12).concat(res.warns.slice(0, 6).map(x => [x[0], "Hinweis: " + x[1]]));
+    M.tested = true; M.approval = null; M.log.push({ date: t.date, by: ctx.userName, text: `Testlauf: ${res.errs.length} Fehler` });
+    const x = M.tests.requisitions; return { text: `Testmigration ${M.label}: ${x.errors} Fehler, ${x.loaded}/${x.source} übernehmbar, Summe ${x.loadedSum} € von ${x.sourceSum} € – Produktivdaten unverändert` };
+  };
+  CMD.migrationRequestApproval = function (w, t, p, ctx) {
+    if (!p.project) return base.req(w, t, p, ctx);
+    need(t, ctx, "view"); const M = migProject(t, p.project); if (!M.tested) fail("ORDER", "Zuerst Testmigration durchführen."); if (M.tests.requisitions.errors) fail("ERRORS", `Freigabe erst bei fehlerfreiem Testlauf (${M.tests.requisitions.errors} Fehler offen).`);
+    M.approval = { status: "offen", requester: ctx.user, requesterName: ctx.userName, date: t.date }; M.log.push({ date: t.date, by: ctx.userName, text: "Freigabe angefordert" }); return { text: `Freigabe der Übernahme ${M.label} angefordert (Vier-Augen-Prinzip)` };
+  };
+  CMD.migrationApprove = function (w, t, p, ctx) {
+    if (!p.project) return base.appr(w, t, p, ctx);
+    need(t, ctx, "approve"); const M = migProject(t, p.project); if (!M.approval || M.approval.status !== "offen") fail("ORDER", "Keine offene Freigabe."); if (M.approval.requester === ctx.user) fail("FOUR_EYES", "Vier-Augen-Prinzip: Die anfordernde Person darf nicht freigeben.");
+    M.approval.status = "freigegeben"; M.approval.by = ctx.userName; M.log.push({ date: t.date, by: ctx.userName, text: "Übernahme freigegeben" }); return { text: `Übernahme ${M.label} freigegeben durch ${ctx.userName}` };
+  };
+  CMD.migrationRun = function (w, t, p, ctx) {
+    if (!p.project) return base.run(w, t, p, ctx);
+    need(t, ctx, "post"); const M = migProject(t, p.project); if (!M.approval || M.approval.status !== "freigegeben") fail("APPROVAL", "Produktivübernahme nur mit erteilter Freigabe."); if (M.done.requisitions) fail("DONE", "Bestellanforderungen bereits übernommen.");
+    const res = prValidate(t, M.source, M.rules); if (res.errs.length) fail("ERRORS", `${res.errs.length} Fehler: ${res.errs[0][1]} …`);
+    const made = prApply(t, M, res.ok, ctx.userName); const rec = migReconcile("requisitions", M.source, res); M.done.requisitions = Object.assign(rec, { date: t.date, by: ctx.userName, reqs: made });
+    M.log.push({ date: t.date, by: ctx.userName, text: `Produktivübernahme: ${made.length} Bestellanforderungen` });
+    return { text: `${MIG_LABEL.requisitions} produktiv übernommen: ${rec.loaded} von ${rec.source}, Summe ${rec.loadedSum} € = Quelle ${r2(rec.sourceSum - (rec.excludedSum || 0))} €${rec.excluded ? ` (${rec.excluded} auf Klärungsliste)` : ""}`, objects: made };
+  };
+})();
+Object.assign(CMD, {
+  /* Rückweg einer Ablösung: offene Bestellanforderungen aus Übernahme und Parallelbetrieb zurückziehen; Projekt kann neu beginnen */
+  withdrawRequisitions(w, t, p, ctx) {
+    need(t, ctx, "approve"); const nos = Array.isArray(p.reqNos) ? p.reqNos : []; let n = 0;
+    for (const no of nos) { const q = t.reqs.find(x => x.no === no); if (q && q.status === "zur Freigabe" && !q.po) { q.status = "zurückgezogen"; q.approvedBy = ctx.userName; q.note = p.reason || "Rückweg"; n++; } }
+    if (p.project && t.migProjects && t.migProjects[p.project]) { const M = t.migProjects[p.project]; M.done = {}; M.approval = null; M.tested = false; M.source = null; M.map = {}; M.log.push({ date: t.date, by: ctx.userName, text: "Rückweg: Projekt zurückgesetzt" }); }
+    return { text: `${n} offene Bestellanforderung(en) zurückgezogen (${p.reason || "Rückweg"})` };
+  }
+});
+
+return { MIG_PROJECTS, WORK_CENTERS, CATALOG, CATEGORY_DEFAULT, deriveDrawing, ROLE_DESC, dueMaintenance, returnRate, personnelCost, cutoverStatus, legacyData, MIG_OBJECTS, MIG_LABEL, isAbsent, absHoursInPeriod, SERVICE_RATE, VERSION, START_DATE, TENANT_IDS, COA, SIZES, E5, createWorld, resetTenant, resetAll, dispatch, kpis, plOf, trialBalance, balance, projectMetrics, replenishmentProposals, processInstances, tenantHash, costing, avail, periodOf, customerName, supplierName, articleName, materialOf, QUERY_ONLY, _internal: { HIST, crossHistory } };
 });
 
 /* NEXORA DXF-Leser: liest ASCII-DXF (R12 bis aktuelle Versionen), Schriftfeld- und Positionsattribute
@@ -1775,7 +1862,7 @@ return { WORK_CENTERS, CATALOG, CATEGORY_DEFAULT, deriveDrawing, ROLE_DESC, dueM
   for (const id in CONNECTORS) CONNECTORS[id].routes = ROUTES[id];
   /* Erlaubte Wege je Befehl. Nicht aufgeführte Wege (insbesondere "direct-api") werden abgelehnt. */
   const ALLOWED = {
-    sap: { approveInvoice: ["joule-a2a", "released-api"], rejectInvoice: ["joule-a2a", "released-api"], approvePR: ["joule-a2a", "released-api"], rejectPR: ["joule-a2a", "released-api"], createPR: ["joule-a2a", "mcp-gateway"], mirrorPR: ["released-api"], query: ["joule-a2a", "mcp-gateway", "released-api"] },
+    sap: { approveInvoice: ["joule-a2a", "released-api"], rejectInvoice: ["joule-a2a", "released-api"], approvePR: ["joule-a2a", "released-api"], rejectPR: ["joule-a2a", "released-api"], createPR: ["joule-a2a", "mcp-gateway"], mirrorPR: ["released-api"], markMigrated: ["released-api"], query: ["joule-a2a", "mcp-gateway", "released-api"] },
     m365: { replyApproval: ["copilot-a2a", "graph"], archiveMail: ["graph"], query: ["copilot-a2a", "graph"] },
     servicenow: { approveRITM: ["nowassist-a2a", "rest"], rejectRITM: ["nowassist-a2a", "rest"], createRITM: ["rest", "nowassist-a2a"], query: ["nowassist-a2a", "rest"] },
     workday: { approveAbsence: ["workday-agent-a2a", "integration"], rejectAbsence: ["workday-agent-a2a", "integration"], completeOnboardingTask: ["integration", "workday-agent-a2a"], query: ["workday-agent-a2a", "integration"] },
@@ -1815,6 +1902,25 @@ return { WORK_CENTERS, CATALOG, CATEGORY_DEFAULT, deriveDrawing, ROLE_DESC, dueM
     const r = routeOf(best.system, best.route);
     const what = best.system === "sap" ? (/rechnung|kreditor/.test(q) ? "invoices" : /bestellanforderung|banf/.test(q) ? "prs" : "materials") : null;
     return { ok: true, agent: best, system: best.system, route: r, cost: r.costPerCall, what, cmd: best.system === "nexora" ? null : `conn.${best.system}.query` };
+  }
+
+  /* ---------- Ablösung: unterstützte Prozesse, Extrakt, Abstimmung, Fortschritt ---------- */
+  const SUPPORTED_TRANSITION = { bestellanforderung: "sap-pr" };
+  /* Extrakt offener Bestellanforderungen aus dem simulierten SAP (rein lesend) */
+  function prExtract(w, tid) { return { requisitions: state(w, tid).sap.prs.filter(o => o.status === "zur Freigabe" || o.status === "1. Freigabe erteilt").map(o => ({ BANFN: o.no, TXZ01: o.text, MENGE: o.qty, MEINS: o.unit || "Stk", PREIS: o.price, KOSTL: o.costCenter && o.costCenter !== "–" ? o.costCenter : "", AFNAM: o.requester, FAELLIG: o.due, KATALOG: o.catalog || null })) }; }
+  /* Abstimmung im Parallelbetrieb: neue Vorgänge in NEXORA gegen Spiegelungen im Altsystem (Stückzahl und Summe) */
+  function reconcile(w, tid, process) {
+    const s = state(w, tid), t = w.tenants[tid]; const st = s.transition[process] || {}; const base = st.reqBase == null ? t.reqs.length : st.reqBase;
+    const nx = t.reqs.slice(base).filter(q => q.type === "indirekt" && !q.legacy); const mir = s.sap.prs.filter(o => o.mirrorOf && nx.some(q => q.no === o.mirrorOf));
+    const sum = a => r2(a.reduce((x, y) => x + y, 0)); const nSum = sum(nx.map(q => q.net)), lSum = sum(mir.map(o => o.value));
+    const missing = nx.filter(q => !mir.some(o => o.mirrorOf === q.no)).map(q => q.no);
+    return { nexora: { count: nx.length, sum: nSum }, legacy: { count: mir.length, sum: lSum }, diffCount: nx.length - mir.length, diffSum: r2(nSum - lSum), missing, qty: { nexora: nx.reduce((a, q) => a + q.qty, 0), legacy: mir.reduce((a, o) => a + o.qty, 0) } };
+  }
+  /* Anteil der Vorgänge eines Prozesses auf der NEXORA-Engine */
+  function share(w, tid, process) {
+    const s = state(w, tid), t = w.tenants[tid];
+    if (process === "bestellanforderung") { const nx = t.reqs.filter(q => q.type === "indirekt" && q.status !== "zurückgezogen").length; const sap = s.sap.prs.filter(o => o.status !== "gespiegelt" && o.status !== "übernommen nach NEXORA").length; return nx + sap ? nx / (nx + sap) : 0; }
+    return s.owners[process] === "nexora" ? 1 : 0;
   }
 
   /* ---------- Hilfen ---------- */
@@ -1884,7 +1990,7 @@ return { WORK_CENTERS, CATALOG, CATEGORY_DEFAULT, deriveDrawing, ROLE_DESC, dueM
     }
     if (sys === "nexora") {
       const t = w.tenants[tid];
-      if (own("bestellanforderung") && allow("approve")) { const { u } = who(w, tid, ctx); for (const q of (t.reqs || []).filter(x => x.status === "zur Freigabe" && x.requester !== u.id && (x.level !== "ceo" || u.role === "ceo"))) out.push(prCard("nexora", "nexora:req:" + q.no, { no: q.no, text: q.text, qty: q.qty, unit: q.unit, value: q.net, requester: q.requesterName, costCenter: q.costCenter || "–", due: q.date, status: q.status }, tid)); }
+      if (own("bestellanforderung") && allow("approve")) { const { u } = who(w, tid, ctx); for (const q of (t.reqs || []).filter(x => x.status === "zur Freigabe" && x.requester !== u.id && (x.level !== "ceo" || u.role === "ceo"))) out.push(prCard("nexora", "nexora:req:" + q.no, { no: q.no, text: q.text, qty: q.qty, unit: q.unit, value: q.net, requester: q.requesterName, costCenter: q.costCenter || "–", due: q.due || q.date, status: q.status }, tid)); }
       if (PROVIDERS.nexoraTasks) for (const k of PROVIDERS.nexoraTasks(tid, ctx && ctx.user)) { if (k.cmd === "approveRequisition") continue; out.push({ process: k.cmd === "approveAbsence" ? "abwesenheit" : "auftrag", sys: "nexora", ref: "nexora:task:" + k.id, title: k.title, fields: [["Details", k.sub || ""]], amount: 0, due: t.date, status: "offen", actions: [{ label: k.label, cmd: k.cmd, p: k.p, perm: null, primary: true }].concat(k.reject ? [{ label: "Ablehnen", cmd: k.cmd, p: k.reject, perm: null, confirm: true }] : []) }); }
       else for (const m of t.inbox.filter(x => x.status === "offen")) out.push({ process: "auftrag", sys: "nexora", ref: "nexora:inbox:" + m.id, title: m.text, fields: [], amount: 0, due: t.date, status: "offen", actions: [{ label: "Prüfen und buchen", cmd: "processInbox", p: { id: m.id }, perm: "view", primary: true }] });
     }
@@ -1953,6 +2059,9 @@ return { WORK_CENTERS, CATALOG, CATEGORY_DEFAULT, deriveDrawing, ROLE_DESC, dueM
         const no = String(10004711 + s.sap.prs.length); const qty = p.qty > 0 ? p.qty : 1; const { u } = who(w, tid, ctx); const o = { no, text, qty, unit: "Stk", price: p.price, value: r2(qty * p.price), requester: p.requester || u.name, costCenter: p.costCenter || "–", created: w.tenants[tid].date, due: addDays(w.tenants[tid].date, 2), status: "zur Freigabe", approvals: [], catalog: p.catalogId || null, source: p.sourceRef || null, history: [["angelegt über " + route.label, w.tenants[tid].date]] }; s.sap.prs.push(o);
         return { text: `Bestellanforderung ${no} in SAP angelegt (${route.label})${p.sourceRef ? " aus " + p.sourceRef : ""}`, objects: ["sap:pr:" + no] }; },
       mirrorPR(w, tid, p, ctx, s) { need(w, tid, ctx, "view"); if (!s.transition.bestellanforderung || s.transition.bestellanforderung.phase !== "parallel") fail("STATUS", "Spiegeln nur im Parallelbetrieb."); const no = String(10004711 + s.sap.prs.length); s.sap.prs.push({ no, text: p.text, qty: p.qty, unit: "Stk", price: p.price, value: r2(p.qty * p.price), requester: p.requester, costCenter: p.costCenter || "–", created: w.tenants[tid].date, due: w.tenants[tid].date, status: "gespiegelt", approvals: [], mirrorOf: p.reqNo, history: [["gespiegelt aus NEXORA " + p.reqNo, w.tenants[tid].date]] }); return { text: `Parallelbetrieb: ${p.reqNo} nach SAP gespiegelt (${no})` }; },
+      markMigrated(w, tid, p, ctx, s) { need(w, tid, ctx, "approve"); const st = s.transition.bestellanforderung; if (!st || st.phase !== "parallel") fail("STATUS", "Kennzeichnen nur im Parallelbetrieb."); const map = p.map || {}; let n = 0;
+        for (const o of s.sap.prs) if (map[o.no] && o.status !== "übernommen nach NEXORA") { o.prevStatus = o.status; o.status = "übernommen nach NEXORA"; o.migratedTo = map[o.no]; o.history.push(["übernommen nach NEXORA " + map[o.no] + " – nur noch lesend", w.tenants[tid].date]); n++; }
+        return { text: `${n} Bestellanforderung(en) in SAP als übernommen gekennzeichnet – Altsystem für diesen Prozess nur noch lesend` }; },
       query(w, tid, p, ctx, s, route) { need(w, tid, ctx, "view"); const what = p.what || "materials"; const data = what === "invoices" ? s.sap.invoices.map(o => ({ no: o.no, lieferant: o.supplier, betrag: o.amount, status: o.status })) : what === "prs" ? s.sap.prs.map(o => ({ no: o.no, bedarf: o.text, wert: o.value, status: o.status })) : s.sap.materials.map(o => ({ material: o.name, werk: o.plant, verfuegbar: o.available - o.reserved })); return { text: `SAP-Abfrage ${what} über ${route.label}`, result: data, read: true }; }
     },
     m365: {
@@ -1983,9 +2092,18 @@ return { WORK_CENTERS, CATALOG, CATEGORY_DEFAULT, deriveDrawing, ROLE_DESC, dueM
       setDash(w, tid, p, ctx, s) { need(w, tid, ctx, "view"); const { u } = who(w, tid, ctx); const key = p.scope === "role" ? "role:" + u.role : "user:" + u.id; if (!Array.isArray(p.tiles)) fail("INPUT", "Kacheln fehlen."); s.dash[key] = p.tiles.slice(0, 16).map(x => String(x)); return { text: `Dashboard gespeichert (${p.tiles.length} Kacheln)` }; },
       transition(w, tid, p, ctx, s) { need(w, tid, ctx, "approve"); const pr = PROCESSES[p.process]; if (!pr) fail("PROCESS", "Unbekannter Prozess."); const st = s.transition[p.process] || (s.transition[p.process] = { phase: "überlagert", log: [] }); const date = w.tenants[tid].date; const { u } = who(w, tid, ctx);
         const go = (phase, text) => { st.log.push({ phase, date, by: u.name, text }); st.phase = phase; return { text }; };
-        if (p.step === "parallel") { if (st.phase !== "überlagert" && st.phase !== "zurückgestellt") fail("STATUS", `Phase „${st.phase}“.`); st.until = addDays(date, p.days || 14); s.owners[p.process] = "nexora"; return go("parallel", `${pr.label}: Parallelbetrieb bis ${st.until} – neue Vorgänge in der NEXORA-Engine, Spiegelung ins Altsystem`); }
-        if (p.step === "cutover") { if (st.phase !== "parallel") fail("STATUS", "Umschalten nur aus dem Parallelbetrieb."); if (p.reconDiff !== 0) fail("RECON", "Abstimmung zeigt Differenzen – Umschalten nicht möglich."); return go("abgelöst", `${pr.label} abgelöst: System of Record ist die NEXORA-Engine, das Altsystem bleibt lesend (Historie)`); }
-        if (p.step === "rollback") { if (st.phase !== "parallel") fail("STATUS", "Ein Rückweg ist nur bis zum Abschluss des Parallelbetriebs möglich."); s.owners[p.process] = PROCESSES[p.process].owner; return go("zurückgestellt", `${pr.label}: Rückweg – System of Record wieder ${CONNECTORS[PROCESSES[p.process].owner].name}`); }
+        if (p.step === "parallel") { if (st.phase !== "überlagert" && st.phase !== "zurückgestellt") fail("STATUS", `Phase „${st.phase}“.`); if (!SUPPORTED_TRANSITION[p.process]) fail("PROCESS", `${pr.label} ist in dieser Demo nicht umstellbar.`);
+          const t = w.tenants[tid]; const mp = t.migProjects && t.migProjects[SUPPORTED_TRANSITION[p.process]]; if (!mp || !mp.done || !mp.done.requisitions) fail("ORDER", "Zuerst die Datenübernahme abschließen (Testlauf, Freigabe, Produktivübernahme).");
+          st.until = addDays(date, p.days || 14); st.reqBase = t.reqs.length; st.migrated = (mp.done.requisitions.reqs || []).slice(); s.owners[p.process] = "nexora"; return go("parallel", `${pr.label}: Parallelbetrieb bis ${st.until} – neue Vorgänge in der NEXORA-Engine, Spiegelung ins Altsystem`); }
+        if (p.step === "cutover") { if (st.phase !== "parallel") fail("STATUS", "Umschalten nur aus dem Parallelbetrieb."); const rc = reconcile(w, tid, p.process); if (rc.diffCount !== 0 || rc.diffSum !== 0) fail("RECON", `Abstimmung zeigt Differenzen (${rc.diffCount} Vorgänge, ${eur(rc.diffSum)}) – Umschalten nicht möglich.`); st.recon = rc; return go("abgelöst", `${pr.label} abgelöst: System of Record ist die NEXORA-Engine, das Altsystem bleibt lesend (Historie)`); }
+        if (p.step === "rollback") { if (st.phase !== "parallel") fail("STATUS", "Ein Rückweg ist nur bis zum Abschluss des Parallelbetriebs möglich."); const t = w.tenants[tid]; s.owners[p.process] = PROCESSES[p.process].owner;
+          // Altsystem führt wieder: übernommene Originale reaktivieren (Status aus NEXORA übernehmen), Spiegelungen werden echte Vorgänge
+          const byNo = no => t.reqs.find(q => q.no === no); const withdraw = [];
+          for (const o of s.sap.prs) { if (o.status === "übernommen nach NEXORA") { const q = byNo(o.migratedTo); o.status = q && q.status !== "zur Freigabe" ? q.status : o.prevStatus; o.history.push(["Rückweg: wieder im Altsystem führend", date]); delete o.prevStatus; delete o.migratedTo; if (q && q.status === "zur Freigabe") withdraw.push(q.no); }
+            else if (o.status === "gespiegelt") { const q = byNo(o.mirrorOf); o.status = q && q.status !== "zur Freigabe" ? q.status : "zur Freigabe"; o.history.push(["Rückweg: Spiegelung wird führender Vorgang", date]); if (q && q.status === "zur Freigabe") withdraw.push(q.no); } }
+          st.reqBase = null; st.migrated = [];
+          const r = go("zurückgestellt", `${pr.label}: Rückweg – System of Record wieder ${CONNECTORS[PROCESSES[p.process].owner].name}`);
+          return Object.assign(r, { follow: [{ cmd: "withdrawRequisitions", p: { reqNos: withdraw, project: SUPPORTED_TRANSITION[p.process], reason: "Rückweg der Ablösung" }, why: "offene Vorgänge in NEXORA zurückziehen" }] }); }
         fail("STEP", "Unbekannter Schritt."); }
     }
   };
@@ -2013,7 +2131,7 @@ return { WORK_CENTERS, CATALOG, CATEGORY_DEFAULT, deriveDrawing, ROLE_DESC, dueM
   function owners(w, tid) { return Object.assign({}, state(w, tid).owners); }
   function setProvider(name, fn) { PROVIDERS[name] = fn; }
 
-  return { VERSION, ROUTES, ALLOWED, AGENTS, routeQuery, CONNECTORS, PROCESSES, FOUR_EYES_LIMIT, COST_NOTE, SAP_POLICY_NOTE, state, hash, listTasks, tasksOf, search, getObject, dispatch, dispatchAny, ledger, costs, owners, setProvider, parseRef, resolveRoute };
+  return { VERSION, ROUTES, ALLOWED, AGENTS, routeQuery, SUPPORTED_TRANSITION, prExtract, reconcile, share, CONNECTORS, PROCESSES, FOUR_EYES_LIMIT, COST_NOTE, SAP_POLICY_NOTE, state, hash, listTasks, tasksOf, search, getObject, dispatch, dispatchAny, ledger, costs, owners, setProvider, parseRef, resolveRoute };
 });
 
 </script>
@@ -3381,14 +3499,17 @@ E.dispatch = function (w, tid, cmd, p, ctx) {
 const _act8 = act;
 act = function (cmd, payload, opt) {
   const r = _act8(cmd, payload, opt);
-  if (r && r.ok && r.follow && r.follow.length) for (const f of r.follow) { const fr = _act8(f.cmd, f.p, Object.assign({}, opt || {}, { auto: false })); if (fr && fr.ok) toast("Folgeschritt: " + fr.text); }
+  // Folgeschritte (und Spiegelungen im Parallelbetrieb) als eigene protokollierte Ereignisse
+  const more = (c, p, res) => (res && res.ok ? (res.follow || []) : []).concat(typeof mirrorFor === "function" ? mirrorFor(c, p, res) : []);
+  const queue = more(cmd, payload, r).slice(); let guard = 0;
+  while (queue.length && guard++ < 20) { const f = queue.shift(); const fr = _act8(f.cmd, f.p, Object.assign({}, opt || {}, { auto: false })); if (fr && fr.ok) { toast("Folgeschritt: " + fr.text); queue.push(...more(f.cmd, f.p, fr)); } }
   return r;
 };
 
 /* ---------- Phase 2: ein Kartenformat, eine Inbox, eine Suche, Deep Links ---------- */
 var LAYER_READY = true;
-LAYER_ROUTES.splice(0, LAYER_ROUTES.length, "tasks", "ai", "systems", "agents", "audit", "documents", "admin");
-MODS.systems = ["Systeme", "db", "live"]; MODS.agents = ["Agenten", "users", "live"]; MODS.audit = ["Protokoll", "check", "live"]; MODS.privacy = ["Mitbestimmung & Datenschutz", "shield", "live"]; MODS.obj = ["Objekt", "doc", "live"]; ROUTES.push("systems", "agents", "audit", "privacy", "obj");
+LAYER_ROUTES.splice(0, LAYER_ROUTES.length, "home", "tasks", "ai", "systems", "agents", "transition", "audit", "documents", "admin");
+MODS.systems = ["Systeme", "db", "live"]; MODS.agents = ["Agenten", "users", "live"]; MODS.audit = ["Protokoll", "check", "live"]; MODS.transition = ["Ablöse-Cockpit", "flag", "live"]; MODS.privacy = ["Mitbestimmung & Datenschutz", "shield", "live"]; MODS.obj = ["Objekt", "doc", "live"]; ROUTES.push("systems", "agents", "audit", "privacy", "obj", "transition");
 const SYS_ORDER = ["nexora", "sap", "m365", "servicenow", "workday"];
 const sysName = id => (C.CONNECTORS[id] || { name: id }).name;
 const simBadge = sys => C.CONNECTORS[sys] && C.CONNECTORS[sys].simulated ? `<span class="ly-sim" title="Keine echte Integration – Daten aus dem Seed erzeugt">Demo-Konnektor · simuliert</span>` : `<span class="ly-sim live">Live-Engine</span>`;
@@ -3679,6 +3800,104 @@ const embedBar = () => { const rt = route(); return `<div class="emb-bar"><div c
 const _render6 = render;
 render = function () { document.body.classList.toggle("embed", !!S.embed); if (S.embed) S.live = false; _render6(); if (S.embed) { const m = document.querySelector("#root .main"); if (m) m.insertAdjacentHTML("afterbegin", embedBar()); } };
 try { if (/^#embed\b/.test(location.hash) || new URLSearchParams(location.search).get("embed") === "1") { S.embed = true; S.layer = "layer"; if (/^#embed\b/.test(location.hash)) { try { history.replaceState(null, "", "#tasks"); } catch (e) { location.hash = "tasks"; } } } } catch (e) {}
+
+/* ---------- Phase 7: Individuelles Dashboard, System of Record je Prozess, Ablöse-Cockpit ---------- */
+const TR_PROJECT = C.SUPPORTED_TRANSITION.bestellanforderung; // "sap-pr"
+const trState = (proc, tid) => (C.state(W, tid || S.tenant).transition[proc] || { phase: "überlagert", log: [] });
+const PHASE_LABEL = { "überlagert": "überlagert", parallel: "im Parallelbetrieb", "abgelöst": "abgelöst", "zurückgestellt": "zurückgestellt" };
+const phaseOf = p => { const own = C.owners(W, S.tenant)[p]; const st = trState(p); if (C.PROCESSES[p].owner === "nexora") return "nativ"; return st.phase === "überlagert" && own === "nexora" ? "abgelöst" : st.phase; };
+const phasePill = ph => ph === "nativ" ? pill("p-good", "NEXORA nativ") : ph === "abgelöst" ? pill("p-good", "abgelöst") : ph === "parallel" ? pill("p-warn", "im Parallelbetrieb") : ph === "zurückgestellt" ? pill("p-neu", "zurückgestellt") : pill("p-acc", "überlagert");
+// Parallelbetrieb: neue Bestellanforderungen der Engine ins Altsystem spiegeln (eigenes protokolliertes Ereignis)
+function mirrorFor(cmd, p, res) {
+  if (cmd !== "createRequisition" || !res || !res.ok || !res.objects || !res.objects.length) return [];
+  if (trState("bestellanforderung").phase !== "parallel") return [];
+  const q = T().reqs.find(x => x.no === res.objects[0]); if (!q || q.type !== "indirekt") return [];
+  return [{ cmd: "conn.sap.mirrorPR", p: { reqNo: q.no, text: q.text, qty: q.qty, price: q.price, requester: q.requesterName, costCenter: q.costCenter, via: "Parallelbetrieb" } }];
+}
+/* Dashboard-Kacheln: systemneutral, lesen über das System of Record */
+function kpiDefs() { return KPI_DEF.common.concat(KPI_DEF[S.tenant] || []); }
+const DASH_TEMPLATES = { ceo: ["kpi:cash", "kpi:revenueCur", "trend", "approvals", "process", "costs"], cfo: ["kpi:cash", "kpi:arOpen", "kpi:apOpen", "approvals", "costs", "trend"], buy: ["approvals", "tasks", "kpi:apOpen", "kpi:inventory", "process"], sales: ["tasks", "kpi:revenueCur", "kpi:backlog", "trend"], prod: ["tasks", "kpi:openProd", "kpi:wip", "process"], hr: ["tasks", "approvals", "process"] };
+const TEMPLATE_LABEL = { ceo: "CEO", cfo: "CFO", buy: "Einkauf", sales: "Vertrieb", prod: "Fertigung", hr: "HR" };
+function tileCatalog() { const k = E.kpis(T()); return [["approvals", "Offene Freigaben (alle Systeme)"], ["tasks", "Meine Aufgaben"], ["trend", "Umsatz und EBIT (12 Monate)"], ["process", "Prozessstatus und System of Record"], ["costs", "Zugriffskosten"]].concat(kpiDefs().filter(d => k[d[0]] != null).map(d => ["kpi:" + d[0], "Kennzahl: " + d[1]])); }
+function dashTemplate(roleId) { const valid = new Set(tileCatalog().map(x => x[0])); return (DASH_TEMPLATES[roleId] || ["tasks", "approvals", "kpi:cash", "trend"]).filter(x => valid.has(x)); }
+function dashTiles() { const s = C.state(W, S.tenant); const u = U(); return { tiles: s.dash["user:" + u.id] || s.dash["role:" + u.role] || dashTemplate(u.role), own: !!s.dash["user:" + u.id] }; }
+const tileLabel = id => (tileCatalog().find(x => x[0] === id) || [id, id])[1];
+function tileBody(id) {
+  const t = T();
+  if (id.startsWith("kpi:")) { const key = id.slice(4); const d = kpiDefs().find(x => x[0] === key); const v = E.kpis(t)[key]; return `<div class="dt-kpi num">${d && d[2] === "n" ? num(v || 0) : eur(v || 0)}</div><span class="small faint">aus Belegen und Nebenbüchern der NEXORA-Engine</span>`; }
+  if (id === "approvals" || id === "tasks") { const all = layerTasks(); const l = id === "approvals" ? all.filter(k => (k.actions || []).some(a => /Freigabe|Freigeben|Zustimmen|Genehmig/i.test(a.label))) : all; const by = {}; for (const k of l) by[k.source] = (by[k.source] || 0) + 1;
+    return `<div class="row between"><b class="dt-kpi num">${l.length}</b><span class="small faint">${Object.entries(by).map(([a, n]) => `${esc(a.replace(" (simuliert)", ""))} ${n}`).join(" · ")}</span></div><div class="list">${l.slice(0, 4).map(k => `<button class="dt-row" data-act="openObj" data-ref="${esc(k.ref)}"><span class="ly-chip s-${k.sys}">${esc(sysName(k.sys).replace(" (simuliert)", ""))}</span><span class="grow">${esc(k.title)}</span>${k.amount ? `<span class="num small">${eur(k.amount)}</span>` : ""}</button>`).join("")}</div>${l.length > 4 ? `<a class="small" href="#tasks">alle ${l.length} anzeigen →</a>` : ""}`; }
+  if (id === "trend") { const tr = (E.kpis(t).trend || []).slice(-12); const mx = Math.max(1, ...tr.map(x => x.revenue)); const W2 = 300, H = 90, bw = W2 / Math.max(1, tr.length);
+    return `<svg viewBox="0 0 ${W2} ${H + 14}" class="dt-trend" role="img" aria-label="Umsatz und EBIT der letzten 12 Monate">${tr.map((x, i) => `<rect x="${i * bw + 2}" y="${H - x.revenue / mx * H}" width="${bw - 4}" height="${x.revenue / mx * H}" rx="2" class="b"><title>${perDe(x.period)}: Umsatz ${eur(x.revenue)}, EBIT ${eur(x.ebit)}</title></rect>`).join("")}<polyline class="l" points="${tr.map((x, i) => `${i * bw + bw / 2},${H - Math.max(0, x.ebit) / mx * H}`).join(" ")}"/>${tr.length ? `<text x="0" y="${H + 12}" class="tx">${esc(perDe(tr[0].period))}</text><text x="${W2}" y="${H + 12}" text-anchor="end" class="tx">${esc(perDe(tr[tr.length - 1].period))}</text>` : ""}</svg><span class="small faint">Balken Umsatz, Linie EBIT · abgeschlossene Perioden</span>`; }
+  if (id === "process") { const own = C.owners(W, t.id); return `<div class="list">${Object.keys(C.PROCESSES).map(p => `<div class="dt-row static"><span class="grow small">${esc(C.PROCESSES[p].label)}</span><span class="ly-chip s-${own[p]}">${esc(sysName(own[p]).replace(" (simuliert)", ""))}</span>${phasePill(phaseOf(p))}</div>`).join("")}</div><a class="small" href="#transition">Ablöse-Cockpit →</a>`; }
+  if (id === "costs") { const c = costNow(); return `<div class="row" style="gap:18px"><div><div class="eyebrow">heute</div><b class="dt-kpi num">${eur4(c.day)}</b></div><div><div class="eyebrow">Monat</div><b class="dt-kpi num">${eur4(c.month)}</b></div></div><span class="small faint">${esc(C.COST_NOTE)} · <a href="#audit">Protokoll</a></span>`; }
+  return `<p class="small muted">Unbekannte Kachel.</p>`;
+}
+const DASH_SRC = { approvals: "alle Systeme", tasks: "alle Systeme", process: "Experience Layer", costs: "Protokoll", trend: "NEXORA-Engine" };
+function saveDash(tiles) { act("conn.layer.setDash", { tiles }); }
+Object.assign(ACT, {
+  dashEdit() { S.dashEdit = !S.dashEdit; render(); },
+  dashMove(d) { const l = dashTiles().tiles.slice(); const i = +d.i, j = i + (+d.dir); if (j < 0 || j >= l.length) return; [l[i], l[j]] = [l[j], l[i]]; saveDash(l); },
+  dashDel(d) { const l = dashTiles().tiles.slice(); l.splice(+d.i, 1); saveDash(l); },
+  dashTpl(d) { saveDash(dashTemplate(d.r || U().role)); }
+});
+ON.dashAdd = v => { if (!v) return; const l = dashTiles().tiles.slice(); if (!l.includes(v)) l.push(v); saveDash(l); };
+VIEWS.dashboard = () => {
+  const u = U(); const { tiles, own } = dashTiles(); const ed = !!S.dashEdit; const rest = tileCatalog().filter(x => !tiles.includes(x[0]));
+  return head("Experience Layer · " + esc(T_NAMES[S.tenant]), "Mein Dashboard", `<div class="row"><button class="btn ${ed ? "pri" : ""}" data-act="dashEdit">${ed ? "Fertig" : "Anpassen"}</button><button class="btn" data-act="userMenu">${esc(u.name)} · ${esc((R() || {}).name || "")}</button></div>`)
+   + `<div class="note acc small sn"><div>Kacheln im Aktionskarten-Format, systemneutral: „Offene Freigaben“ zeigt Vorgänge aus SAP, ServiceNow oder der NEXORA-Engine – je nachdem, welches System den Prozess gerade führt. ${own ? "Eigene Zusammenstellung" : `Vorlage ${esc(TEMPLATE_LABEL[u.role] || "Standard")}`}; Änderungen stehen im Ereignisprotokoll (Typ dash) und sind damit reproduzierbar, teilbar und per Reset rücksetzbar.</div></div>`
+   + (ed ? `<section class="card card-pad row" style="gap:10px;flex-wrap:wrap;align-items:flex-end"><label class="f">Kachel hinzufügen<select class="input" data-on="dashAdd"><option value="">Kachel wählen …</option>${rest.map(x => `<option value="${esc(x[0])}">${esc(x[1])}</option>`).join("")}</select></label><span class="small muted">Vorlage laden:</span>${Object.keys(DASH_TEMPLATES).map(r => `<button class="btn sm" data-act="dashTpl" data-r="${r}">${TEMPLATE_LABEL[r]}</button>`).join("")}</section>` : "")
+   + `<div class="dash-grid">${tiles.map((id, i) => `<article class="ly-card card dash-tile" data-tile="${esc(id)}"><div class="ly-src"><span class="ly-chip">${esc(id.startsWith("kpi:") ? "NEXORA-Engine" : DASH_SRC[id] || "")}</span>${ed ? `<span class="grow"></span><button class="icon-btn sm" data-act="dashMove" data-i="${i}" data-dir="-1" aria-label="nach vorn" ${i === 0 ? "disabled" : ""}>↑</button><button class="icon-btn sm" data-act="dashMove" data-i="${i}" data-dir="1" aria-label="nach hinten" ${i === tiles.length - 1 ? "disabled" : ""}>↓</button><button class="icon-btn sm" data-act="dashDel" data-i="${i}" aria-label="entfernen">${ic("x", 13)}</button>` : ""}</div><h3>${esc(tileLabel(id).replace("Kennzahl: ", ""))}</h3>${tileBody(id)}</article>`).join("") || `<section class="card card-pad"><p class="muted">Keine Kacheln. Über „Anpassen“ hinzufügen.</p></section>`}</div>`;
+};
+VIEWS.home = () => S.layer === "layer" ? VIEWS.dashboard() : _home8();
+// Navigation: „Home“ heißt im Layer-Modus „Dashboard“
+const _render8d = render; render = function () { const h = MODS.home[0]; if (S.layer === "layer") MODS.home[0] = "Dashboard"; try { _render8d(); } finally { MODS.home[0] = h; } };
+
+/* Ablöse-Cockpit (Route transition). Im Layer-Modus ersetzt es den Prototyp „Transformation“; in der Suite bleibt der Prototyp. */
+const PROC_CMDS = { bestellanforderung: ["approvePR", "rejectPR", "createPR", "mirrorPR", "markMigrated"], rechnungsfreigabe: ["approveInvoice", "rejectInvoice"], ticket_einkauf: ["approveRITM", "rejectRITM", "createRITM"], abwesenheit: ["approveAbsence", "rejectAbsence"], freigabebitte: ["replyApproval"], onboarding: ["completeOnboardingTask"], auftrag: [] };
+const LICENSE_EX = { bestellanforderung: [12, 95, "Lizenzen für Anfordernde im Altsystem"], rechnungsfreigabe: [4, 140, "Lizenzen für Freigebende"], ticket_einkauf: [20, 30, "Lizenzen im Service-Portal"], abwesenheit: [60, 6, "Lizenzen Self-Service"], onboarding: [3, 45, "Lizenzen HR-Fachbereich"] };
+function procCosts(p) { const own0 = C.PROCESSES[p].owner; const per = T().date.slice(0, 7); const L = C.ledger(W, S.tenant).filter(x => x.sys === own0 && x.period === per && PROC_CMDS[p].includes(x.cmd)); return { calls: L.length, cost: Math.round(L.reduce((a, x) => a + x.cost, 0) * 1000) / 1000 }; }
+S.trRules = S.trRules || { fillCostCenter: false, excludeUnmapped: false }; S.trDays = S.trDays || 14;
+Object.assign(ACT, {
+  trTest() { act("migrationTest", { project: TR_PROJECT, source: C.prExtract(W, S.tenant), rules: Object.assign({}, S.trRules) }); },
+  trReq() { act("migrationRequestApproval", { project: TR_PROJECT }); },
+  trAppr() { act("migrationApprove", { project: TR_PROJECT }); },
+  trRun() { act("migrationRun", { project: TR_PROJECT, object: "requisitions" }); },
+  trParallel() { const r = act("conn.layer.transition", { process: "bestellanforderung", step: "parallel", days: S.trDays }); if (r && r.ok) { const M = T().migProjects[TR_PROJECT]; act("conn.sap.markMigrated", { map: M.map }); } },
+  trSample() { const c = T().catalog[0]; act("createRequisition", { catalogId: c.id, qty: 1, costCenter: T().master.costCenters[0].id }); },
+  trCutover() { act("conn.layer.transition", { process: "bestellanforderung", step: "cutover" }); },
+  trRollback() { confirmCard({ title: "Ablösung Bestellanforderung", source: "Experience Layer", sys: "nexora", process: "bestellanforderung" }, { label: "Rückweg ausführen", cmd: "conn.layer.transition" }, () => act("conn.layer.transition", { process: "bestellanforderung", step: "rollback" })); }
+});
+Object.assign(ON, { trRule(v, el) { S.trRules[el.dataset.k] = el.checked; render(); }, trDays(v) { S.trDays = +v || 14; } });
+VIEWS.transition = () => {
+  const t = T(); const own = C.owners(W, t.id); const st = trState("bestellanforderung"); const M = (t.migProjects || {})[TR_PROJECT]; const x = M && M.tests.requisitions; const done = M && M.done.requisitions; const ph = st.phase; const rc = ph === "parallel" ? C.reconcile(W, t.id, "bestellanforderung") : null;
+  const truescale = ON_PAGES ? "truescale.html#roi" : "https://marcelwagner-afk.github.io/nexora-suite/truescale.html#roi";
+  const rows = Object.keys(C.PROCESSES).map(p => { const P = C.PROCESSES[p]; const phx = phaseOf(p); const sh = C.share(W, t.id, p); const pc = procCosts(p); const lic = LICENSE_EX[p];
+    return `<tr data-proc="${p}"><td><b>${esc(P.label)}</b></td><td><span class="ly-chip s-${own[p]}">${esc(sysName(own[p]).replace(" (simuliert)", ""))}</span></td><td>${phasePill(phx)}</td><td><div class="tr-bar" title="${Math.round(sh * 100)} %"><i style="width:${Math.round(sh * 100)}%"></i></div><span class="small num">${Math.round(sh * 100)} %</span></td><td class="r num small">${P.owner === "nexora" ? "–" : `${eur4(pc.cost)}<div class="faint">${pc.calls} Aufrufe im Monat</div>`}</td><td class="r num small">${lic ? `${eur(lic[0] * lic[1])}/Monat<div class="faint">${lic[0]} × ${eur(lic[1])} ${esc(lic[2])}</div>` : "–"}</td><td class="small">${C.SUPPORTED_TRANSITION[p] ? `<a href="#tr-bestell">Ablösung steuern ↓</a>` : P.owner === "nexora" ? "läuft in NEXORA" : `<span class="faint">in dieser Demo nicht umstellbar</span>`}</td></tr>`; }).join("");
+  const step = (n, title, state, body) => `<section class="card card-pad tr-step ${state}"><div class="row between"><h3><span class="tr-n">${n}</span> ${esc(title)}</h3>${state === "done" ? pill("p-good", "erledigt") : state === "active" ? pill("p-acc", "jetzt") : pill("p-neu", "später")}</div>${body}</section>`;
+  const s1 = !done ? "active" : "done", s2 = ph === "parallel" ? "active" : ph === "abgelöst" ? "done" : done ? "active" : "", s3 = ph === "abgelöst" ? "done" : ph === "parallel" ? "active" : "";
+  const extract = C.prExtract(W, t.id).requisitions;
+  return head("Experience Layer · " + esc(T_NAMES[t.id]), "Ablöse-Cockpit", `<button class="btn" data-act="userMenu">${esc(U().name)} · ${esc((R() || {}).name || "")}</button>`)
+   + `<div class="note acc small sn"><div>Prozess für Prozess vom Altsystem in die NEXORA-Engine – ohne dass Mitarbeitende die Oberfläche wechseln. Inbox, Karten, Suche und Dashboard lesen über das System of Record je Prozess. Altsysteme sind simuliert; alle Geldwerte sind <b>Beispielwerte</b>, keine Herstellerpreise. Der Prototyp „Transformation“ bleibt in der Suite-Ansicht erreichbar.</div></div>`
+   + `<section class="card" style="overflow:auto"><table class="small tr-tbl"><thead><tr><th>Prozess</th><th>System of Record</th><th>Status</th><th>Anteil NEXORA</th><th class="r">entfallende Zugriffskosten</th><th class="r">Lizenzwirkung (illustrativ)</th><th></th></tr></thead><tbody>${rows}</tbody></table><p class="small faint" style="padding:8px 14px">Zugriffskosten aus dem Protokoll (laufender Monat, Beispielwerte). Lizenzwirkung illustrativ mit Beispielwerten – eigene Annahmen im <a href="${truescale}" target="${ON_PAGES ? "_self" : "_blank"}" rel="noopener">Kostenrechner auf der TRUESCALE-Seite</a>.</p></section>`
+   + `<h2 id="tr-bestell" style="margin-top:6px">Bestellanforderung: SAP S/4HANA (simuliert) → NEXORA-Engine</h2>`
+   + step(1, "Datenübernahme über das Migrationsmodul", s1, done ? `<p class="small">Übernommen am ${dDe(done.date)} durch ${esc(done.by)}: <b>${done.loaded} von ${done.source}</b> Bestellanforderungen, Summe ${eur(done.loadedSum)} = Quelle ${eur(done.sourceSum - (done.excludedSum || 0))}${done.excluded ? `, ${done.excluded} auf der Klärungsliste` : ""}. Neue Nummern: ${esc((done.reqs || []).join(", "))}.</p>`
+      : `<p class="small muted">Extrakt der offenen Bestellanforderungen aus dem Altsystem: <b>${extract.length}</b> Vorgänge, ${eur(extract.reduce((a, r) => a + r.MENGE * r.PREIS, 0))}. Testlauf auf einer Kopie, Fehlerliste, Freigabe durch eine zweite Person mit Freigaberecht, dann Produktivübernahme – dasselbe Modul wie bei der Übernahme Liftservice Nord.</p>
+        <div class="row" style="gap:14px;flex-wrap:wrap"><label class="small"><input type="checkbox" data-on="trRule" data-k="fillCostCenter" ${S.trRules.fillCostCenter ? "checked" : ""}> Fehlende Kostenstelle durch Einkauf ersetzen</label><label class="small"><input type="checkbox" data-on="trRule" data-k="excludeUnmapped" ${S.trRules.excludeUnmapped ? "checked" : ""}> Nicht zuordenbare auf Klärungsliste</label></div>
+        ${x ? `<table class="small"><thead><tr><th class="r">Quelle</th><th class="r">übernehmbar</th><th class="r">ausgeschlossen</th><th class="r">Fehler</th><th class="r">Summe Quelle</th><th class="r">Summe Ziel</th></tr></thead><tbody><tr><td class="r num">${x.source}</td><td class="r num">${x.loaded}</td><td class="r num">${x.excluded}</td><td class="r num">${x.errors ? `<b style="color:var(--crit)">${x.errors}</b>` : 0}</td><td class="r num">${eur(x.sourceSum)}</td><td class="r num">${eur(x.loadedSum)}</td></tr></tbody></table>${x.issues.length ? `<div class="list">${x.issues.map(i => `<div class="li small" style="padding:4px 0"><span class="mono" style="width:90px">${esc(i[0])}</span><span class="grow">${esc(i[1])}</span></div>`).join("")}</div>` : ""}` : ""}
+        <div class="row" style="gap:8px;flex-wrap:wrap"><button class="btn ${!x ? "pri" : ""}" data-act="trTest">Testlauf${x ? " wiederholen" : ""}</button><button class="btn ${x && !x.errors && !M.approval ? "pri" : ""}" data-act="trReq" ${x && !x.errors && !(M.approval && M.approval.status) ? "" : "disabled"}>Freigabe anfordern</button><button class="btn ${M && M.approval && M.approval.status === "offen" ? "pri" : ""}" data-act="trAppr" ${M && M.approval && M.approval.status === "offen" ? "" : "disabled"}>Freigeben (Vier-Augen)</button><button class="btn ${M && M.approval && M.approval.status === "freigegeben" ? "pri" : ""}" data-act="trRun" ${M && M.approval && M.approval.status === "freigegeben" ? "" : "disabled"}>Produktivübernahme</button></div>
+        ${M && M.approval ? `<p class="small faint">Freigabe ${esc(M.approval.status)} · angefordert von ${esc(M.approval.requesterName)}${M.approval.by ? " · freigegeben von " + esc(M.approval.by) : " · freigeben muss eine andere Person mit Freigaberecht"}</p>` : ""}`)
+   + step(2, "Parallelbetrieb mit Abstimmung", s2, ph === "parallel" ? `<p class="small">Bis ${dDe(st.until)}: Neue Bestellanforderungen entstehen in der NEXORA-Engine und werden ins Altsystem gespiegelt. Die übernommenen Originale sind in SAP als „übernommen“ gekennzeichnet.</p>
+        <table class="small"><thead><tr><th>Abstimmung</th><th class="r">NEXORA-Engine</th><th class="r">Altsystem (Spiegel)</th><th class="r">Differenz</th></tr></thead><tbody><tr><td>Vorgänge</td><td class="r num">${rc.nexora.count}</td><td class="r num">${rc.legacy.count}</td><td class="r num">${rc.diffCount}</td></tr><tr><td>Stückzahl</td><td class="r num">${rc.qty.nexora}</td><td class="r num">${rc.qty.legacy}</td><td class="r num">${rc.qty.nexora - rc.qty.legacy}</td></tr><tr><td>Summe</td><td class="r num">${eur(rc.nexora.sum)}</td><td class="r num">${eur(rc.legacy.sum)}</td><td class="r num">${eur(rc.diffSum)}</td></tr></tbody></table>
+        <p class="small">${rc.diffCount === 0 && rc.diffSum === 0 ? pill("p-good", "Differenz 0 – Umschalten möglich") : pill("p-crit", "Differenzen: " + rc.missing.join(", "))}</p><div class="row" style="gap:8px"><button class="btn sm" data-act="trSample">Test-Bedarf in NEXORA anlegen</button><a class="btn sm" href="#supply">Einkauf öffnen</a></div>`
+      : ph === "abgelöst" ? `<p class="small">Abgeschlossen. Abstimmung beim Umschalten: ${st.recon ? `${st.recon.nexora.count} Vorgänge, ${eur(st.recon.nexora.sum)}, Differenz 0` : "Differenz 0"}.</p>`
+      : `<div class="row" style="gap:10px;align-items:flex-end"><label class="f">Zeitraum<select class="input" data-on="trDays">${[7, 14, 30].map(d => `<option value="${d}" ${S.trDays === d ? "selected" : ""}>${d} Tage</option>`).join("")}</select></label><button class="btn ${done ? "pri" : ""}" data-act="trParallel" ${done ? "" : "disabled"}>Parallelbetrieb starten</button></div><p class="small faint">${done ? "System of Record wechselt auf die NEXORA-Engine; das Altsystem erhält jede neue Bestellanforderung als Spiegel." : "Erst nach der Datenübernahme möglich."}</p>`)
+   + step(3, "Umschalten oder Rückweg", s3, ph === "abgelöst" ? `<p class="small">System of Record ist die <b>NEXORA-Engine</b>. SAP S/4HANA (simuliert) ist für Bestellanforderungen nur noch lesend (Historie). Neue Vorgänge entstehen ausschließlich in der Engine.</p>`
+      : `<div class="row" style="gap:8px"><button class="btn ${ph === "parallel" && rc && rc.diffCount === 0 && rc.diffSum === 0 ? "pri" : ""}" data-act="trCutover" ${ph === "parallel" && rc && rc.diffCount === 0 && rc.diffSum === 0 ? "" : "disabled"}>Umschalten auf NEXORA</button><button class="btn" data-act="trRollback" ${ph === "parallel" ? "" : "disabled"}>Rückweg</button></div><p class="small faint">Der Rückweg ist bis zum Abschluss des Parallelbetriebs möglich: Das Altsystem führt wieder, offene Vorgänge in NEXORA werden zurückgezogen, Spiegelungen werden führende Vorgänge. Jeder Schritt steht im Protokoll.</p>`)
+   + `<section class="card card-pad"><h3>Ablaufprotokoll</h3><div class="list">${[].concat((M ? M.log : []).map(l => [l.date, l.by, "Migration: " + l.text]), (st.log || []).map(l => [l.date, l.by, l.text])).map(l => `<div class="li small" style="padding:5px 0"><span class="num" style="width:90px">${esc(dDe(l[0]))}</span><span style="width:140px">${esc(l[1])}</span><span class="grow">${esc(l[2])}</span></div>`).join("") || `<p class="small muted">Noch keine Schritte.</p>`}</div><a class="small" href="#audit">Alle Ereignisse im Protokoll →</a></section>`;
+};
+const _transformation7 = VIEWS.transformation;
+VIEWS.transformation = () => S.layer === "layer" ? VIEWS.transition() : _transformation7();
 
 /* ---------- Start ---------- */
 boot(); adoptAccounts(); if (window.innerWidth < 700 && route() === "home" && !location.search.includes("story=")) location.hash = "tasks"; render(); startBackend(); startRoom();

@@ -105,6 +105,45 @@ async def layer(p):
   await pg.screenshot(path=SP + "layer_audit.png"); await pg.evaluate("ACT.auditReset()")
   await pg.evaluate("location.hash='privacy'"); await pg.wait_for_timeout(120)
   assert await pg.evaluate("document.querySelectorAll('.priv-mx tbody tr').length") >= 5; await pg.screenshot(path=SP + "layer_privacy.png", full_page=True)
+  # Phase 7: Ablöse-Cockpit – Bestellanforderung SAP → NEXORA über die Oberfläche, CFO-Inbox vorher = nachher
+  shape = "JSON.stringify(layerTasks().filter(k => k.process === 'bestellanforderung').map(k => JSON.stringify([k.fields, k.status, k.actions.map(a => a.label)])).sort())"
+  await pg.evaluate("ACT.setUser({id:'u2'}); location.hash='tasks'"); await pg.wait_for_timeout(100); before = await pg.evaluate(shape); srcb = await pg.evaluate("[...new Set(layerTasks().filter(k => k.process === 'bestellanforderung').map(k => k.sys))]")
+  await pg.evaluate("location.hash='transition'"); await pg.wait_for_timeout(120); await pg.screenshot(path=SP + "layer_transition_0.png", full_page=True)
+  async def click(actn, uid):
+    await pg.evaluate(f"ACT.setUser({{id:'{uid}'}})"); await pg.wait_for_timeout(60); await pg.click(f"[data-act={actn}]"); await pg.wait_for_timeout(120)
+    okk = await pg.evaluate("S.last && S.last.ok"); assert okk, (actn, await pg.evaluate("S.last && S.last.text"))
+  await click("trTest", "u10"); e1 = await pg.evaluate("T().migProjects['sap-pr'].tests.requisitions.errors"); print("Testlauf Fehler:", e1, await pg.evaluate("T().migProjects['sap-pr'].tests.requisitions.issues"))
+  if e1:
+    await pg.screenshot(path=SP + "layer_transition_errors.png", full_page=True); await pg.check("[data-on=trRule][data-k=fillCostCenter]"); await pg.wait_for_timeout(80); await click("trTest", "u10")
+    assert await pg.evaluate("T().migProjects['sap-pr'].tests.requisitions.errors") == 0
+  for actn, uid in (("trReq", "u10"), ("trAppr", "u2"), ("trRun", "u10"), ("trParallel", "u2")): await click(actn, uid)
+  await click("trSample", "u3"); rc = await pg.evaluate("C.reconcile(W,'elevon','bestellanforderung')"); print("Abstimmung:", rc["nexora"], rc["legacy"], rc["diffCount"], rc["diffSum"]); assert rc["diffCount"] == 0 and rc["diffSum"] == 0 and rc["nexora"]["count"] == 1
+  await pg.evaluate("ACT.setUser({id:'u2'})"); await pg.wait_for_timeout(60); await pg.screenshot(path=SP + "layer_transition_parallel.png", full_page=True)
+  await click("trCutover", "u2")
+  await pg.evaluate("ACT.setUser({id:'u2'}); location.hash='tasks'"); await pg.wait_for_timeout(100); after = await pg.evaluate(shape + ".replace(/x/g,'x')")
+  srca = await pg.evaluate("[...new Set(layerTasks().filter(k => k.process === 'bestellanforderung' && k.fields[0][1] !== T().catalog[0].name).map(k => k.sys))]")
+  aft_nosample = await pg.evaluate("JSON.stringify(layerTasks().filter(k => k.process === 'bestellanforderung' && k.fields[0][1] !== T().catalog[0].name).map(k => JSON.stringify([k.fields, k.status, k.actions.map(a => a.label)])).sort())")
+  import json as _j
+  fixcc = lambda arr: sorted(x.replace('["Kostenstelle","–"]', '["Kostenstelle","KS4130"]') for x in _j.loads(arr))  # per Regel ergänzte Kostenstelle
+  print("CFO-Inbox Bestellanforderungen:", srcb, "→", srca, "gleich:", fixcc(before) == fixcc(aft_nosample))
+  if fixcc(before) != fixcc(aft_nosample): print(_j.loads(before), _j.loads(aft_nosample))
+  assert srcb == ["sap"] and srca == ["nexora"] and fixcc(before) == fixcc(aft_nosample)
+  steps = await pg.evaluate("auditRows().filter(r => /migration|transition|markMigrated|mirrorPR/.test(r.cmd)).map(r => r.cmd)"); print("Protokoll der Ablösung:", steps); assert len(steps) >= 7
+  await pg.evaluate("location.hash='transition'"); await pg.wait_for_timeout(120); await pg.screenshot(path=SP + "layer_transition_done.png", full_page=True)
+  assert await pg.evaluate("document.querySelector('[data-proc=bestellanforderung]').innerText.includes('abgelöst')")
+  # Dashboard: Vorlage je Rolle, Kachel hinzufügen (Ereignis), Reset stellt die Vorlage wieder her
+  await pg.evaluate("location.hash='home'"); await pg.wait_for_timeout(120); t0 = await pg.evaluate("[...document.querySelectorAll('.dash-tile')].map(x=>x.dataset.tile)"); print("Dashboard CFO:", t0); assert t0 == await pg.evaluate("dashTemplate('cfo')")
+  await pg.screenshot(path=SP + "layer_dashboard.png", full_page=True)
+  await pg.evaluate("location.hash='home'"); await pg.wait_for_function("document.querySelector('h1') && document.querySelector('h1').innerText === 'Mein Dashboard'"); await pg.wait_for_timeout(150)
+  await pg.evaluate("S.dashEdit = true; render()"); await pg.wait_for_selector("[data-on=dashAdd]", timeout=5000); await pg.select_option("[data-on=dashAdd]", "process"); await pg.wait_for_timeout(120); await pg.click(".dash-tile[data-tile=process] [data-dir='-1']"); await pg.wait_for_timeout(120)
+  t1 = await pg.evaluate("[...document.querySelectorAll('.dash-tile')].map(x=>x.dataset.tile)"); print("nach Anpassung:", t1); assert t1[-2] == "process" and len(t1) == len(t0) + 1
+  await pg.evaluate("S.dashEdit = false; render()")
+  # Reload: Welt aus Seed und Protokoll neu aufbauen ergibt dasselbe Dashboard und dieselbe Ablösung
+  rl = await pg.evaluate("(() => { const w = E.createWorld({ size: S.size }); for (const x of LOG) { try { if (x.reset) E.resetTenant(w, x.reset); else if (x.resetAll) E.resetAll(w); else if (x.cmd) E.dispatch(w, x.t, x.cmd, x.p, x.ctx); } catch (e) {} } return { dash: JSON.stringify(C.state(w,'elevon').dash) === JSON.stringify(C.state(W,'elevon').dash), conn: C.hash(w,'elevon') === C.hash(W,'elevon'), eng: E.tenantHash(w.tenants.elevon) === E.tenantHash(W.tenants.elevon) }; })()")
+  print("Reload aus dem Protokoll:", rl); assert all(rl.values())
+  await pg.evaluate("ACT.resetAllBtn(); S.mode='free'; ACT.tenant({id:'elevon'}); ACT.setUser({id:'u2'}); location.hash='home'"); await pg.wait_for_timeout(150)
+  assert await pg.evaluate("[...document.querySelectorAll('.dash-tile')].map(x=>x.dataset.tile).join()") == ",".join(t0), "Reset → Vorlage"
+  assert await pg.evaluate("C.owners(W,'elevon').bestellanforderung") == "sap", "Reset → SAP führt wieder"
   # Phase 6: Einbettungsmodus bei 400 px – nur Inbox und Assistent, ohne Seitennavigation
   await pg.set_viewport_size({"width": 400, "height": 820}); await pg.evaluate("enterEmbed()"); await pg.wait_for_timeout(150)
   emb = await pg.evaluate("""({ side: getComputedStyle(document.querySelector('.side')).display, bar: !!document.querySelector('.emb-bar'), note: document.querySelector('.emb-note').innerText, cards: document.querySelectorAll('.ly-card').length, sw: document.documentElement.scrollWidth })""")
