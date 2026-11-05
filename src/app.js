@@ -115,8 +115,8 @@ function render() {
     ${mods.filter(m => modSt(m) === "live" && m !== "admin").map(navA).join("")}
     <div class="nav-sep"></div><div class="nav-label">Weitere Module</div>
     ${mods.filter(m => modSt(m) !== "live" && m !== "admin").map(navA).join("")}
-    <a href="${ON_PAGES ? "truescale.html" : "https://marcelwagner-afk.github.io/nexora-suite/truescale.html"}" target="${ON_PAGES ? "_self" : "_blank"}" rel="noopener">${ic("an", 19)}<span>Business Case · TRUESCALE</span></a>
-    <a href="${ON_PAGES ? "truescale.html#markt" : "https://marcelwagner-afk.github.io/nexora-suite/truescale.html#markt"}" target="${ON_PAGES ? "_self" : "_blank"}" rel="noopener">${ic("pie", 19)}<span>Marktposition · TRUESCALE</span></a>
+    <a href="${ON_PAGES ? "nexora.html" : "https://marcelwagner-afk.github.io/nexora-suite/nexora.html"}" target="${ON_PAGES ? "_self" : "_blank"}" rel="noopener">${ic("an", 19)}<span>Business Case</span></a>
+    <a href="${ON_PAGES ? "nexora.html#markt" : "https://marcelwagner-afk.github.io/nexora-suite/nexora.html#markt"}" target="${ON_PAGES ? "_self" : "_blank"}" rel="noopener">${ic("pie", 19)}<span>Marktposition</span></a>
     <div class="nav-sep"></div>${navA("admin")}
     <button class="tenant" data-act="goAdmin"><span class="av">${ic("building", 18)}</span><span style="flex:1;min-width:0"><b style="font-weight:600">${esc(T_NAMES[S.tenant])}</b><small>${esc(t.companies.length)} Gesellschaften · Größe ${S.size}</small></span></button>
    </nav>

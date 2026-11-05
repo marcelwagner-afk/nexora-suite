@@ -5,13 +5,13 @@ ROOT=pathlib.Path(__file__).resolve().parent.parent
 SP=str(ROOT/"test-results")+"/"; os.makedirs(SP, exist_ok=True)
 
 async def markt(p):
-  """Marktposition auf der truescale-Seite: öffentliche und interne Fassung, Interaktion, Mobil, Hell/Dunkel."""
+  """Marktposition auf der NEXORA-Produktseite: öffentliche und interne Fassung, Interaktion, Mobil, Hell/Dunkel."""
   import threading, http.server, functools, socketserver
   H = functools.partial(http.server.SimpleHTTPRequestHandler, directory=str(ROOT / "dist"))
   class Q(http.server.SimpleHTTPRequestHandler):
     def log_message(self, *a): pass
   srv = socketserver.TCPServer(("127.0.0.1", 0), functools.partial(Q, directory=str(ROOT / "dist"))); port = srv.server_address[1]
-  threading.Thread(target=srv.serve_forever, daemon=True).start(); base = f"http://127.0.0.1:{port}/truescale.html"
+  threading.Thread(target=srv.serve_forever, daemon=True).start(); base = f"http://127.0.0.1:{port}/nexora.html"
   b = await p.chromium.launch(); errs = []
   try:
     pg = await b.new_page(viewport={"width": 1440, "height": 900}); pg.on("pageerror", lambda e: errs.append(str(e)))
@@ -31,9 +31,9 @@ async def markt(p):
     await d.goto(base + "#markt"); await d.wait_for_timeout(400); await d.add_style_tag(content=".ts-top{position:static!important}"); el = await d.query_selector("#markt"); await el.screenshot(path=SP + "ts_markt_dunkel.png")
     m = await b.new_page(viewport={"width": 400, "height": 860}); m.on("pageerror", lambda e: errs.append(str(e)))
     await m.goto(base + "#markt"); await m.wait_for_timeout(400); sw = await m.evaluate("document.documentElement.scrollWidth"); print("Markt mobil scrollWidth", sw); assert sw == 400, sw
-    st = await m.evaluate("document.querySelectorAll('#stories .story').length"); assert st > 0, "Storys auf der truescale-Seite"
+    st = await m.evaluate("document.querySelectorAll('#stories .story').length"); assert st > 0, "Storys auf der NEXORA-Produktseite"
     su = await b.new_page(viewport={"width": 1440, "height": 900}); su.on("pageerror", lambda e: errs.append(str(e))); await su.goto(f"http://127.0.0.1:{port}/index.html"); await su.wait_for_timeout(400)
-    href = await su.evaluate("[...document.querySelectorAll('nav.side a')].filter(a=>a.textContent.includes('Marktposition · TRUESCALE')).map(a=>a.getAttribute('href'))[0]"); print("Suite-Link Marktposition:", href); assert href and href.endswith("truescale.html#markt"), href
+    href = await su.evaluate("[...document.querySelectorAll('nav.side a')].filter(a=>a.textContent.trim() === 'Marktposition').map(a=>a.getAttribute('href'))[0]"); print("Suite-Link Marktposition:", href); assert href and href.endswith("nexora.html#markt"), href
   finally:
     await b.close(); srv.shutdown()
   assert not errs, errs

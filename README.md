@@ -191,18 +191,18 @@ Seite „IT-Infrastruktur“ in der Suite (je Mandant, live aus Engine und Konne
 
 ## Filme
 
-Web-Fassungen der Filme liegen in `media/` (16:9, 720p, je 2–4 MB, mit Vorschaubild); die Originale bleiben außerhalb des Repos. Zuordnung in `src/app_media.js` (`VIDEOS`) und in `src/truescale.html`. Neue Filme: Datei nach `media/` (Name `nexora-<thema>.mp4` und `.jpg`), Eintrag in `VIDEOS`, Einbau mit `vidAfterH1`.
+Web-Fassungen der Filme liegen in `media/` (16:9, 720p, je 2–4 MB, mit Vorschaubild); die Originale bleiben außerhalb des Repos. Zuordnung in `src/app_media.js` (`VIDEOS`) und in `src/nexora.html`. Neue Filme: Datei nach `media/` (Name `nexora-<thema>.mp4` und `.jpg`), Eintrag in `VIDEOS`, Einbau mit `vidAfterH1`.
 
 ## Marktposition pflegen
 
-Die Positionierungsmatrix „Wer liefert die eine Oberfläche für alle Anwendungen?“ steht auf der TRUESCALE-Seite unter `truescale.html#markt`. Die Suite verlinkt sie in der Navigation („Marktposition · TRUESCALE“). Die Referenzumsetzung liegt in `docs/positionierung-referenz.html`.
+Die Positionierungsmatrix „Wer liefert die eine Oberfläche für alle Anwendungen?“ steht auf der NEXORA-Produktseite unter `nexora.html#markt`. Die Suite verlinkt sie in der Navigation („Marktposition“). Die Referenzumsetzung liegt in `docs/positionierung-referenz.html`.
 
 - **Daten:** alles im Objekt `MARKET` in `src/market.js`. Dort stehen Punkte der Karte (`points`), Zeilen der Matrix (`rows`), Kriterien, variable Texte und Quellen. Karte und Tabelle werden daraus gezeichnet; `python build.py` baut die Seite neu.
 - **Stand-Datum:** `asOf` und `asOfLabel` bei jeder inhaltlichen Aktualisierung anpassen. Die Angabe erscheint im Kopf des Abschnitts.
 - **Quellen:** neuen Eintrag `{ label, url }` in `sources` ergänzen. Bewertungen nur mit Beleg ändern; ohne belastbare Angabe die Bewertung 0 (Strich) setzen.
 - **Öffentliche und interne Fassung:**
-  - Standard ist die öffentliche Fassung (`MARKET_INTERNAL = false`). Sie hat keinen Punkt und keine Zeile „NEXORA heute“ und keinen Umbau-Pfeil. Die eigene Zeile heißt „NEXORA × truescale · Roadmap“ und ist als „geplant“ markiert.
-  - Die interne Fassung entspricht der Referenz und öffnet sich über `truescale.html#markt-intern`.
+  - Standard ist die öffentliche Fassung (`MARKET_INTERNAL = false`). Sie hat keinen Punkt und keine Zeile „NEXORA heute“ und keinen Umbau-Pfeil. Die eigene Zeile heißt „NEXORA · Roadmap“ und ist als „geplant“ markiert.
+  - Die interne Fassung entspricht der Referenz und öffnet sich über `nexora.html#markt-intern`.
   - Einträge nur für intern bekommen `internal: true`, öffentliche Ersatztexte stehen in `publicName`, `publicSub`, `publicMaturity` und `texts.*.public`.
 - **Farben:** Kategorien- und Bewertungsfarben sind Tokens in `src/base.css` (`--cat-*`, `--rate-*`, `--quad`) für Hell und Dunkel.
 

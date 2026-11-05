@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.9.12 – Ohne TRUESCALE-Seite (2026-11)
+
+- **TRUESCALE-Seite entfernt:** `truescale.html` gibt es nicht mehr. Die Inhalte (Film, Mehrwert, Marktposition, Experience Layer, Kostenrechner, Live-Demos, Weg zum eigenen ERP) stehen markenneutral auf der NEXORA-Produktseite `nexora.html`.
+- **Navigation:** „Business Case“ und „Marktposition“ ohne TRUESCALE-Zusatz; Verweise im Ablöse-Cockpit zeigen auf `nexora.html#roi`. Marktmatrix-Zeile heißt „NEXORA“; Herausgeber in den Film-Metadaten NEXORA AI.
+- **Tests:** e2e prüft dieselben Punkte auf der neuen Seite (öffentliche und interne Marktposition, Storys, Suite-Link).
+
 ## v0.9.11 – Ohne TRUESCALE-Marke (2026-11)
 
 - **Marke:** Zusatz „A brand of TRUESCALE“ überall entfernt (Kopfzeilen der Suite, Prototyp, Einbettungsleiste, Fußzeile, Kommentare, README, Doku). Herausgeber in `agent-card.json`: Marcel Wagner, Marke NEXORA AI.
