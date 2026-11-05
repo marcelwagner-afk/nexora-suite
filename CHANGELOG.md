@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.9.9 – IT-Infrastruktur und Sizing (2026-11)
+
+- **Neuer Kern `src/infra.js`:** Architekturprofile für alle ERP-Systeme des Portfolios und NEXORA, Sizing mit Formeln (Nutzer, Spitzenlast, vCPU/RAM, Datenbank inkl. In-Memory, Datenbestand heute und Prognose, Speicher, Netz, IOPS), Ziel-Sizing NEXORA, Was-wäre-wenn mit Zukauf, Live-Auslastung. Alles Beispielwerte, Herstellernamen nur als Text, SAP-Hinweis auf das Hersteller-Sizing.
+- **Suite → IT-Infrastruktur:** Architektur des Mandanten live aus Engine-Befehlen und Konnektor-Aufrufen; Ablösung im Ablöse-Cockpit ändert die Architektur sofort; „Lastspitze simulieren“ ohne Buchungen.
+- **PE → IT-Infrastruktur** und Reiter auf der Unternehmensseite: Sizing je Unternehmen, Portfolio-Summen, Betriebsmodelle, Ziel NEXORA; Integrationsstatus live aus dem ERP Integration Hub.
+- **Tests:** `test/infra.test.js` (10, in CI), e2e-Block, Stresstest um das Sizing erweitert. Doku: `docs/it-infrastruktur.md`.
+
 ## v0.9.8 – Stresstest (2026-11)
 
 - **Neue Stresstests:** `test/pe.stress.js` (Skalierung bis 2.500 Unternehmen, Engine-Last S/M/L, 3.000 Zufallsbefehle mit Invarianten) und `test/ui.stress.py` (alle PE-Seiten im Browser, auch mit 255 Unternehmen, und 300 Geschäftsvorfälle Dauerlast). Eine verkleinerte Fassung läuft in CI. Ergebnisse: `docs/stresstest.md`.

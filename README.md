@@ -185,6 +185,10 @@ Ein Bereich **Private Equity** in derselben Navigation, für PE-Investoren. Plan
 - **Aggregation:** Portfolio-Summen sind eine Management-Aggregation zu 100 % der aktiven Unternehmen, nicht anteilig und keine Konsolidierung. Unternehmen im Onboarding sind ausgeschlossen und werden benannt.
 - **Tests:** `node test/pe.test.js` (60 Tests, in CI) und `python test/e2e.py` (Block „PE Command Center“). Leistungsmessung des Rechenkerns: `node test/pe.bench.js 100` (2.500 Unternehmen). Stresstests: `node test/pe.stress.js` und `python test/ui.stress.py`, Ergebnisse in [`docs/stresstest.md`](docs/stresstest.md).
 
+## IT-Infrastruktur und Sizing (v0.9.9)
+
+Seite „IT-Infrastruktur“ in der Suite (je Mandant, live aus Engine und Konnektoren) und im PE-Bereich (Portfolio und je Unternehmen, Integrationsstatus live aus dem Hub). Sizing mit Formeln, Ziel NEXORA und Was-wäre-wenn. Alles Beispielwerte – keine Herstellerangaben. Details: [`docs/it-infrastruktur.md`](docs/it-infrastruktur.md). Tests: `node test/infra.test.js`.
+
 ## Marktposition pflegen
 
 Die Positionierungsmatrix „Wer liefert die eine Oberfläche für alle Anwendungen?“ steht auf der TRUESCALE-Seite unter `truescale.html#markt`. Die Suite verlinkt sie in der Navigation („Marktposition · TRUESCALE“). Die Referenzumsetzung liegt in `docs/positionierung-referenz.html`.

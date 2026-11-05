@@ -162,7 +162,7 @@ async def pe(p):
   await pg.set_content(html); await pg.wait_for_timeout(400)
   await pg.evaluate("S.live=false; S.pe.principal='p1'; S.pe.log=[]; PEW=null; location.hash='pe'"); await pg.wait_for_timeout(300)
   st = await pg.evaluate("({ kpis: document.querySelectorAll('.pe-kpi').length, funds: document.querySelectorAll('.pe-tbl tbody tr').length, hm: document.querySelectorAll('.pe-hm tbody tr').length, ins: document.querySelectorAll('.pe-in').length, nav: document.querySelectorAll('.pe-nav a').length, demo: !!document.querySelector('.pe-demo'), rev: document.querySelector('[data-kpi=revenue] b').innerText })")
-  print("PE Command Center:", st); assert st["kpis"] >= 20 and st["hm"] == 24 and st["ins"] >= 3 and st["nav"] == 13 and st["demo"] and "Mrd" in st["rev"]
+  print("PE Command Center:", st); assert st["kpis"] >= 20 and st["hm"] == 24 and st["ins"] >= 3 and st["nav"] == 14 and st["demo"] and "Mrd" in st["rev"]
   await pg.screenshot(path=SP + "pe_command_center.png", full_page=True)
   await pg.click(".pe-db >> nth=0"); await pg.wait_for_timeout(150); f = await pg.evaluate("({ c: S.pe.filter.country, n: document.querySelectorAll('.pe-hm tbody tr').length })"); print("Filter per Klick:", f); assert f["c"] and f["n"] < 24
   await pg.evaluate("ACT.peReset()"); await pg.select_option("[data-on=peF][data-k=fund]", "F2"); await pg.wait_for_timeout(150); assert await pg.evaluate("document.querySelectorAll('.pe-hm tbody tr').length") == 8
@@ -240,6 +240,19 @@ async def pe(p):
   await pg.screenshot(path=SP + "pe_transformation.png", full_page=True); await pg.click("[data-act=peTaReset]"); await pg.wait_for_timeout(100)
   await pg.set_viewport_size({"width": 400, "height": 820}); await pg.evaluate("location.hash='pe'; render()"); await pg.wait_for_timeout(200); sw = await pg.evaluate("document.documentElement.scrollWidth"); print("PE bei 400 px, Seitenbreite:", sw); assert sw <= 400
   await pg.evaluate("location.hash='pe-trans'; render()"); await pg.wait_for_timeout(200); sw = await pg.evaluate("document.documentElement.scrollWidth"); print("ERP-Transformation bei 400 px:", sw); assert sw <= 400
+  # IT-Infrastruktur: Suite live (Lastspitze, echte Buchung, Ablösung), PE-Portfolio und Integrationsfehler aus dem Hub
+  for r in ["infra", "pe-infra"]:
+    await pg.evaluate(f"location.hash='{r}'; render()"); await pg.wait_for_timeout(150); sw = await pg.evaluate("document.documentElement.scrollWidth"); print(r, "bei 400 px:", sw); assert sw <= 400
+  await pg.set_viewport_size({"width": 1440, "height": 900}); await pg.evaluate("S.tenant='elevon'; location.hash='infra'; render()"); await pg.wait_for_selector(".ix-node[data-ix=app]", timeout=3000)
+  u = lambda: pg.evaluate("parseInt((document.querySelector('.ix-node[data-ix=app]').innerText.match(/Auslastung (\\d+)/) || [0, -1])[1])")
+  u0 = await u(); await pg.click("[data-act=ixBurst]"); await pg.wait_for_timeout(200); u1 = await u(); cls = await pg.evaluate("document.querySelector('.ix-node[data-ix=app]').className"); print("Infrastruktur Auslastung Anwendung", u0, "→", u1, "% nach simulierter Lastspitze,", cls); assert u1 > u0 and ("ix-warn" in cls or "ix-crit" in cls)
+  e0 = await pg.evaluate("IX_EV.elevon.engine.length"); await pg.evaluate("(() => { for (const a of W.tenants.elevon.master.assets) { if (E.dispatch(W, 'elevon', 'createServiceTicket', { assetId: a.id, text: 'Infra' }, { auto: true }).ok) break; } render(); })()"); await pg.wait_for_timeout(150); e1 = await pg.evaluate("IX_EV.elevon.engine.length"); assert e1 == e0 + 1, (e0, e1)
+  for pr in ["abwesenheit", "onboarding"]: await pg.evaluate(f"(() => {{ const r = C.dispatch(W, 'elevon', 'layer', 'setOwner', {{ process: '{pr}', owner: 'nexora' }}); if (!r.ok) throw new Error(r.text); render(); }})()")
+  await pg.wait_for_timeout(150); wd = await pg.evaluate("(() => { const n = document.querySelector('.ix-node[data-ix=ext-workday]'); return [n.className, n.innerText]; })()"); print("Workday nach Ablösung:", wd[0], "|", wd[1].replace("\n", " ")[:80]); assert "ix-na" in wd[0] and "nur lesend" in wd[1]
+  await pg.screenshot(path=SP + "infra_suite.png", full_page=True); await pg.evaluate("E.resetTenant(W, 'elevon'); render()")
+  await pg.evaluate("S.pe.principal='p1'; location.hash='pe-infra'; render()"); await pg.wait_for_timeout(200); n = await pg.evaluate("document.querySelectorAll('tr[data-act=peOpenInfra]').length"); assert n == 25, n
+  await pg.click("tr[data-act=peOpenInfra][data-id=PC20]"); await pg.wait_for_selector("[data-ix-co=PC20]", timeout=3000); sf = await pg.evaluate("(() => { const n = document.querySelector('.ix-node[data-ix=sftp]'); return [n.className, n.innerText]; })()"); print("PE Aurelis SFTP:", sf[0], "|", sf[1].replace("\n", " ")[:90]); assert "ix-crit" in sf[0] and "Zugang abgelaufen" in sf[1]
+  await pg.screenshot(path=SP + "infra_pe.png", full_page=True); await pg.set_viewport_size({"width": 400, "height": 820})
   await pg.screenshot(path=SP + "pe_mobile.png"); await b.close(); assert not errs, errs; print("PE Command Center ok")
 
 async def main():

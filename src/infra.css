@@ -1,0 +1,15 @@
+/* IT-Infrastruktur (v0.9.9) – nur Tokens aus base.css */
+.ix-topo{display:flex;flex-direction:column;gap:0;margin-top:10px}
+.ix-tier{display:grid;grid-template-columns:110px minmax(0,1fr);gap:10px;align-items:stretch;padding:8px;border-radius:12px;background:var(--sunk);position:relative}
+.ix-tier+.ix-tier{margin-top:14px}
+.ix-tier+.ix-tier::before{content:"";position:absolute;left:54px;top:-14px;height:14px;border-left:2px dashed var(--line-strong)}
+.ix-tier>.eyebrow{align-self:center}
+.ix-nodes{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px}
+.ix-node{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--line-strong);border-radius:10px;padding:9px 10px;display:flex;flex-direction:column;gap:3px;min-width:0;transition:border-color .3s}
+.ix-node.ix-ok{border-left-color:var(--good)}.ix-node.ix-warn{border-left-color:var(--warn)}.ix-node.ix-crit{border-left-color:var(--crit);background:var(--crit-soft)}.ix-node.ix-saas{border-left-color:var(--accent-line)}.ix-node.ix-na{border-left-color:var(--line-strong)}
+.ix-dot{font-size:11px;font-weight:700;border-radius:8px;padding:0 6px;white-space:nowrap;background:var(--sunk);color:var(--fg-2)}
+.ix-ok .ix-dot{background:var(--good-soft);color:var(--good)}.ix-warn .ix-dot{background:var(--warn-soft);color:var(--warn)}.ix-crit .ix-dot{background:var(--crit);color:#fff}.ix-saas .ix-dot{background:var(--accent-soft);color:var(--accent)}
+.ix-bar{height:6px;border-radius:3px;background:var(--sunk);overflow:hidden;margin-top:2px}.ix-bar i{display:block;height:100%;background:var(--good);transition:width .4s}
+.ix-warn .ix-bar i{background:var(--warn)}.ix-crit .ix-bar i{background:var(--crit)}
+.ix-size td:first-child{white-space:nowrap}
+@media (max-width:620px){.ix-tier{grid-template-columns:minmax(0,1fr)}.ix-tier+.ix-tier::before{left:20px}}

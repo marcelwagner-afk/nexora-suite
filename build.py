@@ -1,7 +1,7 @@
 import json
 import pathlib
 d=pathlib.Path(__file__).parent/'src'; out=pathlib.Path(__file__).parent/'dist'
-css=(d/'base.css').read_text()+'\n'+(d/'extra.css').read_text()+'\n'+(d/'layer.css').read_text()+'\n'+(d/'pe.css').read_text()
+css=(d/'base.css').read_text()+'\n'+(d/'extra.css').read_text()+'\n'+(d/'layer.css').read_text()+'\n'+(d/'pe.css').read_text()+'\n'+(d/'infra.css').read_text()
 html=f'''<title>NEXORA AI Suite</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -16,6 +16,7 @@ html=f'''<title>NEXORA AI Suite</title>
 {(d/'dxf.js').read_text()}
 {(d/'connectors.js').read_text()}
 {(d/'pe.js').read_text()}
+{(d/'infra.js').read_text()}
 </script>
 <script>
 {(d/'icons.js').read_text()}
@@ -30,6 +31,7 @@ const SAMPLES = {json.dumps({k: (d.parent/'samples'/(k + '.dxf')).read_text() fo
 {(d/"app_pe4.js").read_text()}
 {(d/"app_pe5.js").read_text()}
 {(d/"app_pe6.js").read_text()}
+{(d/"app_infra.js").read_text()}
 {(d/"app_boot.js").read_text()}
 </script>
 '''
