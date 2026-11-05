@@ -62,3 +62,4 @@ body.embed .page{padding-top:12px}
 .tr-step.active{border-color:var(--accent-line)}
 .tr-n{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--accent-soft);color:var(--accent);font-size:12px;margin-right:4px}
 .tr-tbl td:nth-child(4){white-space:nowrap}
+body.layer .app.live .cost-ctr{display:none}

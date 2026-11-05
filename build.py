@@ -39,7 +39,7 @@ for target in (out, root):
 
 # TRUESCALE-Vertriebsseite im NEXORA-Design, Demos aus den echten Suite-Storys
 import re
-src = "".join((d/f).read_text() for f in ("app.js", "app_ext.js", "app_v6.js"))
+src = "".join((d/f).read_text() for f in ("app.js", "app_ext.js", "app_v6.js", "app_v8.js"))
 stories = []
 for m in re.finditer(r'\{ id: "([a-z0-9]+)", tenant: "([a-z]+)", cross: \[([^\]]*)\], short: "([^"]*)", title: "([^"]*)", situation: "([^"]*)"', src):
     body = src[m.end():]; body = body[:body.index("], outro")]

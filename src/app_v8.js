@@ -2,7 +2,8 @@
    Additiv: alle Erweiterungen über das Wrapper-Muster; die Suite-Ansicht bleibt unverändert. */
 const APP_VERSION = "v0.8";
 const UI_KEY = "nexora-suite-v08-ui";
-S.layer = (() => { try { return (JSON.parse(localStorage.getItem(UI_KEY) || "{}").layer) || "suite"; } catch (e) { return "suite"; } })();
+// Ab v0.8 ist der Experience Layer Standard; die Suite-Ansicht bleibt per Umschalter erreichbar (Wahl wird gespeichert).
+S.layer = (() => { try { const q = new URLSearchParams(location.search).get("layer"); if (q === "1") return "layer"; if (q === "0") return "suite"; } catch (e) {} try { return (JSON.parse(localStorage.getItem(UI_KEY) || "{}").layer) || "layer"; } catch (e) { return "layer"; } })();
 function saveUi() { try { localStorage.setItem(UI_KEY, JSON.stringify({ layer: S.layer })); } catch (e) {} }
 
 /* ---------- Ansichts-Umschalter in der Kopfzeile ---------- */
@@ -437,3 +438,38 @@ VIEWS.transition = () => {
 };
 const _transformation7 = VIEWS.transformation;
 VIEWS.transformation = () => S.layer === "layer" ? VIEWS.transition() : _transformation7();
+
+/* ---------- Phase 8: geführte Storys im Experience Layer ---------- */
+const snTicketFrom = src => C.state(W, "elevon").servicenow.tickets.find(o => o.source === src && (o.status === "zur Freigabe" || o.status === "1. Freigabe erteilt"));
+const sapPrFrom = re => C.state(W, "elevon").sap.prs.find(o => re.test(o.source || "") && o.status === "zur Freigabe");
+STORIES.push(
+  { id: "crosssys", tenant: "elevon", cross: [], short: "Freigabe über Systemgrenzen", title: "Freigabe über Systemgrenzen: Vom Onboarding zum Wareneingang", situation: "Eine neue Mitarbeiterin startet bei Elevon. Ihr Onboarding läuft in Workday, IT-Anfragen in ServiceNow, Bestellanforderungen in SAP – Bestellung und Wareneingang in der NEXORA-Engine. Alle Fremdsysteme sind simuliert.", layer: true, problem: "Heute springt jede Freigabe zwischen vier Oberflächen, und niemand sieht die Kosten der Zugriffe.", value: "Eine Inbox für alle Systeme: Jeder Schritt ist eine Karte mit Quelle, Zugriffsweg und Beispielkosten. Folgeschritte entstehen über Ereignisse, jeder ist im Protokoll einer Person und Rolle zugeordnet.", steps: [
+    { t: "HR stößt im Onboarding den Laptop an", d: "Workday-Aufgabe erledigt – als Folgeschritt entsteht automatisch ein ServiceNow-Ticket.", user: "u8", cmd: "conn.workday.completeOnboardingTask", p: () => ({ ref: "workday:onb:ONB-77:laptop" }), go: "tasks" },
+    { t: "CFO gibt das ServiceNow-Ticket in NEXORA frei", d: "Karte „ServiceNow (simuliert)“ über Now Assist (A2A) – Folgeschritt: SAP-Bestellanforderung über Joule.", user: "u2", multi: () => { const o = snTicketFrom("Workday ONB-77"); return o ? [["conn.servicenow.approveRITM", { ref: "servicenow:ritm:" + o.no }]] : []; }, go: "tasks" },
+    { t: "CFO gibt die SAP-Bestellanforderung frei", d: "Joule-Weg (A2A, 0,04 € Beispielwert). Da der Laptop ein Katalogartikel ist, laufen Bestellung und Wareneingang in der NEXORA-Engine.", user: "u2", multi: () => { const o = sapPrFrom(/ServiceNow RITM/); return o ? [["conn.sap.approvePR", { ref: "sap:pr:" + o.no }]] : []; } },
+    { t: "Einkauf bestellt in der NEXORA-Engine", d: "Bestellung beim IT-Lieferanten aus der freigegebenen Bedarfsanforderung.", user: "u5", cmd: "convertRequisitions", p: () => ({}), go: "supply" },
+    { t: "Wareneingang in der NEXORA-Engine", d: "GWG-Notebook auf Konto 6830, Kostenstelle belastet.", user: "u6", multi: () => W.tenants.elevon.purchaseOrders.filter(p => p.kind === "indirekt" && !p.grDoc).map(p => ["postGoodsReceipt", { poNo: p.no }]) },
+    { t: "Kosten und Protokoll prüfen", d: "Jeder Schritt mit Person, Rolle, System, Weg, Agent und Beispielkosten; Summe = Kostenzähler.", user: "u2", multi: () => [], then: () => {}, go: "audit" }
+  ], outro: "Vier Systeme, eine Oberfläche: Die Kosten der Zugriffe stehen im Protokoll, jede Ausführung ist einem Menschen zugeordnet." },
+  { id: "oneday", tenant: "elevon", cross: [], short: "Ein Tag im Experience Layer", title: "Ein Tag im Experience Layer: Die CFO arbeitet ihre Inbox ab", situation: "Martin Seidel, CFO bei Elevon, hat Freigaben in SAP, Microsoft 365, ServiceNow und Workday – alle simuliert – und Aufgaben in der NEXORA-Engine.", layer: true, problem: "Vier Logins, vier Oberflächen, kein gemeinsamer Überblick.", value: "Ein persönliches Dashboard und eine Inbox über alle Systeme; der Assistent schlägt vor, ausgeführt wird erst nach Klick und Bestätigung.", steps: [
+    { t: "Dashboard anpassen", d: "Kacheln Offene Freigaben, Bank, Zugriffskosten und Prozessstatus – gespeichert als Ereignis im Protokoll.", user: "u2", cmd: "conn.layer.setDash", p: () => ({ tiles: ["approvals", "kpi:cash", "costs", "process", "trend"] }), go: "home" },
+    { t: "SAP: Kreditorenrechnung freigeben", d: "Über Joule (A2A); Rechnungen über 10.000 € bräuchten eine zweite Person.", user: "u2", multi: () => { const o = C.state(W, "elevon").sap.invoices.find(i => i.status === "zur Freigabe" && i.amount <= C.FOUR_EYES_LIMIT); return o ? [["conn.sap.approveInvoice", { ref: "sap:inv:" + o.no }]] : []; }, go: "tasks" },
+    { t: "Microsoft 365: Freigabebitte beantworten", d: "Antwort per Copilot (A2A) statt Outlook.", user: "u2", multi: () => { const o = C.state(W, "elevon").m365.mails.find(m => m.needsApproval && m.status === "Antwort erwartet"); return o ? [["conn.m365.replyApproval", { ref: "m365:mail:" + o.no, decision: "zugestimmt" }]] : []; } },
+    { t: "ServiceNow: Lizenzanfrage freigeben", d: "Folgeschritt: Bestellanforderung im System of Record SAP.", user: "u2", multi: () => { const o = C.state(W, "elevon").servicenow.tickets.find(x => x.no === "RITM0014022" && x.status === "zur Freigabe"); return o ? [["conn.servicenow.approveRITM", { ref: "servicenow:ritm:" + o.no }]] : []; } },
+    { t: "Workday: Urlaub genehmigen", d: "Abwesenheit über den Workday-Agenten (A2A).", user: "u2", multi: () => { const o = C.state(W, "elevon").workday.absences.find(a => a.status === "beantragt"); return o ? [["conn.workday.approveAbsence", { ref: "workday:abs:" + o.no }]] : []; } },
+    { t: "Assistent fragen, was noch offen ist", d: "Antwort mit Aktionskarten – ausgeführt wird nur nach Bestätigung.", user: "u2", ask: "Was muss ich heute freigeben?" }
+  ], outro: "Die CFO hat vier Systeme bedient, ohne die Oberfläche zu wechseln. Kosten und Schritte stehen im Protokoll." },
+  { id: "replace", tenant: "elevon", cross: [], short: "Prozess für Prozess ablösen", title: "Prozess für Prozess ablösen: Bestellanforderungen von SAP zur NEXORA-Engine", situation: "Bestellanforderungen laufen bei Elevon heute im (simulierten) SAP. Der Einkauf arbeitet bereits im Experience Layer.", layer: true, problem: "Eine Ablösung bedeutet sonst Big Bang, neue Oberfläche und Schulung.", value: "Datenübernahme über das bestehende Migrationsmodul, Parallelbetrieb mit Abstimmung, Umschalten bei Differenz 0 – die Karten in der Inbox sehen vorher und nachher gleich aus. Das Ablöse-Cockpit zeigt Fortschritt und entfallende Zugriffskosten (Beispielwerte).", steps: [
+    { t: "Testlauf der Datenübernahme", d: "Extrakt der offenen SAP-Bestellanforderungen, Prüfung auf einer Kopie; fehlende Kostenstellen werden per Regel durch den Einkauf ersetzt.", user: "u10", cmd: "migrationTest", p: () => ({ project: TR_PROJECT, source: C.prExtract(W, "elevon"), rules: { fillCostCenter: true } }), go: "transition" },
+    { t: "Freigabe anfordern", d: "Vier-Augen-Prinzip wie bei jeder Migration.", user: "u10", cmd: "migrationRequestApproval", p: () => ({ project: TR_PROJECT }) },
+    { t: "CFO gibt die Übernahme frei", d: "Eine zweite Person mit Freigaberecht.", user: "u2", cmd: "migrationApprove", p: () => ({ project: TR_PROJECT }) },
+    { t: "Produktivübernahme", d: "Bestellanforderungen entstehen in der NEXORA-Engine; Summe Ziel = Quelle.", user: "u10", cmd: "migrationRun", p: () => ({ project: TR_PROJECT, object: "requisitions" }) },
+    { t: "Parallelbetrieb starten", d: "System of Record wechselt auf NEXORA; die Originale in SAP werden als übernommen gekennzeichnet.", user: "u2", multi: () => [["conn.layer.transition", { process: "bestellanforderung", step: "parallel", days: 14 }], ["conn.sap.markMigrated", { map: (W.tenants.elevon.migProjects || {})[TR_PROJECT] ? W.tenants.elevon.migProjects[TR_PROJECT].map : {} }]] },
+    { t: "Einkauf legt einen neuen Bedarf an", d: "Entsteht in der Engine und wird ins Altsystem gespiegelt – die Abstimmung bleibt bei Differenz 0.", user: "u5", cmd: "createRequisition", p: () => ({ catalogId: "K-03", qty: 2, costCenter: "KS4130" }), go: "tasks" },
+    { t: "CFO gibt in derselben Inbox frei", d: "Gleiche Karte wie vorher in SAP – nur Quelle und Zugriffsweg sind anders.", user: "u2", multi: () => { const q = W.tenants.elevon.reqs.find(x => x.legacy && x.status === "zur Freigabe"); return q ? [["approveRequisition", { reqNo: q.no }]] : []; } },
+    { t: "Umschalten auf die NEXORA-Engine", d: "Nur bei Differenz 0 möglich. SAP bleibt für Bestellanforderungen lesend (Historie).", user: "u2", cmd: "conn.layer.transition", p: () => ({ process: "bestellanforderung", step: "cutover" }), go: "transition" }
+  ], outro: "Der Einkauf hat die ganze Zeit in derselben Oberfläche gearbeitet. Das Ablöse-Cockpit zeigt den Prozess als abgelöst und die entfallenden Zugriffskosten." }
+);
+// Layer-Storys öffnen den Experience Layer (ohne die gespeicherte Einstellung zu ändern)
+const _startStory8 = ACT.startStory;
+ACT.startStory = function (d) { const st = STORIES.find(s => s.id === d.id); if (st && st.layer) S.layer = "layer"; return _startStory8(d); };

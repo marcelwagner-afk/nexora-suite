@@ -162,16 +162,25 @@ async def main():
     errs=[]; pg.on("pageerror",lambda e:errs.append(str(e)))
     html="<!doctype html><html><head><meta charset='utf-8'></head><body>"+open(ROOT/"dist"/"nexora-suite.html").read()+"</body></html>"
     await pg.set_content(html); await pg.wait_for_timeout(400)
+    assert await pg.evaluate("S.layer") == "layer", "Standard ab v0.8: Experience Layer"; await pg.screenshot(path=SP+"layer_start.png")
+    await pg.evaluate("ACT.setLayer({v:'suite'})"); await pg.wait_for_timeout(150)  # bisherige Prüfungen in der Suite-Ansicht wie v0.7
     await pg.screenshot(path=SP+"s_home.png")
     report=[]
-    for sid in ["industrial","retail","services","crosslift","service","omni","migration","design","p2p","hire"]:
+    for sid in ["industrial","retail","services","crosslift","service","omni","migration","design","p2p","hire","crosssys","oneday","replace"]:
       await pg.evaluate(f"ACT.startStory({{id:'{sid}',reset:1}})"); await pg.wait_for_timeout(100)
       n=await pg.evaluate(f"STORIES.find(s=>s.id==='{sid}').steps.length")
       for i in range(n):
         await pg.click("[data-act=storyStep]"); await pg.wait_for_timeout(60)
       st=await pg.evaluate("S.story && S.story.i"); last=await pg.evaluate("S.last && S.last.ok")
       report.append((sid,n,st,last))
-      if sid in ("service","omni","migration","design","p2p","hire"): await pg.screenshot(path=SP+"s_"+sid+".png")
+      if sid == "crosssys":
+        cs = await pg.evaluate("({ led: C.ledger(W,'elevon').map(x => x.sys + '.' + x.cmd), gr: W.tenants.elevon.purchaseOrders.filter(p => p.kind === 'indirekt' && p.grDoc).length, route: location.hash })"); print("crosssys:", cs); assert all(x in cs["led"] for x in ["workday.completeOnboardingTask", "servicenow.createRITM", "servicenow.approveRITM", "sap.createPR", "sap.approvePR"]) and cs["gr"] >= 1
+      if sid == "oneday":
+        od = await pg.evaluate("({ led: C.ledger(W,'elevon').map(x => x.sys).filter(x => x !== 'layer'), dash: C.state(W,'elevon').dash['user:u2'], cards: document.querySelectorAll('#aiBody .ly-card').length })"); print("oneday:", od); assert {"sap", "m365", "servicenow", "workday"} <= set(od["led"]) and od["dash"] and od["cards"] > 0
+      if sid == "replace":
+        rp = await pg.evaluate("({ own: C.owners(W,'elevon').bestellanforderung, phase: C.state(W,'elevon').transition.bestellanforderung.phase, recon: C.state(W,'elevon').transition.bestellanforderung.recon })"); print("replace:", rp); assert rp["own"] == "nexora" and rp["phase"] == "abgelöst" and rp["recon"]["diffCount"] == 0 and rp["recon"]["nexora"]["count"] == 1
+      if sid in ("crosssys", "oneday", "replace"): await pg.evaluate("S.layer = 'suite'; render()")
+      if sid in ("service","omni","migration","design","p2p","hire","crosssys","oneday","replace"): await pg.screenshot(path=SP+"s_"+sid+".png")
       if sid=="industrial": await pg.screenshot(path=SP+"s_ind.png")
     print(report)
     # Konsistenzprüfung nach allen Storys
