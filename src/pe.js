@@ -99,7 +99,7 @@
       standard, fyStart, acquired, ownership, scenario: scen, size, margin, growth, gm, ps,
       status: scen === "acquisition" ? "Onboarding" : idx === 12 ? "Exit-Vorbereitung" : "Halten",
       onboarding: scen === "acquisition" ? "Finanz-Mapping" : "Aktiv", integration: scen === "acquisition" ? "Mapping offen" : scen === "erp" ? "Verzögert" : "Synchron",
-      dsa: { level: idx % 4 === 1 ? "kpi" : idx % 4 === 2 ? "statements" : "transactions" }, entities, units,
+      leaseShare: r2(0.14 + 0.12 * mulberry32(hashStr(id + "lease"))()), dsa: { level: idx % 4 === 1 ? "kpi" : idx % 4 === 2 ? "statements" : "transactions" }, entities, units,
       costCenters: ["Vertrieb", "Produktion", "Verwaltung", "IT"].map((n, i) => ({ id: id + "-CC" + (i + 1), name: n })) };
   }
 
@@ -114,7 +114,7 @@
       let fa = rev0 * 12 * between(mulberry32(hashStr(c.id + "fa")), 0.25, 0.5), debt = debt0, ar = 0, inv = 0, ap = 0, cash = cash0, eq = null; const rows = [];
       for (let i = 0; i < MONTHS; i++) {
         const p = PERIODS[i]; const mo = +p.slice(5); const r = mulberry32(hashStr(c.id + p));
-        const seas = 1 + 0.06 * Math.sin((mo - 3) / 12 * 2 * Math.PI); const noise = 1 + between(r, -0.025, 0.025);
+        const seas = 1 + 0.06 * Math.sin((mo - 3) / 12 * 2 * Math.PI); const noise = (1 + between(r, -0.025, 0.025)) * (c.id === "PC15" && p === "2026-03" ? 1.32 : 1); // PC15: einmaliger Sondereffekt (Großauftrag) im März 2026
         const rev = rev0 * Math.pow(1 + c.growth, i / 12) * seas * noise;
         let m = c.margin; if (c.scenario === "margin") m = i < MONTHS - 14 ? c.margin : Math.max(0.045, c.margin - (i - (MONTHS - 14)) * 0.006); // Margenverfall in den letzten 14 Monaten
         if (liq) m = c.margin - Math.max(0, i - 18) * 0.004;
@@ -161,7 +161,7 @@
     // Umsatz auf rund 3,2 Mrd. € (NGEP, 25 Unternehmen) normieren – vor der Erzeugung der Monatswerte
     const ngep = companies.filter(c => c.orgId === "ngep"); const target = 3.08e9 * mult; const f0 = target / sum(ngep.map(c => c.size)); for (const c of ngep) c.size *= f0;
     const data = {}; for (const c of companies) { const g = genMonthly(mulberry32(hashStr(c.id) ^ seed), c); data[c.id] = g.months; c.debtInfo = g.debt; }
-    const W = { version: VERSION, seed, valuationDate: VALUATION_DATE, periods: PERIODS.slice(), orgs, funds, portfolios, companies, data, fx, note: DEMO_NOTE };
+    const W = { adjust: {}, version: VERSION, seed, valuationDate: VALUATION_DATE, periods: PERIODS.slice(), orgs, funds, portfolios, companies, data, fx, note: DEMO_NOTE };
     for (const c of companies) c.investment = genInvestment(mulberry32(hashStr(c.id + "inv") ^ seed), W, c);
     W.principals = demoPrincipals(W);
     return W;
@@ -185,13 +185,15 @@
   function priorRange(W, r) { const a = r.a - 12, b = r.b - 12; return a >= 0 ? { a, b } : null; }
 
   /* ---------- Kennzahlen eines Unternehmens (EUR) – deterministisch, mit Formel in KPI_DEFS ---------- */
-  function flowsSum(W, c, a, b) { const o = { REV: 0, COGS: 0, OPEX_PERS: 0, OPEX_OTHER: 0, DA: 0, INT: 0, TAX: 0, CAPEX: 0, DIV: 0, EQIN: 0, dNWC: 0 };
+  function flowsSum(W, c, a, b, basis) { const o = { REV: 0, COGS: 0, OPEX_PERS: 0, OPEX_OTHER: 0, DA: 0, INT: 0, TAX: 0, CAPEX: 0, DIV: 0, EQIN: 0, dNWC: 0 };
     for (let i = a; i <= b; i++) { const e = eurMonth(W, c, i); for (const k of Object.keys(o)) if (k !== "dNWC") o[k] += e[k];
       if (i > 0) { const h1 = harmonizedMonth(W, c, i), h0 = harmonizedMonth(W, c, i - 1); const r = rateOf(W, c.currency, W.periods[i]).avg; o.dNWC += ((h1.AR + h1.INV - h1.AP) - (h0.AR + h0.INV - h0.AP)) / r; } }
+    if (basis === "ifrs") { const adj = gaapAdjust(W, c, a, b); if (adj.applied) { o.OPEX_OTHER -= adj.lease; o.DA += adj.da; o.INT += adj.interest; } o._adj = adj; }
     return o; }
-  function companyKpis(W, c, key) {
-    const r = rangeIdx(W, key); const f = flowsSum(W, c, r.a, r.b); const end = eurMonth(W, c, r.b); const pr = priorRange(W, r); const fp = pr ? flowsSum(W, c, pr.a, pr.b) : null;
-    const ltm = flowsSum(W, c, W.periods.length - 12, W.periods.length - 1); const ltmEbitda = ltm.REV - ltm.COGS - ltm.OPEX_PERS - ltm.OPEX_OTHER;
+  function companyKpis(W, c, key, basis) {
+    const r = rangeIdx(W, key); const f = flowsSum(W, c, r.a, r.b, basis); const end = Object.assign({}, eurMonth(W, c, r.b)); const pr = priorRange(W, r); const fp = pr ? flowsSum(W, c, pr.a, pr.b, basis) : null;
+    if (f._adj && f._adj.applied) end.DEBT += f._adj.liability; // IFRS 16: Leasingverbindlichkeit in der Nettoverschuldung
+    const ltm = flowsSum(W, c, W.periods.length - 12, W.periods.length - 1, basis); const ltmEbitda = ltm.REV - ltm.COGS - ltm.OPEX_PERS - ltm.OPEX_OTHER;
     const ebitda = f.REV - f.COGS - f.OPEX_PERS - f.OPEX_OTHER; const gp = f.REV - f.COGS; const ebit = ebitda - f.DA; const ni = ebit - f.INT - f.TAX;
     const ocf = ebitda - f.TAX - f.dNWC; const fcf = ocf - f.CAPEX; const wc = end.AR + end.INV - end.AP; const netDebt = end.DEBT - end.CASH;
     const ebitdaP = fp ? fp.REV - fp.COGS - fp.OPEX_PERS - fp.OPEX_OTHER : null;
@@ -202,7 +204,7 @@
     const k = { period: r.label, periodKey: r.key, revenue: f.REV, ebitda, margin: f.REV ? ebitda / f.REV : null, revenueGrowth: fp && fp.REV ? f.REV / fp.REV - 1 : null, ebitdaGrowth: fp && ebitdaP > 0 ? ebitda / ebitdaP - 1 : null,
       grossProfit: gp, ebit, netIncome: ni, cash: end.CASH, ocf, capex: f.CAPEX, fcf, cashConversion: ebitda > 0 ? fcf / ebitda : null, workingCapital: wc, runwayMonths: runway,
       grossDebt: end.DEBT, netDebt, leverage, interestCoverage: ltmInt > 0 ? ltmEbitda / ltmInt : null, maturity: c.debtInfo.maturity, covenantMax: cov, covenantHeadroom: leverage != null ? (cov - leverage) / cov : null,
-      ltmEbitda, ev, equityValue: equity, multiple: mult, marginPrior: fp && fp.REV ? ebitdaP / fp.REV : null };
+      ltmEbitda, ev, equityValue: equity, multiple: mult, marginPrior: fp && fp.REV ? ebitdaP / fp.REV : null, basis: basis === "ifrs" ? "IFRS-Konzernsicht (freigegebene Anpassungen)" : "lokaler Standard (" + c.standard + ")", adjustment: f._adj || null };
     k.health = healthScore(k); k.risks = riskFlags(k); return k;
   }
   function healthScore(k) { let s = 100; if (k.leverage != null) s -= Math.max(0, k.leverage - 3) * 12; else if (k.netDebt > 0) s -= 30; if (k.runwayMonths != null && k.runwayMonths < 6) s -= 25; if (k.margin != null && k.marginPrior != null && k.margin - k.marginPrior < -0.03) s -= 15; if (k.revenueGrowth != null && k.revenueGrowth < 0) s -= 10; if (k.covenantHeadroom != null && k.covenantHeadroom < 0.15) s -= 10; if (k.cashConversion != null && k.cashConversion < 0.3) s -= 8; return Math.max(0, Math.min(100, Math.round(s))); }
@@ -335,12 +337,12 @@
   function companies(W, p, filter) {
     const key = (filter || {}).period || "LTM";
     return visibleCompanies(W, p, filter).map(c => { if (c.noData) return { id: c.id, name: c.name, fundId: c.fundId, industry: c.industry, country: c.country, currency: c.currency, acquired: c.acquired, ownership: c.ownership, status: c.status, erp: c.erp, model: c.model, integration: c.integration, onboarding: c.onboarding, reporting: false, noData: true, risks: [] };
-      const k = companyKpis(W, c, key); return { id: c.id, name: c.name, fundId: c.fundId, industry: c.industry, country: c.country, currency: c.currency, acquired: c.acquired, ownership: c.ownership, status: c.status, erp: c.erp, model: c.model, integration: c.integration, onboarding: c.onboarding, reporting: reportingActive(c), scenario: c.scenario,
+      const k = companyKpis(W, c, key, (filter || {}).basis); return { id: c.id, name: c.name, fundId: c.fundId, industry: c.industry, country: c.country, currency: c.currency, acquired: c.acquired, ownership: c.ownership, status: c.status, erp: c.erp, model: c.model, integration: c.integration, onboarding: c.onboarding, reporting: reportingActive(c), scenario: c.scenario,
       revenue: k.revenue, ebitda: k.ebitda, margin: k.margin, revenueGrowth: k.revenueGrowth, cash: k.cash, netDebt: k.netDebt, leverage: k.leverage, ev: k.ev, health: k.health, risks: k.risks, runwayMonths: k.runwayMonths }; });
   }
-  function company(W, p, id, key) {
+  function company(W, p, id, key, basis) {
     const c = guard(W, p, W.companies.find(x => x.id === id), "kpi");
-    if (c.noData) return { profile: { id: c.id, name: c.name, industry: c.industry, country: c.country, currency: c.currency, standard: c.standard, erp: c.erp, erpMethod: ERP[c.erp].method, model: c.model, acquired: c.acquired, ownership: c.ownership, status: c.status, integration: c.integration, onboarding: c.onboarding, fund: (W.funds.find(f => f.id === c.fundId) || {}).name, entities: c.entities, units: c.units, costCenters: c.costCenters, dsa: c.dsa.level }, kpis: null, noData: true, gap: "Noch keine Finanzdaten: ERP-Anbindung und Mapping im Onboarding (Phase 5) ausstehend." }; const k = companyKpis(W, c, key || "LTM"); const st = access(W, p, c, "statements"); const tx = access(W, p, c, "transactions") && ERP[c.erp].lineItems;
+    if (c.noData) return { profile: { id: c.id, name: c.name, industry: c.industry, country: c.country, currency: c.currency, standard: c.standard, erp: c.erp, erpMethod: ERP[c.erp].method, model: c.model, acquired: c.acquired, ownership: c.ownership, status: c.status, integration: c.integration, onboarding: c.onboarding, fund: (W.funds.find(f => f.id === c.fundId) || {}).name, entities: c.entities, units: c.units, costCenters: c.costCenters, dsa: c.dsa.level }, kpis: null, noData: true, gap: "Noch keine Finanzdaten: ERP-Anbindung und Mapping im Onboarding (Phase 5) ausstehend." }; const k = companyKpis(W, c, key || "LTM", basis); const st = access(W, p, c, "statements"); const tx = access(W, p, c, "transactions") && ERP[c.erp].lineItems;
     const R = ROLES[p.role]; const showInvest = R.fund && p.orgId === c.orgId;
     return { profile: { id: c.id, name: c.name, industry: c.industry, country: c.country, currency: c.currency, standard: c.standard, fyStart: c.fyStart, erp: c.erp, erpMethod: ERP[c.erp].method, lineItems: ERP[c.erp].lineItems, model: c.model, acquired: c.acquired, ownership: c.ownership, status: c.status, integration: c.integration, onboarding: c.onboarding, fund: (W.funds.find(f => f.id === c.fundId) || {}).name, entities: c.entities, units: c.units, costCenters: c.costCenters, dsa: c.dsa.level, scenario: c.scenario },
       kpis: k, source: SOURCE(c), access: { statements: st, transactions: tx, transactionsReason: tx ? null : !ERP[c.erp].lineItems ? `${c.erp}: Quellsystem liefert keine Einzelposten (${ERP[c.erp].method})` : "Datenfreigabe oder Rolle erlaubt keine Buchungen" },
@@ -357,14 +359,14 @@
       const bRev = prev.REV * (1 + planG), bE = prevE * (1 + planG) * (c.scenario === "margin" ? 1.06 : 1); let a = null, aE = null;
       if (pi < W.periods.length) { const e = eurMonth(W, c, pi); a = e.REV; aE = e.REV - e.COGS - e.OPEX_PERS - e.OPEX_OTHER; ytdA += a; ytdB += bRev; ytdEA += aE; ytdEB += bE; }
       months.push({ period: "2026-" + String(m + 1).padStart(2, "0"), budgetRevenue: bRev, budgetEbitda: bE, actualRevenue: a, actualEbitda: aE }); }
-    const last3 = months.filter(x => x.actualRevenue != null).slice(-3); const rr = sum(last3.map(x => x.actualRevenue)) / 3, rrE = sum(last3.map(x => x.actualEbitda)) / 3;
-    for (const x of months) if (x.actualRevenue == null) { x.forecastRevenue = rr; x.forecastEbitda = rrE; } else { x.forecastRevenue = x.actualRevenue; x.forecastEbitda = x.actualEbitda; }
-    return { months, ytd: { actualRevenue: ytdA, budgetRevenue: ytdB, actualEbitda: ytdEA, budgetEbitda: ytdEB }, fy: { budgetRevenue: sum(months.map(x => x.budgetRevenue)), forecastRevenue: sum(months.map(x => x.forecastRevenue)), budgetEbitda: sum(months.map(x => x.budgetEbitda)), forecastEbitda: sum(months.map(x => x.forecastEbitda)) }, method: "Budget: GJ 2025 Ist × (1 + Planwachstum); Forecast: Ist Jan–Okt + Ø der letzten drei Monate für Nov–Dez (Run-Rate, keine KI)" };
+    const fc = seasonalForecast(W, c, 2);
+    for (const x of months) if (x.actualRevenue == null) { const m = fc.months.find(z => z.period === x.period); x.forecastRevenue = m ? m.revenue : null; x.forecastEbitda = m ? m.ebitda : null; } else { x.forecastRevenue = x.actualRevenue; x.forecastEbitda = x.actualEbitda; }
+    return { months, ytd: { actualRevenue: ytdA, budgetRevenue: ytdB, actualEbitda: ytdEA, budgetEbitda: ytdEB }, fy: { budgetRevenue: sum(months.map(x => x.budgetRevenue)), forecastRevenue: sum(months.map(x => x.forecastRevenue)), budgetEbitda: sum(months.map(x => x.budgetEbitda)), forecastEbitda: sum(months.map(x => x.forecastEbitda)) }, method: "Budget: GJ 2025 Ist × (1 + Planwachstum); Forecast: Ist Jan–Okt, Nov–Dez nach der saisonalen Prognosemethode (gleicher Monat Vorjahr × Wachstumsfaktor, Marge der letzten 6 Monate), keine KI" };
   }
   /* Management-Aggregation zu 100 % – keine Konsolidierung, keine Anteilsgewichtung */
   function portfolioKpis(W, p, filter) {
     filter = filter || {}; const key = filter.period || "LTM"; const vis = visibleCompanies(W, p, filter); const inRep = vis.filter(c => reportingActive(c) && !c.noData); const excluded = vis.filter(c => !reportingActive(c)).map(c => ({ id: c.id, name: c.name, reason: `Onboarding „${c.onboarding}“ – noch nicht freigegeben für das Portfolio-Reporting` }));
-    const ks = inRep.map(c => ({ c, k: companyKpis(W, c, key) })); const S = f => sum(ks.map(x => x.k[f] || 0));
+    const ks = inRep.map(c => ({ c, k: companyKpis(W, c, key, filter.basis) })); const S = f => sum(ks.map(x => x.k[f] || 0));
     const rev = S("revenue"), ebitda = S("ebitda"); const growthOk = ks.every(x => x.k.revenueGrowth != null);
     const prevRev = growthOk ? sum(ks.map(x => x.k.revenue / (1 + x.k.revenueGrowth))) : null; const ebitdaGrowthOk = ks.every(x => x.k.ebitdaGrowth != null);
     const prevE = ebitdaGrowthOk ? sum(ks.map(x => x.k.ebitda / (1 + x.k.ebitdaGrowth))) : null; const ltmE = S("ltmEbitda"); const nd = S("netDebt");
@@ -372,7 +374,7 @@
       revenue: rev, ebitda, margin: rev ? ebitda / rev : null, revenueGrowth: prevRev ? rev / prevRev - 1 : null, ebitdaGrowth: prevE ? ebitda / prevE - 1 : null, grossProfit: S("grossProfit"), ebit: S("ebit"), netIncome: S("netIncome"),
       cash: S("cash"), ocf: S("ocf"), fcf: S("fcf"), cashConversion: ebitda > 0 ? S("fcf") / ebitda : null, workingCapital: S("workingCapital"), grossDebt: S("grossDebt"), netDebt: nd, leverage: ltmE > 0 ? nd / ltmE : null,
       ev: S("ev"), equityValue: S("equityValue"), atRisk: ks.filter(x => x.k.risks.some(r => r.level === "crit")).length,
-      gaps: [].concat(growthOk ? [] : ["Wachstum: Vorjahreszeitraum nicht vollständig (Daten ab Nov 2023)"], ["Liquiditätsprognose: folgt in Phase 3 (Forecast-Engine)"]) };
+      gaps: [].concat(growthOk ? [] : ["Wachstum: Vorjahreszeitraum nicht vollständig (Daten ab Nov 2023)"], []) };
     return out;
   }
   function series(W, p, ids, metric) {
@@ -412,6 +414,128 @@
       if (k.covenantHeadroom != null && k.covenantHeadroom < 0.15) out.push({ severity: "crit", company: c.name, id: c.id, title: "Covenant-Spielraum knapp", evidence: `Net Debt/EBITDA ${k.leverage.toFixed(2)}x bei Covenant ${k.covenantMax.toFixed(2)}x`, kpis: { leverage: k.leverage, covenantHeadroom: k.covenantHeadroom }, period: "Stichtag Okt 2026", method: KPI_DEFS.covenantHeadroom.formula, action: "Covenant-Test-Prognose für das nächste Quartal erstellen", confidence: "hoch (Ist-Daten)" }); }
     return out.sort((a, b) => (a.severity === "crit" ? 0 : 1) - (b.severity === "crit" ? 0 : 1));
   }
+
+  /* ===== PE-Phase 3: Financial Intelligence – deterministische Analysen; die KI erklärt nur diese Ergebnisse ===== */
+  /* GAAP-Anpassung zur IFRS-Konzernsicht. HGB: IFRS 16 – Mietaufwand aus operativen Leasingverträgen wird zu Abschreibung (Nutzungsrecht)
+     und Zins (Leasingverbindlichkeit). US GAAP (ASC 842): operatives Leasing bleibt im Aufwand – Standards sind nicht austauschbar.
+     Angewendet wird eine Anpassung erst nach Freigabe (Abstimmungs-Workflow). */
+  const LEASE_SPLIT = { da: 0.82, interest: 0.18, years: 4.2 };
+  function gaapAdjust(W, c, a, b) {
+    const st = (W.adjust && W.adjust[c.id]) || { status: c.standard === "HGB" ? "vorgeschlagen" : "nicht erforderlich" };
+    if (c.standard !== "HGB") return { applied: false, standard: c.standard, status: st.status, lease: 0, da: 0, interest: 0, liability: 0, method: c.standard === "US GAAP" ? "ASC 842: operatives Leasing bleibt im Aufwand; für die IFRS-Konzernsicht fehlt die Leasingangabe – Datenlücke, keine Schätzung" : "IFRS 16 bereits im lokalen Abschluss angewendet" , gap: c.standard === "US GAAP" };
+    let lease = 0; for (let i = a; i <= b; i++) lease += eurMonth(W, c, i).OPEX_OTHER * c.leaseShare; const lastMonthly = eurMonth(W, c, b).OPEX_OTHER * c.leaseShare;
+    return { applied: st.status === "freigegeben", standard: "HGB", status: st.status, by: st.by || null, lease, da: lease * LEASE_SPLIT.da, interest: lease * LEASE_SPLIT.interest, liability: lastMonthly * 12 * LEASE_SPLIT.years, leaseShare: c.leaseShare,
+      method: `IFRS 16: Mietaufwand aus operativem Leasing (${Math.round(c.leaseShare * 100)} % der sonstigen Aufwendungen laut Anhang, synthetisch) → ${Math.round(LEASE_SPLIT.da * 100)} % Abschreibung, ${Math.round(LEASE_SPLIT.interest * 100)} % Zins; Leasingverbindlichkeit = Monatsmiete × 12 × ${LEASE_SPLIT.years} Jahre (vereinfachter Barwert)` };
+  }
+  function adjustments(W, p, filter) {
+    const key = (filter || {}).period || "LTM";
+    return visibleCompanies(W, p, filter).filter(c => !c.noData && access(W, p, c, "statements")).map(c => { const r = rangeIdx(W, key); const f = flowsSum(W, c, r.a, r.b); const adj = gaapAdjust(W, c, r.a, r.b); const loc = f.REV - f.COGS - f.OPEX_PERS - f.OPEX_OTHER;
+      return { id: c.id, name: c.name, standard: c.standard, status: adj.status, by: adj.by, localEbitda: loc, adjustment: c.standard === "HGB" ? adj.lease : 0, ifrsEbitda: c.standard === "HGB" ? loc + adj.lease : loc, leaseLiability: adj.liability, applied: adj.applied, method: adj.method, gap: !!adj.gap }; });
+  }
+  /* Vergleich mehrerer Unternehmen inkl. Median */
+  function compare(W, p, ids, key, basis) {
+    const rows = ids.map(id => W.companies.find(c => c.id === id)).filter(c => c && !c.noData && access(W, p, c, "kpi")).map(c => Object.assign({ id: c.id, name: c.name, industry: c.industry, country: c.country }, companyKpis(W, c, key || "LTM", basis)));
+    const med = f => { const v = rows.map(r => r[f]).filter(x => x != null).sort((a, b) => a - b); return v.length ? (v.length % 2 ? v[(v.length - 1) / 2] : (v[v.length / 2 - 1] + v[v.length / 2]) / 2) : null; };
+    const metrics = ["revenue", "ebitda", "margin", "revenueGrowth", "cashConversion", "leverage", "workingCapital", "health"];
+    return { rows, median: Object.fromEntries(metrics.map(m => [m, med(m)])), metrics, denied: ids.length - rows.length };
+  }
+  /* EBITDA-Brücke LTM gegen Vorjahres-LTM: Volumen- und Kostenquoteneffekte, Summe exakt = Veränderung */
+  function marginBridge(W, p, id) {
+    const c = guard(W, p, W.companies.find(x => x.id === id), "kpi"); if (c.noData) fail("DATA_GAP", "Keine Finanzdaten.");
+    const n = W.periods.length; const f1 = flowsSum(W, c, n - 12, n - 1), f0 = flowsSum(W, c, n - 24, n - 13);
+    const e1 = f1.REV - f1.COGS - f1.OPEX_PERS - f1.OPEX_OTHER, e0 = f0.REV - f0.COGS - f0.OPEX_PERS - f0.OPEX_OTHER; const m0 = e0 / f0.REV;
+    const q = (f, k) => f[k] / f.REV; const steps = [["Umsatzvolumen (zur Vorjahresmarge)", (f1.REV - f0.REV) * m0], ["Materialquote", -f1.REV * (q(f1, "COGS") - q(f0, "COGS"))], ["Personalquote", -f1.REV * (q(f1, "OPEX_PERS") - q(f0, "OPEX_PERS"))], ["Quote sonstige Aufwendungen", -f1.REV * (q(f1, "OPEX_OTHER") - q(f0, "OPEX_OTHER"))]];
+    const ratios = { COGS: [q(f0, "COGS"), q(f1, "COGS")], OPEX_PERS: [q(f0, "OPEX_PERS"), q(f1, "OPEX_PERS")], OPEX_OTHER: [q(f0, "OPEX_OTHER"), q(f1, "OPEX_OTHER")] };
+    const driver = steps.slice(1).sort((a, b) => a[1] - b[1])[0];
+    return { company: c.name, id: c.id, from: e0, to: e1, delta: e1 - e0, marginFrom: m0, marginTo: e1 / f1.REV, steps: steps.map(([label, value]) => ({ label, value })), ratios, mainDriver: driver[1] < 0 ? driver[0] : null, period: "LTM Nov 2025 – Okt 2026 gegen Nov 2024 – Okt 2025", method: "ΔEBITDA = ΔUmsatz × Vorjahresmarge − Umsatz × Δ(Kostenquote) je Kostenart; Summe der Effekte = ΔEBITDA" };
+  }
+  /* Saisonale Prognose mit Wachstumsfaktor; Rückrechnung (Backtest) der letzten 12 Monate liefert die Unsicherheit */
+  function seasonalForecast(W, c, horizon) {
+    const n = W.periods.length; const rev = W.periods.map((_, i) => eurMonth(W, c, i).REV); const eb = W.periods.map((_, i) => { const e = eurMonth(W, c, i); return e.REV - e.COGS - e.OPEX_PERS - e.OPEX_OTHER; });
+    const g = end => sum(rev.slice(end - 11, end + 1)) / sum(rev.slice(end - 23, end - 11)); const mg = end => sum(eb.slice(end - 5, end + 1)) / sum(rev.slice(end - 5, end + 1));
+    const errs = { revenue: [], ebitda: [] }; for (let i = n - 12; i < n; i++) { const fr = rev[i - 12] * g(i - 1), fe = fr * mg(i - 1); errs.revenue.push(Math.abs(fr / rev[i] - 1)); if (Math.abs(eb[i]) > rev[i] * 0.02) errs.ebitda.push(Math.min(2, Math.abs(fe - eb[i]) / Math.abs(eb[i]))); }
+    const mape = { revenue: sum(errs.revenue) / errs.revenue.length, ebitda: errs.ebitda.length ? sum(errs.ebitda) / errs.ebitda.length : null };
+    const G = g(n - 1), M = mg(n - 1); const out = []; for (let h = 1; h <= horizon; h++) { const per = addMonths(W.periods[n - 1], h); const base = rev[n - 1 + h - 12]; const r = base * G, e = r * M; out.push({ period: per, revenue: r, ebitda: e, revenueLow: r * (1 - mape.revenue), revenueHigh: r * (1 + mape.revenue), ebitdaLow: e - Math.abs(e) * (mape.ebitda || 0), ebitdaHigh: e + Math.abs(e) * (mape.ebitda || 0) }); }
+    return { months: out, mape, growthFactor: G, margin: M };
+  }
+  const FC_METHOD = "Prognose je Monat = Umsatz gleicher Monat Vorjahr × (Umsatz LTM / Umsatz Vorjahres-LTM); EBITDA = Prognoseumsatz × EBITDA-Marge der letzten 6 Monate. Unsicherheit = mittlerer absoluter Prozentfehler (MAPE) dieser Methode in der Rückrechnung der letzten 12 Monate. Keine KI.";
+  function forecast(W, p, filter, horizon) {
+    const H = horizon || 6; const cs = visibleCompanies(W, p, filter).filter(c => reportingActive(c) && !c.noData); if (!cs.length) return { months: [], companies: 0, method: FC_METHOD };
+    const fcs = cs.map(c => ({ c, f: seasonalForecast(W, c, H) })); const months = fcs[0].f.months.map((m, j) => { const o = { period: m.period }; for (const k of ["revenue", "ebitda", "revenueLow", "revenueHigh", "ebitdaLow", "ebitdaHigh"]) o[k] = sum(fcs.map(x => x.f.months[j][k])); return o; });
+    const n = W.periods.length; const i26 = W.periods.indexOf("2026-01"); let ytdE = 0, ytdR = 0; for (const { c } of fcs) for (let i = i26; i < n; i++) { const e = eurMonth(W, c, i); ytdR += e.REV; ytdE += e.REV - e.COGS - e.OPEX_PERS - e.OPEX_OTHER; }
+    const rest = months.filter(m => m.period <= "2026-12"); const fy = { ebitda: ytdE + sum(rest.map(m => m.ebitda)), ebitdaLow: ytdE + sum(rest.map(m => m.ebitdaLow)), ebitdaHigh: ytdE + sum(rest.map(m => m.ebitdaHigh)), revenue: ytdR + sum(rest.map(m => m.revenue)), actualEbitdaYtd: ytdE, actualRevenueYtd: ytdR };
+    const wm = k => sum(fcs.map(x => (x.f.mape[k] || 0) * Math.abs(x.f.months[0][k]))) / Math.max(1, sum(fcs.map(x => Math.abs(x.f.months[0][k]))));
+    return { months, companies: cs.length, fy2026: fy, mape: { revenue: wm("revenue"), ebitda: wm("ebitda") }, method: FC_METHOD, byCompany: fcs.map(x => ({ id: x.c.id, name: x.c.name, mape: x.f.mape, months: x.f.months })) };
+  }
+  /* Liquiditätsprognose (6 Monate) je Unternehmen, konstante Kurse */
+  function liquidityForecast(W, p, id, horizon) {
+    const c = guard(W, p, W.companies.find(x => x.id === id), "kpi"); if (c.noData) fail("DATA_GAP", "Keine Finanzdaten."); const H = horizon || 6; const n = W.periods.length;
+    const f = seasonalForecast(W, c, H); const ltm = flowsSum(W, c, n - 12, n - 1); const last = eurMonth(W, c, n - 1), yearAgo = eurMonth(W, c, n - 13);
+    const capexQ = ltm.CAPEX / ltm.REV, intM = ltm.INT / 12, daM = ltm.DA / 12, nwcQ = (last.AR + last.INV - last.AP) / eurMonth(W, c, n - 1).REV; const debtM = Math.min(0, (last.DEBT - yearAgo.DEBT) / 12);
+    let cash = last.CASH, prevRev = last.REV; const months = []; let first = null;
+    for (const m of f.months) { const tax = Math.max(0, m.ebitda - daM - intM) * 0.28; const capex = m.revenue * capexQ; const dNwc = nwcQ * (m.revenue - prevRev); const flow = m.ebitda - tax - capex - intM + debtM - dNwc;
+      const flowLow = m.ebitdaLow - Math.max(0, m.ebitdaLow - daM - intM) * 0.28 - capex - intM + debtM - dNwc; cash += flow; prevRev = m.revenue;
+      months.push({ period: m.period, flow, cash, cashLow: (months.length ? months[months.length - 1].cashLow : last.CASH) + flowLow }); if (first === null && cash < 0) first = m.period; }
+    const firstLow = (months.find(m => m.cashLow < 0) || {}).period || null;
+    return { company: c.name, id: c.id, startCash: last.CASH, months, shortfall: first, shortfallPessimistic: firstLow, minCash: Math.min(...months.map(m => m.cash)), method: "Kasse + Σ (Prognose-EBITDA − Steuern 28 % − Capex-Quote LTM − Ø Zins LTM − Ø Tilgung LTM − ΔNWC zur aktuellen NWC-Quote); pessimistisch: EBITDA an der unteren Prognosegrenze. Konstante Wechselkurse, keine Neufinanzierung unterstellt.", mape: f.mape };
+  }
+  /* Working-Capital-Potenzial gegen Branchen-Richtwerte (Annahmen, gekennzeichnet) */
+  const WC_BENCH = { Industrie: [50, 55, 45], Maschinenbau: [55, 70, 45], Logistik: [40, 10, 35], Software: [45, 5, 35], "IT-Services": [50, 5, 35], Medizintechnik: [55, 60, 40], Pharma: [50, 65, 40], Konsumgüter: [40, 50, 45], Lebensmittel: [30, 30, 40], Handel: [20, 45, 45] };
+  function wcPotential(W, p, filter) {
+    const n = W.periods.length;
+    return visibleCompanies(W, p, filter).filter(c => reportingActive(c) && !c.noData).map(c => { const f = flowsSum(W, c, n - 12, n - 1); const e = eurMonth(W, c, n - 1); const dso = e.AR / (f.REV / 365), dio = e.INV / (f.COGS / 365), dpo = e.AP / (f.COGS / 365); const [bs, bi, bp] = WC_BENCH[c.industry];
+      const pot = { ar: Math.max(0, dso - bs) * f.REV / 365, inv: Math.max(0, dio - bi) * f.COGS / 365, ap: Math.max(0, bp - dpo) * f.COGS / 365 };
+      return { id: c.id, name: c.name, industry: c.industry, dso, dio, dpo, bench: { dso: bs, dio: bi, dpo: bp }, ccc: dso + dio - dpo, potential: pot.ar + pot.inv + pot.ap, parts: pot }; }).sort((a, b) => b.potential - a.potential);
+  }
+  const WC_METHOD = "Potenzial = max(0, DSO − Richtwert) × Umsatz/365 + max(0, DIO − Richtwert) × Materialaufwand/365 + max(0, Richtwert DPO − DPO) × Materialaufwand/365; Richtwerte je Branche sind Annahmen der Demo";
+  /* Plan/Ist je Unternehmen */
+  function planVariance(W, p, filter) {
+    return visibleCompanies(W, p, filter).filter(c => reportingActive(c) && !c.noData).map(c => { const b = budgetVsActual(W, c); return { id: c.id, name: c.name, revenueYtd: b.ytd.actualRevenue, revenueBudgetYtd: b.ytd.budgetRevenue, ebitdaYtd: b.ytd.actualEbitda, ebitdaBudgetYtd: b.ytd.budgetEbitda, revenueVar: b.ytd.actualRevenue / b.ytd.budgetRevenue - 1, ebitdaVar: b.ytd.actualEbitda / b.ytd.budgetEbitda - 1, fyEbitdaForecast: b.fy.forecastEbitda, fyEbitdaBudget: b.fy.budgetEbitda, missing: b.ytd.actualEbitda / b.ytd.budgetEbitda - 1 < -0.05 }; }).sort((a, b) => a.ebitdaVar - b.ebitdaVar);
+  }
+  /* Anomalien: Monatsumsatz weicht mehr als 15 % von der saisonalen Erwartung ab (gleicher Monat Vorjahr × Wachstumsfaktor) */
+  function anomalies(W, p, filter) {
+    const out = []; const n = W.periods.length;
+    for (const c of visibleCompanies(W, p, filter).filter(x => reportingActive(x) && !x.noData)) { const rev = W.periods.map((_, i) => eurMonth(W, c, i).REV);
+      for (let i = 24; i < n; i++) { const g = sum(rev.slice(i - 12, i)) / sum(rev.slice(i - 24, i - 12)); const exp = rev[i - 12] * g; const dev = rev[i] / exp - 1;
+        if (Math.abs(dev) > 0.15) out.push({ id: c.id, company: c.name, period: W.periods[i], metric: "Umsatz", actual: rev[i], expected: exp, deviation: dev, method: "Erwartung = gleicher Monat Vorjahr × Wachstumsfaktor der 12 Vormonate; Schwelle ±15 %" }); } }
+    return out.sort((a, b) => Math.abs(b.deviation) - Math.abs(a.deviation));
+  }
+
+  /* ---------- AI Financial Advisor: Regel-Rückfall; Claude bekommt dieselben Funktionen als Werkzeuge ---------- */
+  const EXAMPLES = ["Welche Portfoliounternehmen sind unterdurchschnittlich?", "Welche Unternehmen haben sinkende EBITDA-Margen?", "Welche Unternehmen bekommen in den nächsten sechs Monaten Liquiditätsprobleme?", "Wo ist das größte Working-Capital-Potenzial?", "Welche Investments haben das höchste finanzielle Risiko?", "Vergleiche unsere Industrieunternehmen.", "Welche Unternehmen verfehlen ihren Jahresplan?", "Welches Portfolio-EBITDA erwarten wir zum Jahresende?"];
+  const SECTOR_GROUPS = { industrie: ["Industrie", "Maschinenbau"], fertigung: ["Industrie", "Maschinenbau"], manufacturing: ["Industrie", "Maschinenbau"], produktion: ["Industrie", "Maschinenbau"], software: ["Software"], tech: ["Software", "IT-Services"], technologie: ["Software", "IT-Services"], "it-": ["IT-Services"], gesundheit: ["Medizintechnik", "Pharma"], healthcare: ["Medizintechnik", "Pharma"], medizin: ["Medizintechnik"], konsum: ["Konsumgüter", "Lebensmittel", "Handel"], consumer: ["Konsumgüter", "Lebensmittel", "Handel"], logistik: ["Logistik"], handel: ["Handel"] };
+  const pctS = v => v == null ? "–" : (v * 100).toFixed(1).replace(".", ",") + " %"; const mio = v => v == null ? "–" : (v / 1e6).toFixed(1).replace(".", ",") + " Mio. €";
+  function advise(W, p, question) {
+    const q = String(question || "").toLowerCase(); const vis = visibleCompanies(W, p, {}).filter(c => reportingActive(c) && !c.noData);
+    const base = { source: "Harmonisierte Monatswerte der freigegebenen Unternehmen (" + DEMO_NOTE + ")", gaps: [] };
+    if (!vis.length) return Object.assign(base, { title: "Keine freigegebenen Daten", text: "Für diesen Zugang sind keine Finanzdaten von Portfoliounternehmen freigegeben.", rows: [], period: "–", method: "Rechteprüfung", confidence: "–", action: "Zugriff über die Administration klären." });
+    if (/liquidit|zahlungsunf|cash.*(eng|knapp|problem)|runway/.test(q)) { const l = vis.map(c => liquidityForecast(W, p, c.id, 6)).filter(x => x.shortfall || x.shortfallPessimistic).sort((a, b) => (a.shortfall || "9") < (b.shortfall || "9") ? -1 : 1);
+      return Object.assign(base, { title: "Liquiditätsprobleme in den nächsten sechs Monaten", text: l.length ? `${l.length} Unternehmen zeigen in der 6-Monats-Prognose eine Liquiditätslücke (Kasse < 0)${l.some(x => !x.shortfall) ? " – teils nur im pessimistischen Fall" : ""}.` : "Kein Unternehmen zeigt in der 6-Monats-Prognose eine Liquiditätslücke, auch nicht im pessimistischen Fall.",
+        rows: l.map(x => ({ id: x.id, Unternehmen: x.company, "Kasse heute": mio(x.startCash), "Lücke erwartet": x.shortfall ? perLabel(x.shortfall) : "–", "Lücke pessimistisch": x.shortfallPessimistic ? perLabel(x.shortfallPessimistic) : "–", "Tiefster Stand": mio(x.minCash) })), period: "Prognose Nov 2026 – Apr 2027 auf Basis Ist bis Okt 2026", method: l[0] ? l[0].method : "Liquiditätsprognose je Unternehmen", confidence: "mittel: Prognosefehler der Methode in der Rückrechnung als Bandbreite", action: l.length ? "13-Wochen-Liquiditätsplanung anfordern, Finanzierungsoptionen (Kreditlinie, Gesellschafterdarlehen) vorbereiten" : "Keine Sofortmaßnahme; monatliche Überwachung beibehalten" }); }
+    if (/marge|margin/.test(q) && /sink|rückl|fall|declin|verschlecht|schrumpf/.test(q)) { const l = vis.map(c => ({ c, k: companyKpis(W, c, "LTM") })).filter(x => x.k.marginPrior != null && x.k.margin - x.k.marginPrior < -0.01).sort((a, b) => (a.k.margin - a.k.marginPrior) - (b.k.margin - b.k.marginPrior)); const br = l[0] ? marginBridge(W, p, l[0].c.id) : null;
+      return Object.assign(base, { title: "Sinkende EBITDA-Margen", text: l.length ? `${l.length} Unternehmen mit Margenrückgang über 1 Prozentpunkt.${br && br.mainDriver ? ` Stärkster Rückgang: ${br.company}, Haupttreiber ${br.mainDriver} (${mio(br.steps.find(s => s.label === br.mainDriver).value)} EBITDA-Wirkung).` : ""}` : "Kein Unternehmen mit Margenrückgang über 1 Prozentpunkt.",
+        rows: l.map(x => ({ id: x.c.id, Unternehmen: x.c.name, "Marge LTM": pctS(x.k.margin), "Marge Vorjahr": pctS(x.k.marginPrior), "Veränderung": pctS(x.k.margin - x.k.marginPrior) })), bridge: br, period: "LTM Nov 2025 – Okt 2026 gegen Vorjahres-LTM", method: KPI_DEFS.margin.formula + "; Treiber über EBITDA-Brücke", confidence: "hoch (Ist-Daten)", action: "Preis- und Einkaufsanalyse beim Haupttreiber; Materialkostenquote je Produktgruppe prüfen" }); }
+    if (/working.?capital|nwc|forderung|vorräte|bestände|cash conversion/.test(q)) { const l = wcPotential(W, p, {}).slice(0, 8);
+      return Object.assign(base, { title: "Working-Capital-Potenzial", text: `Größtes Potenzial: ${l[0].name} mit ${mio(l[0].potential)} (DSO ${Math.round(l[0].dso)} Tage, DIO ${Math.round(l[0].dio)} Tage). Summe der Top 8: ${mio(sum(l.map(x => x.potential)))}.`,
+        rows: l.map(x => ({ id: x.id, Unternehmen: x.name, DSO: Math.round(x.dso) + " (" + x.bench.dso + ")", DIO: Math.round(x.dio) + " (" + x.bench.dio + ")", DPO: Math.round(x.dpo) + " (" + x.bench.dpo + ")", Potenzial: mio(x.potential) })), period: "Stichtag Okt 2026, Umsatz und Materialaufwand LTM", method: WC_METHOD, confidence: "mittel: Richtwerte sind Annahmen", action: "Forderungsmanagement (Mahnwesen, Zahlungsziele) und Bestandsreduktion beim Spitzenreiter priorisieren" }); }
+    if (/risik|risk|gefährd/.test(q)) { const l = vis.map(c => ({ c, k: companyKpis(W, c, "LTM") })).sort((a, b) => a.k.health - b.k.health).slice(0, 6);
+      return Object.assign(base, { title: "Höchstes finanzielles Risiko", text: `Niedrigster Financial Health Score: ${l[0].c.name} (${l[0].k.health}) – ${l[0].k.risks.filter(r => r.level === "crit").map(r => r.dim + ": " + r.text).join("; ") || "keine kritischen Indikatoren"}.`,
+        rows: l.map(x => ({ id: x.c.id, Unternehmen: x.c.name, Health: x.k.health, Kritisch: x.k.risks.filter(r => r.level === "crit").map(r => r.dim).join(", ") || "–", "Net Debt/EBITDA": x.k.leverage == null ? "EBITDA ≤ 0" : x.k.leverage.toFixed(1).replace(".", ",") + "x" })), period: "LTM Nov 2025 – Okt 2026, Stichtag Okt 2026", method: HEALTH_FORMULA, confidence: "hoch (Ist-Daten), Gewichtung des Scores ist eine Festlegung", action: "Für die zwei schwächsten Unternehmen Maßnahmenplan und Bankgespräch vorbereiten" }); }
+    if (/vergleich|compare|gegenüberstell/.test(q)) { const key = Object.keys(SECTOR_GROUPS).find(k => q.includes(k)); const sectors = key ? SECTOR_GROUPS[key] : null; const ids = vis.filter(c => !sectors || sectors.includes(c.industry)).map(c => c.id); const cmp = compare(W, p, ids, "LTM");
+      if (!sectors) base.gaps.push("Keine Branche erkannt – Vergleich über alle freigegebenen Unternehmen");
+      return Object.assign(base, { title: `Vergleich${sectors ? " " + sectors.join(" / ") : ""}`, text: `${cmp.rows.length} Unternehmen. Median EBITDA-Marge ${pctS(cmp.median.margin)}, Median Wachstum ${pctS(cmp.median.revenueGrowth)}, Median Net Debt/EBITDA ${cmp.median.leverage == null ? "–" : cmp.median.leverage.toFixed(1).replace(".", ",") + "x"}.`,
+        rows: cmp.rows.map(r => ({ id: r.id, Unternehmen: r.name, Umsatz: mio(r.revenue), "EBITDA-Marge": pctS(r.margin), Wachstum: pctS(r.revenueGrowth), "Cash Conversion": pctS(r.cashConversion), "Net Debt/EBITDA": r.leverage == null ? "–" : r.leverage.toFixed(1).replace(".", ",") + "x", Health: r.health })), period: "LTM Nov 2025 – Okt 2026", method: "Kennzahlen je Unternehmen nach KPI-Definitionen; Median über die Auswahl", confidence: "hoch (Ist-Daten)", action: "Ausreißer unter dem Median mit dem Operating Partner besprechen" }); }
+    if (/plan|budget|verfehl/.test(q)) { const l = planVariance(W, p, {}); const miss = l.filter(x => x.missing);
+      return Object.assign(base, { title: "Planverfehlungen GJ 2026", text: miss.length ? `${miss.length} Unternehmen liegen beim EBITDA bis Oktober mehr als 5 % unter Budget. Größte Abweichung: ${miss[0].name} (${pctS(miss[0].ebitdaVar)}).` : "Kein Unternehmen liegt beim EBITDA bis Oktober mehr als 5 % unter Budget.",
+        rows: miss.map(x => ({ id: x.id, Unternehmen: x.name, "EBITDA Ist Jan–Okt": mio(x.ebitdaYtd), "Budget Jan–Okt": mio(x.ebitdaBudgetYtd), Abweichung: pctS(x.ebitdaVar), "Forecast GJ": mio(x.fyEbitdaForecast), "Budget GJ": mio(x.fyEbitdaBudget) })), period: "GJ 2026, Ist Jan–Okt, Forecast Nov–Dez", method: "Abweichung = Ist / Budget − 1; Budget = GJ 2025 × (1 + Planwachstum); " + FC_METHOD, confidence: "hoch für Ist, mittel für Forecast", action: "Forecast-Gespräch mit den Geschäftsführungen der Unternehmen mit der größten Abweichung" }); }
+    if (/jahresende|year.?end|gesamtjahr|erwart|prognos|forecast/.test(q)) { const f = forecast(W, p, {}, 6); base.gaps.push("Unternehmen im Onboarding sind nicht enthalten");
+      return Object.assign(base, { title: "Erwartetes Portfolio-EBITDA GJ 2026", text: `Erwartet: ${mio(f.fy2026.ebitda)} (Bandbreite ${mio(f.fy2026.ebitdaLow)} bis ${mio(f.fy2026.ebitdaHigh)}), davon Ist Jan–Okt ${mio(f.fy2026.actualEbitdaYtd)} und Prognose Nov–Dez ${mio(f.fy2026.ebitda - f.fy2026.actualEbitdaYtd)}.`,
+        rows: f.months.filter(m => m.period <= "2026-12").map(m => ({ Monat: perLabel(m.period), Umsatz: mio(m.revenue), EBITDA: mio(m.ebitda), "EBITDA von": mio(m.ebitdaLow), "EBITDA bis": mio(m.ebitdaHigh) })), period: "GJ 2026 (Ist Jan–Okt, Prognose Nov–Dez)", method: FC_METHOD, confidence: `Prognosefehler in der Rückrechnung: Umsatz ${pctS(f.mape.revenue)}, EBITDA ${pctS(f.mape.ebitda)}`, action: "Mit dem Budget abgleichen und Abweichungen je Unternehmen klären" }); }
+    if (/unterdurchschnitt|underperform|schwach|hinter|performance/.test(q)) { const cmp = compare(W, p, vis.map(c => c.id), "LTM"); const pv = Object.fromEntries(planVariance(W, p, {}).map(x => [x.id, x])); const l = cmp.rows.filter(r => (r.margin != null && r.margin < cmp.median.margin && (r.revenueGrowth || 0) < cmp.median.revenueGrowth) || (pv[r.id] && pv[r.id].missing)).sort((a, b) => a.health - b.health);
+      return Object.assign(base, { title: "Unterdurchschnittliche Unternehmen", text: `${l.length} Unternehmen liegen bei Marge und Wachstum unter dem Portfolio-Median oder verfehlen ihren EBITDA-Plan um mehr als 5 %.`,
+        rows: l.map(r => ({ id: r.id, Unternehmen: r.name, "EBITDA-Marge": pctS(r.margin) + " (Median " + pctS(cmp.median.margin) + ")", Wachstum: pctS(r.revenueGrowth) + " (Median " + pctS(cmp.median.revenueGrowth) + ")", "Plan EBITDA": pv[r.id] ? pctS(pv[r.id].ebitdaVar) : "–", Health: r.health })), period: "LTM Nov 2025 – Okt 2026; Plan GJ 2026 Jan–Okt", method: "Unter Median bei Marge und Wachstum oder EBITDA-Planabweichung < −5 %", confidence: "hoch (Ist-Daten)", action: "Performance-Review mit Operating Partner und Geschäftsführung" }); }
+    return Object.assign(base, { title: "Frage nicht zugeordnet", text: "Ich beantworte Fragen zu Performance, Margen, Liquidität, Working Capital, Risiko, Vergleichen, Planerreichung und Prognosen – immer mit den Zahlen des Rechenkerns. Beispiele siehe unten.", rows: [], period: "–", method: "Regelbasierte Zuordnung", confidence: "–", action: "Frage umformulieren", examples: EXAMPLES }); }
+  const perLabel = per => ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"][+per.slice(5) - 1] + " " + per.slice(0, 4);
   /* ---------- Verwaltung: Organisation, Fonds, Unternehmen anlegen (Befehle mit Rechteprüfung, wiederholbar aus einem Protokoll) ---------- */
   const slug = s => String(s || "").toLowerCase().normalize("NFD").replace(/[^a-z0-9]+/g, "").slice(0, 10);
   function apply(W, p, cmd, x) {
@@ -421,7 +545,7 @@
       const id = "org-" + slug(name); if (W.orgs.some(o => o.id === id)) fail("EXISTS", "Organisation existiert bereits."); W.orgs.push({ id, name, currency: x.currency || "EUR", demo: true, created: true });
       const adminId = "p-" + id; W.principals.push({ id: adminId, name: String(x.adminName || "Administrator " + name), role: "pe_admin", orgId: id, label: ROLES.pe_admin.label });
       return { text: `Organisation „${name}“ angelegt; Administrator ${adminId}`, id, adminId }; }
-    if (!R.admin || R.scope !== "org") fail("FORBIDDEN", "Nur der PE Group Administrator der Organisation darf Fonds und Unternehmen anlegen.");
+    if (["addFund", "addCompany"].includes(cmd) && (!R.admin || R.scope !== "org")) fail("FORBIDDEN", "Nur der PE Group Administrator der Organisation darf Fonds und Unternehmen anlegen.");
     if (cmd === "addFund") { const id = p.orgId.toUpperCase().slice(0, 3) + "-F" + (W.funds.filter(f => f.orgId === p.orgId).length + 1); const size = +x.size || 0; if (!(size > 0)) fail("INPUT", "Fondsgröße fehlt.");
       W.funds.push({ id, orgId: p.orgId, name, vintage: x.vintage || VALUATION_DATE, size, commitments: size, fees: { mgmtPct: 0.02, carryPct: 0.2, hurdlePct: 0.08 }, created: true }); W.portfolios.push({ id: id + "-P", fundId: id, orgId: p.orgId, name: "Kernportfolio " + name });
       return { text: `Fonds „${name}“ angelegt`, id }; }
@@ -430,12 +554,15 @@
       const c = { id, orgId: p.orgId, fundId: f.id, portfolioId: f.id + "-P", name, industry: x.industry || "Industrie", country: x.country || "Deutschland", currency: x.currency || "EUR", erp: ERP[x.erp] ? x.erp : "Eigenentwicklung", erpFamily: (ERP[x.erp] || ERP.Eigenentwicklung).family, model: x.erp === "NEXORA AI Suite" ? "B" : "A", standard: x.standard || "HGB", fyStart: 1, acquired: x.acquired || VALUATION_DATE, ownership: own,
         status: "Onboarding", onboarding: "Nicht gestartet", integration: "Nicht verbunden", dsa: { level: "kpi" }, entities: [{ id: id + "-LE1", name: "Hauptgesellschaft", weight: 1 }], units: [{ id: id + "-BU1", name: "Kerngeschäft", weight: 1 }], costCenters: [], debtInfo: { rate: 0, maturity: "–", covenantMaxLeverage: 0, dso: 0, dio: 0, dpo: 0 }, noData: true, created: true };
       W.companies.push(c); return { text: `Portfoliounternehmen „${name}“ in ${f.name} angelegt – Onboarding „Nicht gestartet“, noch keine Finanzdaten`, id }; }
+    if (cmd === "approveAdjustment" || cmd === "rejectAdjustment") { const c = W.companies.find(z => z.id === x.companyId); if (!c || c.standard !== "HGB") fail("NOT_FOUND", "Keine Anpassung für dieses Unternehmen.");
+      const okRole = (p.role === "pe_admin" && p.orgId === c.orgId) || (["portfolio_controller", "portfolio_cfo"].includes(p.role) && p.companyId === c.id); if (!okRole || !access(W, p, c, "statements")) fail("FORBIDDEN", "GAAP-Anpassungen geben nur der PE Group Administrator (mit Abschlussfreigabe) oder Controller/CFO des Unternehmens frei.");
+      W.adjust[c.id] = { status: cmd === "approveAdjustment" ? "freigegeben" : "abgelehnt", by: p.name }; return { text: `IFRS-16-Anpassung ${c.name}: ${W.adjust[c.id].status} (${p.name})` }; }
     fail("CMD", "Unbekannter Befehl.");
   }
   /* Konsistenzprüfung der Demodaten (für Tests und Anzeige) */
   function checkConsistency(W, c) { const errs = []; for (let i = 0; i < W.periods.length; i++) { const h = harmonizedMonth(W, c, i); const d = h.CASH + h.AR + h.INV + h.FA - h.AP - h.DEBT - h.EQ; if (Math.abs(d) > 1) errs.push(`${W.periods[i]}: Bilanzdifferenz ${d.toFixed(2)}`); } return errs; }
 
   return { VERSION, SEED, VALUATION_DATE, PERIODS, PERIOD_SETS, DEMO_NOTE, GROUP_COA, COA_FAMILY, ERP, FX_BASE, SECTOR_MULT, KPI_DEFS, HEALTH_FORMULA, ROLES, LEVEL,
-    createWorld, apply, xirr, access, principal, companies, company, portfolioKpis, fundMetrics, funds, series, drill, insights, visibleCompanies,
-    _internal: { harmonizedMonth, eurMonth, companyKpis, dealMetrics, fundCalc, checkConsistency, flowsSum, statements, budgetVsActual } };
+    createWorld, apply, xirr, access, adjustments, compare, marginBridge, forecast, liquidityForecast, wcPotential, planVariance, anomalies, advise, EXAMPLES, WC_METHOD, FC_METHOD, principal, companies, company, portfolioKpis, fundMetrics, funds, series, drill, insights, visibleCompanies,
+    _internal: { gaapAdjust, seasonalForecast, harmonizedMonth, eurMonth, companyKpis, dealMetrics, fundCalc, checkConsistency, flowsSum, statements, budgetVsActual } };
 });

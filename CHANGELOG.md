@@ -1,5 +1,23 @@
 # Changelog
 
+## v0.9.3 – PE Financial Intelligence (2026-11)
+
+- **Financial Intelligence:**
+  - Abstimmung lokaler Standard → IFRS-Konzernsicht mit expliziten Anpassungen. Bei HGB-Unternehmen ist das IFRS 16; jede Anpassung muss freigegeben werden. US GAAP gilt als Datenlücke statt Schätzung.
+  - Vergleich mit Median.
+  - EBITDA-Brücke: Volumen- und Kostenquoteneffekte, deren Summe die Veränderung genau ergibt.
+  - Anomalien gegen die saisonale Erwartung.
+  - Prognose mit Bandbreite aus der Rückrechnung und erwartetes GJ-2026-EBITDA.
+- **Cash & Liquidity:** Liquiditätsprognose über 6 Monate je Unternehmen (erwarteter und pessimistischer Fall), Working Capital gegen Branchen-Richtwerte, die als Annahmen gekennzeichnet sind.
+- **AI Financial Advisor:**
+  - Claude mit 10 Werkzeugen auf den Rechenkern, mit den Rechten des angemeldeten Nutzers.
+  - Ein Regel-Rückfall beantwortet alle acht Beispielfragen.
+  - Jede Antwort nennt Belege, Zeitraum, Quelle, Methode, Sicherheit und Empfehlung. Nicht zuordenbare Fragen bekommen keine erfundene Antwort.
+- **Command Center:**
+  - Filter „Rechnungslegung“.
+  - Die Liquiditätsprognose ersetzt die bisherige Datenlücke.
+- **Tests:** `test/pe.test.js` hat jetzt 34 Tests. Der e2e-Block prüft IFRS-Freigabe, Prognose, Liquidität und den Advisor (Regeln und Claude-Testdouble, Rechte im Werkzeug).
+
 ## v0.9 – PE Command Center, MVP (2026-11)
 
 **Neu**

@@ -179,6 +179,22 @@ async def pe(p):
   await pg.fill("#peFundName", "Alpenblick Fund I"); await pg.click("[data-act=peAddFund]"); await pg.wait_for_timeout(120); await pg.fill("#peCoName", "Gipfelwerk GmbH"); await pg.click("[data-act=peAddCo]"); await pg.wait_for_timeout(150)
   ad = await pg.evaluate("({ p: S.pe.principal, cos: NexoraPE.companies(peWorld(), peP(), {}).map(c => c.name + ':' + c.onboarding), log: S.pe.log.length })"); print("Verwaltung:", ad); assert ad["cos"] == ["Gipfelwerk GmbH:Nicht gestartet"] and ad["log"] == 3
   await pg.screenshot(path=SP + "pe_admin.png", full_page=True); await pg.evaluate("ACT.peResetAdmin(); S.pe.principal='p1'; peSave()")
+  # PE-Phase 3: Financial Intelligence, Cash & Liquidity, AI Financial Advisor
+  await pg.set_viewport_size({"width": 1440, "height": 900}); await pg.evaluate("S.pe.principal='p1'; S.pe.filter={period:'LTM'}; location.hash='pe-fin'; render()"); await pg.wait_for_timeout(200)
+  e0 = await pg.evaluate("NexoraPE.portfolioKpis(peWorld(), peP(), {basis:'ifrs'}).ebitda")
+  await pg.click("[data-act=peAdj][data-ok='1'] >> nth=0"); await pg.wait_for_timeout(150); e1 = await pg.evaluate("NexoraPE.portfolioKpis(peWorld(), peP(), {basis:'ifrs'}).ebitda"); print("IFRS-16-Freigabe: EBITDA Konzernsicht", round(e0/1e6,1), "→", round(e1/1e6,1)); assert e1 > e0
+  for t in ("cmp", "ana", "fc"): await pg.evaluate(f"ACT.peFinTab({{t:'{t}'}})"); await pg.wait_for_timeout(120)
+  assert await pg.evaluate("document.querySelectorAll('.pe-chart').length") == 2; await pg.screenshot(path=SP + "pe_forecast.png", full_page=True)
+  await pg.evaluate("location.hash='pe-cash'"); await pg.wait_for_timeout(200); lq = await pg.evaluate("[...document.querySelectorAll('.pe-tbl tbody tr')][0].innerText"); print("Liquidität, erste Zeile:", lq.replace("\n", " ")[:90]); assert "Velatis" in lq; await pg.screenshot(path=SP + "pe_cash.png", full_page=True)
+  await pg.evaluate("S.pe.chat=[]; S.pe.aiMode='rules'; location.hash='pe-ai'"); await pg.wait_for_timeout(120)
+  for q in await pg.evaluate("NexoraPE.EXAMPLES"): await pg.evaluate(f"peAsk({repr(q)})"); await pg.wait_for_timeout(60)
+  na = await pg.evaluate("({ n: document.querySelectorAll('.pe-ans').length, ev: document.querySelectorAll('.pe-ans .pe-ev').length, unmatched: [...document.querySelectorAll('.pe-ans b')].filter(b => b.innerText === 'Frage nicht zugeordnet').length })"); print("Advisor (Regeln):", na); assert na["n"] == 8 and na["ev"] == 8 and na["unmatched"] == 0
+  await pg.screenshot(path=SP + "pe_advisor.png", full_page=True)
+  await pg.evaluate("""BK.sample = async (turns, o) => { const t = o.tools.find(x => x.name === 'pe_analyse'); const r = t.execute({ frage: 'Welche Unternehmen bekommen in den nächsten sechs Monaten Liquiditätsprobleme?' }); const d = o.tools.find(x => x.name === 'pe_fonds').execute({ fund: 'F1' }); return { text: r.title + ': ' + r.rows.map(x => x.Unternehmen).join(', ') + ' · Belege: Kasse ' + r.rows[0]['Kasse heute'] + ' · Zeitraum: ' + r.period }; }; S.pe.aiMode='llm'; S.pe.chat=[]""")
+  await pg.evaluate("peAsk('Wer bekommt Liquiditätsprobleme?')"); await pg.wait_for_timeout(250)
+  cl = await pg.evaluate("document.querySelector('#peAiBody .ai-via') && document.querySelector('#peAiBody .ai-via').innerText"); print("Advisor (Claude-Double):", cl); assert cl and "pe_analyse" in cl and "pe_fonds" in cl
+  await pg.evaluate("S.pe.principal='p6'; S.pe.chat=[]"); fx = await pg.evaluate("peAiTools(peP()).find(t => t.name === 'pe_fonds').execute({ fund: 'F1' })"); print("Werkzeug mit CFO-Rechten:", fx); assert fx.get("fehler") == "FORBIDDEN"
+  await pg.evaluate("BK.sample = null; S.pe.aiMode=null; S.pe.principal='p1'; S.pe.log=[]; PEW=null; peSave()")
   await pg.set_viewport_size({"width": 400, "height": 820}); await pg.evaluate("location.hash='pe'; render()"); await pg.wait_for_timeout(200); sw = await pg.evaluate("document.documentElement.scrollWidth"); print("PE bei 400 px, Seitenbreite:", sw); assert sw <= 400
   await pg.screenshot(path=SP + "pe_mobile.png"); await b.close(); assert not errs, errs; print("PE Command Center ok")
 

@@ -194,7 +194,7 @@ Fehler sind strukturiert: `{ code: "FORBIDDEN" | "NOT_FOUND" | "DATA_GAP", text 
 | 5 – Advanced | Konsolidierung (voll, quotal, at equity, getrennt von Management-Sicht), Value Creation ohne Doppelzählung, Exit-Simulation, Onboarding-Assistent mit Freigabe | Rechenbeispiele als Tests |
 | 6 – ERP-Transformation | Verbindung zum Ablöse-Cockpit; Elevon, NovaMart und Aventra als Modell-B-Unternehmen mit Live-Daten der Engine | Szenarien A–D mit offenen Annahmen |
 
-**Stand (05.11.2026):** Phase 1 und Phase 2 (MVP) sind umgesetzt; `node test/pe.test.js` hat 24 Tests, alle bestanden.
+**Stand (05.11.2026):** Phasen 1–3 sind umgesetzt (Phase 3: GAAP-Anpassungen mit Freigabe, Vergleich, EBITDA-Brücke, Anomalien, Prognose mit Rückrechnung, Liquiditätsprognose, Working Capital, AI Financial Advisor); `node test/pe.test.js` hat 34 Tests, alle bestanden.
 
 **Gemessen** mit `node test/pe.bench.js 100` im Cloud-Container der Entwicklung, ohne Server und ohne Datenbank:
 
