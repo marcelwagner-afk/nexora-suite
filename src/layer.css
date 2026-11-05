@@ -18,3 +18,8 @@ body.layer .top2 [data-act=toggleMode]{display:none}
 body.layer .top2 .search{flex:0 0 auto;width:auto} body.layer .top2 .search span,body.layer .top2 .search kbd{display:none}
 .msg.a .ai-cards{margin-top:10px;grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}
 .ly-card.done{opacity:.7}
+.ai-via{display:inline-flex;align-items:center;gap:6px;margin-top:10px;padding:4px 10px;border-radius:999px;border:1px solid var(--line);background:var(--surface);font-size:12px;color:var(--fg-2)}
+.ai-via.rej{border-color:color-mix(in srgb,var(--crit) 40%,transparent);color:var(--crit)}
+.ai-via .ly-sim{font-size:11px;padding:1px 6px}
+.link-btn{background:none;border:0;padding:0;color:var(--accent);cursor:pointer;text-align:left;font:inherit}
+.link-btn:hover{text-decoration:underline}

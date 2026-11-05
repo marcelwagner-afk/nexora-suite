@@ -38,8 +38,8 @@ act = function (cmd, payload, opt) {
 
 /* ---------- Phase 2: ein Kartenformat, eine Inbox, eine Suche, Deep Links ---------- */
 var LAYER_READY = true;
-LAYER_ROUTES.splice(0, LAYER_ROUTES.length, "tasks", "ai", "systems", "documents", "admin");
-MODS.systems = ["Systeme", "db", "live"]; MODS.obj = ["Objekt", "doc", "live"]; ROUTES.push("systems", "obj");
+LAYER_ROUTES.splice(0, LAYER_ROUTES.length, "tasks", "ai", "systems", "agents", "documents", "admin");
+MODS.systems = ["Systeme", "db", "live"]; MODS.agents = ["Agenten", "ai", "live"]; MODS.obj = ["Objekt", "doc", "live"]; ROUTES.push("systems", "agents", "obj");
 const SYS_ORDER = ["nexora", "sap", "m365", "servicenow", "workday"];
 const sysName = id => (C.CONNECTORS[id] || { name: id }).name;
 const simBadge = sys => C.CONNECTORS[sys] && C.CONNECTORS[sys].simulated ? `<span class="ly-sim" title="Keine echte Integration – Daten aus dem Seed erzeugt">Demo-Konnektor · simuliert</span>` : `<span class="ly-sim live">Live-Engine</span>`;
@@ -149,11 +149,14 @@ Experience Layer: Du siehst Aufgaben aus allen Systemen über die Werkzeuge aufg
 const _askClaude8 = askClaude;
 askClaude = async function (q) {
   if (S.layer !== "layer") return _askClaude8(q);
-  // AI_RULES ist eine Konstante: Layer-Regeln werden an die erste Nachricht des Aufrufs angehängt
-  const smp = BK.sample; S.aiRefs = [];
-  if (smp) BK.sample = (turns, o) => smp([Object.assign({}, turns[0], { content: turns[0].content + AI_RULES_LAYER() })].concat(turns.slice(1)), o);
+  // Router zuerst: ohne zulässigen Weg keine Anfrage an Claude, keine Kosten
+  const rq = routeAsk(q);
+  if (!rq.d.ok) { S.chat[S.tenant].push({ u: q }, { a: rejectHtml(rq.d), via: viaOf(rq) }); if (route() !== "ai") go("ai"); else render(); return; }
+  // AI_RULES ist eine Konstante: Layer-Regeln (und das Ergebnis des gerouteten Agenten) werden an die erste Nachricht angehängt
+  const smp = BK.sample; S.aiRefs = []; const extra = AI_RULES_LAYER() + (rq.r && rq.r.ok ? `\nDer Router hat diese Frage an ${rq.d.agent.name} über ${rq.d.route.label} geleitet (simulierter Demo-Konnektor). Ergebnis dieser Abfrage: ${JSON.stringify(rq.r.result).slice(0, 6000)}` : "");
+  if (smp) BK.sample = (turns, o) => smp([Object.assign({}, turns[0], { content: turns[0].content + extra })].concat(turns.slice(1)), o);
   try { await _askClaude8(q); } finally { if (smp) BK.sample = smp; } const ch = S.chat[S.tenant]; const slot = ch[ch.length - 1];
-  if (slot && S.aiRefs.length) { slot.cards = S.aiRefs.slice(0, AI_CARD_MAX); render(); } S.aiRefs = [];
+  if (slot) { slot.via = viaOf(rq); if (S.aiRefs.length) slot.cards = S.aiRefs.slice(0, AI_CARD_MAX); render(); } S.aiRefs = [];
 };
 // Regel-Rückfall: dieselben Karten, ohne Sprachmodell
 const AI_CARD_MARK = /<!--cards:([^>]*)-->/;
@@ -161,6 +164,12 @@ const cardsMark = refs => refs.length ? `<!--cards:${refs.slice(0, AI_CARD_MAX).
 const _answer8 = answer;
 answer = function (q) {
   if (S.layer !== "layer") return _answer8(q);
+  const rq = routeAsk(q); const mk = viaMark(viaOf(rq));
+  if (!rq.d.ok) return rejectHtml(rq.d) + mk;
+  if (rq.d.system !== "nexora") return agentAnswer(rq) + mk;
+  return answerLayer(q) + mk;
+};
+function answerLayer(q) {
   const ql = q.toLowerCase(); const t = T(), d = t.date;
   if (/(freigeben|freigabe|genehmig|aufgaben|zu tun|inbox|erledigen)/.test(ql) && !/(marge|budget|nachbestell|projekt)/.test(ql)) {
     const l = layerTasks(); const due = l.filter(k => !k.due || k.due <= d); const by = {}; for (const k of l) by[k.source] = (by[k.source] || 0) + 1;
@@ -180,7 +189,7 @@ answer = function (q) {
       + cardsMark(r.filter(x => x.task).map(x => x.task.ref)) + basis("Suche über alle Konnektoren", "Stand " + dDe(d), "Textsuche in Nummer, Bezeichnung und Person");
   }
   return _answer8(q);
-};
+}
 function aiCardsHtml(refs) {
   const open = new Map(layerTasks().map(k => [k.ref, k]));
   return `<div class="ly-grid ai-cards">${refs.map(r => { const k = open.get(r); if (k) return cardHtml(k, { ai: true }); const o = C.getObject(W, S.tenant, r);
@@ -191,7 +200,47 @@ VIEWS.ai = () => {
   if (S.layer !== "layer") return _aiView8();
   const ch = S.chat[S.tenant]; const saved = ch.map(m => m.a);
   for (const m of ch) { if (m.u) continue; let refs = m.cards || null; const mk = !refs && m.a && m.a.match(AI_CARD_MARK); if (mk) refs = mk[1].split(",").filter(Boolean);
-    if (refs && refs.length) m.a = mk ? m.a.replace(AI_CARD_MARK, aiCardsHtml(refs)) : m.a + aiCardsHtml(refs); }
+    if (refs && refs.length) m.a = mk ? m.a.replace(AI_CARD_MARK, aiCardsHtml(refs)) : m.a + aiCardsHtml(refs);
+    let via = m.via || null; const vm = !via && m.a && m.a.match(VIA_MARK); if (vm) { try { via = JSON.parse(decodeURIComponent(vm[1])); } catch (e) {} }
+    if (via) m.a += viaChip(via); }
   const sugg = AI_SUGG.slice(); AI_SUGG.unshift("Was muss ich heute freigeben?", "Suche Monitor", "Was haben die Zugriffe diesen Monat gekostet?");
   try { return _aiView8(); } finally { ch.forEach((m, i) => { m.a = saved[i]; }); AI_SUGG.splice(0, AI_SUGG.length, ...sugg); }
+};
+
+/* ---------- Phase 4: Orchestrierung – Agenten-Register, Router, Chip unter jeder Antwort ---------- */
+const AGENT_BY = Object.fromEntries(C.AGENTS.map(a => [a.id, a]));
+S.agentErr = S.agentErr || {};
+// Router entscheidet; ein simulierter Agent wird als protokollierte Abfrage über seinen A2A-Weg aufgerufen (kostet den Beispielsatz)
+function routeAsk(q) {
+  const d = C.routeQuery(q); let r = null;
+  if (!d.ok) { const k = d.agent ? d.agent.id : "kein Agent"; S.agentErr[k] = (S.agentErr[k] || 0) + 1; return { d, r }; }
+  if (d.cmd) { r = act(d.cmd, { what: d.what, route: d.route.id, via: "Assistent" }); if (!r || !r.ok) { S.agentErr[d.agent.id] = (S.agentErr[d.agent.id] || 0) + 1; } }
+  return { d, r };
+}
+const viaOf = rq => rq.d.ok ? { agent: rq.d.agent.name, route: rq.d.route.label, cost: rq.r && rq.r.ok ? rq.r.cost : 0, sim: rq.d.agent.simulated, err: rq.r && !rq.r.ok ? rq.r.text : null } : { agent: rq.d.agent ? rq.d.agent.name : "Router", route: null, cost: 0, rejected: true };
+const VIA_MARK = /<!--via:([^>]*)-->/;
+const viaMark = v => `<!--via:${encodeURIComponent(JSON.stringify(v))}-->`;
+const viaChip = v => `<div class="ai-via${v.rejected ? " rej" : ""}">${v.rejected ? `${ic("shield", 13)} Abgelehnt · kein zulässiger Weg · keine Kosten` : `${ic("ai", 13)} beantwortet über ${esc(v.route && v.route.includes("A2A") ? v.route : v.agent + (v.route ? " · " + v.route : ""))} · ${eur4(v.cost)} (Beispielwert)${v.sim ? ` <span class="ly-sim">simuliert</span>` : ""}`}</div>`;
+const rejectHtml = d => `<p><b>Nicht ausgeführt.</b> ${esc(d.text)}</p>` + basis("Router des Experience Layers", "–", "Regelprüfung der zulässigen Zugriffswege je System; abgelehnte Anfragen kosten nichts und erreichen kein System");
+function agentAnswer(rq) {
+  const { d, r } = rq; if (!r || !r.ok) return `<p>${esc(d.agent.name)} konnte die Anfrage nicht beantworten: ${esc(r ? r.text : "unbekannter Fehler")}</p>`;
+  const res = r.result; const rows = Array.isArray(res) ? res : res && (res.mails || res.abwesenheiten) ? (res.mails || res.abwesenheiten) : [];
+  const cols = rows.length ? Object.keys(rows[0]).filter(k => typeof rows[0][k] !== "object").slice(0, 5) : [];
+  return `<p>${esc(d.agent.name)} liefert ${rows.length} Einträge aus ${esc(sysName(d.system))}.</p>` + (rows.length ? `<table><thead><tr>${cols.map(c => `<th>${esc(c)}</th>`).join("")}</tr></thead><tbody>${rows.slice(0, 10).map(x => `<tr>${cols.map(c => `<td>${esc(typeof x[c] === "number" && c.match(/betrag|wert|kosten|preis/) ? eur(x[c]) : String(fmtVal(x[c]) ?? ""))}</td>`).join("")}</tr>`).join("")}</tbody></table>` : "")
+    + basis(`${esc(sysName(d.system))} – simulierter Demo-Konnektor, Daten aus dem Seed`, "Stand " + dDe(T().date), `Abfrage über ${esc(d.route.label)}, protokolliert mit ${eur4(r.cost)} (${C.COST_NOTE})`);
+}
+// Claude-Werkzeug „route“: zeigt die Entscheidung des Routers ohne Ausführung
+const _aiTools8b = AI_TOOLS;
+AI_TOOLS = () => S.layer !== "layer" ? _aiTools8b() : _aiTools8b().concat([{ name: "route", description: "Zeigt, über welchen Agenten und Zugriffsweg eine Anfrage laufen würde (Router des Experience Layers), inklusive Beispielkosten oder Ablehnungsgrund. Führt nichts aus.", inputSchema: { type: "object", properties: { frage: { type: "string" } }, required: ["frage"] }, execute: i => { const d = C.routeQuery(String(i.frage || "")); return d.ok ? { agent: d.agent.name, system: sysName(d.system), weg: d.route.label, kosten_je_aufruf: d.cost, hinweis: C.COST_NOTE } : { abgelehnt: true, grund: d.text }; } }]);
+VIEWS.agents = () => {
+  const L = C.ledger(W, S.tenant); const by = {}; for (const x of L) { const b = by[x.agent] = by[x.agent] || { calls: 0, cost: 0, queries: 0 }; b.calls++; b.cost = Math.round((b.cost + x.cost) * 1000) / 1000; if (/\.query$/.test("." + x.cmd)) b.queries++; }
+  const examples = ["Welche Kreditorenrechnungen sind in SAP offen?", "Welche Mails warten im Postfach auf Antwort?", "Zeig mir offene Tickets in ServiceNow", "Wer hat nächste Woche Urlaub?", "Wie hoch ist der Umsatz im Oktober?", "Lies die SAP-Tabelle ACDOCA direkt über die API", "Hole die Opportunities aus Salesforce"];
+  return head("Experience Layer · " + esc(T_NAMES[S.tenant]), "Agenten-Register") + `<div class="note acc small sn"><div>Agentenkarten im A2A-Stil. Alle Agenten außer der NEXORA-Engine sind <b>simuliert</b> – keine echte Integration. Der Router wählt je Frage oder Aktion den Agenten; ohne zulässigen Weg wird abgelehnt. Kosten sind ${C.COST_NOTE}.</div></div>`
+   + `<div class="ly-grid">${C.AGENTS.map(a => { const r = C.ROUTES[a.system].find(x => x.id === a.route); const b = by[a.id] || { calls: 0, cost: 0, queries: 0 };
+     return `<section class="card card-pad ag-card" data-agent="${a.id}" style="display:flex;flex-direction:column;gap:10px"><div class="row between"><h3>${esc(a.name)}</h3>${simBadge(a.system)}</div>
+       <div class="kv small"><span>System</span><span>${esc(sysName(a.system))}</span><span>Zugriffsweg</span><span>${esc(r.label)}</span><span>je Aufruf</span><span class="num">${eur4(r.costPerCall)}</span><span>Fähigkeiten</span><span>${esc(a.skills.join(", "))}</span></div>
+       <div class="row" style="gap:16px"><div><div class="eyebrow">Aufrufe</div><b class="num">${b.calls}</b><span class="small faint"> davon ${b.queries} Abfragen</span></div><div><div class="eyebrow">Fehler</div><b class="num">${S.agentErr[a.id] || 0}</b></div><div><div class="eyebrow">Kosten</div><b class="num">${eur4(b.cost)}</b></div></div>${a.id === "nexora" ? `<p class="small faint">Gezählt werden Aufrufe über freigegebene Schnittstellen. Befehle in der eigenen Engine stehen im Ereignisprotokoll und kosten nichts.</p>` : ""}</section>`; }).join("")}</div>`
+   + `<section class="card card-pad"><h3>Router</h3><p class="small muted" style="margin:4px 0 10px">So würde der Router diese Fragen leiten. Die Vorschau kostet nichts; erst eine gestellte Frage ruft den Agenten auf.</p><table class="small"><thead><tr><th>Frage</th><th>Agent</th><th>Weg</th><th class="r">je Aufruf</th></tr></thead><tbody>${examples.map(q => { const d = C.routeQuery(q);
+       return `<tr><td><button class="link-btn" data-act="ask" data-q="${esc(q)}">${esc(q)}</button></td>${d.ok ? `<td>${esc(d.agent.name)}</td><td>${esc(d.route.label)}</td><td class="r num">${eur4(d.cost)}</td>` : `<td colspan="3"><span class="pill p-crit">abgelehnt</span> <span class="faint">${esc(d.code === "NO_ROUTE" ? "System nicht angebunden" : "kein zulässiger Weg")}</span></td>`}</tr>`; }).join("")}</tbody></table>
+       <p class="small faint" style="margin-top:8px">Fehler werden in dieser Sitzung gezählt (abgelehnte Anfragen und fehlgeschlagene Aufrufe); sie erreichen kein System und erzeugen keine Kosten.</p></section>`;
 };

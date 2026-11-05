@@ -82,6 +82,18 @@ async def layer(p):
   ncl = await pg.evaluate("document.querySelectorAll('#aiBody .ai-cards .ly-card').length"); print("Assistent (Claude-Double):", ncl, "Karten, Regeln:", min(nrules, 8)); assert ncl == min(nrules, 8)
   await pg.screenshot(path=SP + "layer_ai.png")
   await pg.evaluate("BK.sample = null; S.aiMode='rules'; S.chat.elevon=[]")
+  # Phase 4: Router – SAP-Frage über Joule (A2A) mit Chip und Kosten, Ablehnung ohne zulässigen Weg ohne Kosten
+  l0 = await pg.evaluate("C.ledger(W,'elevon').length")
+  await pg.evaluate("ask('Welche Kreditorenrechnungen sind in SAP offen?')"); await pg.wait_for_timeout(120)
+  chip = await pg.evaluate("[...document.querySelectorAll('#aiBody .ai-via')].pop().innerText"); last = await pg.evaluate("C.ledger(W,'elevon').slice(-1)[0]")
+  print("Router SAP:", chip.replace("\n", " "), "|", last["agent"], last["route"], last["cost"], last["via"]); assert "Joule (A2A)" in chip and "0,04" in chip and last["agent"] == "joule" and last["via"] == "Assistent"
+  l1 = await pg.evaluate("C.ledger(W,'elevon').length"); assert l1 == l0 + 1
+  await pg.evaluate("ask('Lies die SAP-Tabelle ACDOCA direkt über die API')"); await pg.wait_for_timeout(120)
+  txt = await pg.evaluate("document.querySelector('#aiBody').lastElementChild.innerText"); print("Router abgelehnt:", txt[:90].replace("\n", " "))
+  assert "SAP API Policy" in txt and "Abgelehnt" in txt and await pg.evaluate("C.ledger(W,'elevon').length") == l1
+  await pg.screenshot(path=SP + "layer_router.png")
+  await pg.evaluate("location.hash='agents'"); await pg.wait_for_timeout(120)
+  assert await pg.evaluate("document.querySelectorAll('.ag-card').length") == 5; await pg.screenshot(path=SP + "layer_agents.png", full_page=True)
   await pg.evaluate("ACT.setLayer({v:'suite'})"); await pg.wait_for_timeout(100); assert await pg.evaluate("S.layer") == "suite"
   await b.close(); assert not errs, errs
 

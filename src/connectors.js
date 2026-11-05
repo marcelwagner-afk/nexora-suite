@@ -48,6 +48,31 @@
     auftrag: { label: "Aufträge, Fertigung, Finanzen", systems: ["nexora"], owner: "nexora" }
   };
 
+  /* ---------- Agenten-Register (A2A-Stil) und Router ----------
+     Jeder Agent hat eine Agentenkarte: Name, System, Fähigkeiten, Zugriffsweg. Alle außer der NEXORA-Engine sind simuliert. */
+  const AGENTS = [
+    { id: "nexora", name: "NEXORA-Engine", system: "nexora", route: "engine", simulated: false, skills: ["Kennzahlen und GuV", "Aufträge, Fertigung, Service", "Einkauf und Lager", "HR und Personalkosten", "Datenmigration", "Inbox über alle Systeme"], keywords: [] },
+    { id: "joule", name: "Joule (simuliert)", system: "sap", route: "joule-a2a", simulated: true, skills: ["Bestellanforderungen", "Kreditorenrechnungen", "Materialbestand je Werk"], keywords: ["sap", "s/4", "s4", "fiori", "banf", "bestellanforderung 1000", "kreditor", "eingangsrechnung", "rechnungsfreigabe", "werk 1000", "materialbestand"] },
+    { id: "copilot", name: "Copilot (simuliert)", system: "m365", route: "copilot-a2a", simulated: true, skills: ["Mails und Freigabebitten", "Termine", "Dokumente"], keywords: ["microsoft", "m365", "outlook", "teams", "mail", "e-mail", "postfach", "termin", "kalender", "sharepoint", "dokument"] },
+    { id: "nowassist", name: "Now Assist (simuliert)", system: "servicenow", route: "nowassist-a2a", simulated: true, skills: ["IT- und Einkaufsanfragen", "Störungen", "Katalog"], keywords: ["servicenow", "ticket", "ritm", "incident", "störung", "it-anfrage", "service portal", "lizenz"] },
+    { id: "workday-agent", name: "Workday-Agent (simuliert)", system: "workday", route: "workday-agent-a2a", simulated: true, skills: ["Abwesenheiten", "Onboarding", "Mitarbeitende"], keywords: ["workday", "urlaub", "abwesenheit", "krank", "onboarding", "neue mitarbeiter", "eintritt"] }
+  ];
+  const NOT_CONNECTED = ["salesforce", "oracle", "dynamics", "datev", "hubspot", "jira", "zendesk", "successfactors", "ariba", "coupa"];
+  function routeOf(sys, id) { return (ROUTES[sys] || []).find(r => r.id === id) || null; }
+  /* Router: wählt je Anfrage den Agenten. Liefert { ok, agent, system, route, cost, what } oder { ok:false, code, text }. Rein lesend, ohne Kosten. */
+  function routeQuery(text) {
+    const q = String(text || "").toLowerCase();
+    if (/\b(direkt\w*|direct)\b[^.?!]{0,40}\b(api|schnittstelle|tabelle|datenbank|odata|rfc|bapi)\b|\b(rfc|bapi|se16|hana-datenbank|tabelle (bkpf|bseg|ekko|ekpo|mara|lfa1|acdoca))\b/.test(q) && (/sap|s\/4|joule|bapi|rfc|se16|hana|acdoca|bkpf|bseg|ekko|ekpo|mara|lfa1/.test(q)))
+      return { ok: false, code: "ROUTE_NOT_ALLOWED", system: "sap", agent: AGENTS[1], text: "Für diese Anfrage gibt es keinen zulässigen Weg. " + SAP_POLICY_NOTE + " Zulässig sind Joule (A2A), das MCP Gateway und freigegebene Schnittstellen." };
+    const nc = NOT_CONNECTED.find(n => q.includes(n));
+    if (nc) return { ok: false, code: "NO_ROUTE", system: null, agent: null, text: `Für „${nc[0].toUpperCase() + nc.slice(1)}“ gibt es in dieser Demo keinen angebundenen Konnektor und damit keinen zulässigen Weg. Angebunden sind die NEXORA-Engine sowie simuliert SAP S/4HANA, Microsoft 365, ServiceNow und Workday.` };
+    let best = AGENTS[0], score = 0;
+    for (const a of AGENTS.slice(1)) { const sc = a.keywords.reduce((n, k) => n + (q.includes(k) ? (k.length > 4 ? 2 : 1) : 0), 0); if (sc > score) { best = a; score = sc; } }
+    const r = routeOf(best.system, best.route);
+    const what = best.system === "sap" ? (/rechnung|kreditor/.test(q) ? "invoices" : /bestellanforderung|banf/.test(q) ? "prs" : "materials") : null;
+    return { ok: true, agent: best, system: best.system, route: r, cost: r.costPerCall, what, cmd: best.system === "nexora" ? null : `conn.${best.system}.query` };
+  }
+
   /* ---------- Hilfen ---------- */
   function mulberry32(a) { return function () { a |= 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
   function hashStr(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
@@ -229,7 +254,7 @@
       const fn = CMD[sys] && Object.prototype.hasOwnProperty.call(CMD[sys], cmd) ? CMD[sys][cmd] : null; if (!fn) fail("CMD", `Befehl ${sys}.${cmd} unbekannt.`);
       const route = resolveRoute(sys, cmd, params.route); const { u, role } = who(w, tid, ctx);
       const res = fn(w, tid, params, ctx || {}, s, route) || {};
-      const entry = { seq: ++s.seq, date: t.date, period: t.date.slice(0, 7), user: u.id, userName: u.name, role: role.name, sys, system: CONNECTORS[sys] ? CONNECTORS[sys].name : "NEXORA-Konfiguration", route: route.label, routeId: route.id, agent: route.viaAgent, cmd, ref: params.ref || null, cost: route.costPerCall, ok: true, text: res.text, via: ctx && ctx.via ? ctx.via : "Mensch" };
+      const entry = { seq: ++s.seq, date: t.date, period: t.date.slice(0, 7), user: u.id, userName: u.name, role: role.name, sys, system: CONNECTORS[sys] ? CONNECTORS[sys].name : "NEXORA-Konfiguration", route: route.label, routeId: route.id, agent: route.viaAgent, cmd, ref: params.ref || null, cost: route.costPerCall, ok: true, text: res.text, via: params.via || (ctx && ctx.via) || "Mensch" };
       s.ledger.push(entry);
       return { ok: true, cmd: "conn." + sys + "." + cmd, sys, text: res.text, cost: route.costPerCall, route: route.label, agent: route.viaAgent, objects: res.objects || [], follow: res.follow || [], result: res.result, user: u.name, docs: [] };
     } catch (e) {
@@ -244,5 +269,5 @@
   function owners(w, tid) { return Object.assign({}, state(w, tid).owners); }
   function setProvider(name, fn) { PROVIDERS[name] = fn; }
 
-  return { VERSION, ROUTES, ALLOWED, CONNECTORS, PROCESSES, FOUR_EYES_LIMIT, COST_NOTE, SAP_POLICY_NOTE, state, hash, listTasks, tasksOf, search, getObject, dispatch, dispatchAny, ledger, costs, owners, setProvider, parseRef, resolveRoute };
+  return { VERSION, ROUTES, ALLOWED, AGENTS, routeQuery, CONNECTORS, PROCESSES, FOUR_EYES_LIMIT, COST_NOTE, SAP_POLICY_NOTE, state, hash, listTasks, tasksOf, search, getObject, dispatch, dispatchAny, ledger, costs, owners, setProvider, parseRef, resolveRoute };
 });

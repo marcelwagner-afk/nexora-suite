@@ -367,6 +367,11 @@ body.layer .top2 [data-act=toggleMode]{display:none}
 body.layer .top2 .search{flex:0 0 auto;width:auto} body.layer .top2 .search span,body.layer .top2 .search kbd{display:none}
 .msg.a .ai-cards{margin-top:10px;grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}
 .ly-card.done{opacity:.7}
+.ai-via{display:inline-flex;align-items:center;gap:6px;margin-top:10px;padding:4px 10px;border-radius:999px;border:1px solid var(--line);background:var(--surface);font-size:12px;color:var(--fg-2)}
+.ai-via.rej{border-color:color-mix(in srgb,var(--crit) 40%,transparent);color:var(--crit)}
+.ai-via .ly-sim{font-size:11px;padding:1px 6px}
+.link-btn{background:none;border:0;padding:0;color:var(--accent);cursor:pointer;text-align:left;font:inherit}
+.link-btn:hover{text-decoration:underline}
 
 </style>
 <div id="root"></div>
@@ -1763,6 +1768,31 @@ return { WORK_CENTERS, CATALOG, CATEGORY_DEFAULT, deriveDrawing, ROLE_DESC, dueM
     auftrag: { label: "Aufträge, Fertigung, Finanzen", systems: ["nexora"], owner: "nexora" }
   };
 
+  /* ---------- Agenten-Register (A2A-Stil) und Router ----------
+     Jeder Agent hat eine Agentenkarte: Name, System, Fähigkeiten, Zugriffsweg. Alle außer der NEXORA-Engine sind simuliert. */
+  const AGENTS = [
+    { id: "nexora", name: "NEXORA-Engine", system: "nexora", route: "engine", simulated: false, skills: ["Kennzahlen und GuV", "Aufträge, Fertigung, Service", "Einkauf und Lager", "HR und Personalkosten", "Datenmigration", "Inbox über alle Systeme"], keywords: [] },
+    { id: "joule", name: "Joule (simuliert)", system: "sap", route: "joule-a2a", simulated: true, skills: ["Bestellanforderungen", "Kreditorenrechnungen", "Materialbestand je Werk"], keywords: ["sap", "s/4", "s4", "fiori", "banf", "bestellanforderung 1000", "kreditor", "eingangsrechnung", "rechnungsfreigabe", "werk 1000", "materialbestand"] },
+    { id: "copilot", name: "Copilot (simuliert)", system: "m365", route: "copilot-a2a", simulated: true, skills: ["Mails und Freigabebitten", "Termine", "Dokumente"], keywords: ["microsoft", "m365", "outlook", "teams", "mail", "e-mail", "postfach", "termin", "kalender", "sharepoint", "dokument"] },
+    { id: "nowassist", name: "Now Assist (simuliert)", system: "servicenow", route: "nowassist-a2a", simulated: true, skills: ["IT- und Einkaufsanfragen", "Störungen", "Katalog"], keywords: ["servicenow", "ticket", "ritm", "incident", "störung", "it-anfrage", "service portal", "lizenz"] },
+    { id: "workday-agent", name: "Workday-Agent (simuliert)", system: "workday", route: "workday-agent-a2a", simulated: true, skills: ["Abwesenheiten", "Onboarding", "Mitarbeitende"], keywords: ["workday", "urlaub", "abwesenheit", "krank", "onboarding", "neue mitarbeiter", "eintritt"] }
+  ];
+  const NOT_CONNECTED = ["salesforce", "oracle", "dynamics", "datev", "hubspot", "jira", "zendesk", "successfactors", "ariba", "coupa"];
+  function routeOf(sys, id) { return (ROUTES[sys] || []).find(r => r.id === id) || null; }
+  /* Router: wählt je Anfrage den Agenten. Liefert { ok, agent, system, route, cost, what } oder { ok:false, code, text }. Rein lesend, ohne Kosten. */
+  function routeQuery(text) {
+    const q = String(text || "").toLowerCase();
+    if (/\b(direkt\w*|direct)\b[^.?!]{0,40}\b(api|schnittstelle|tabelle|datenbank|odata|rfc|bapi)\b|\b(rfc|bapi|se16|hana-datenbank|tabelle (bkpf|bseg|ekko|ekpo|mara|lfa1|acdoca))\b/.test(q) && (/sap|s\/4|joule|bapi|rfc|se16|hana|acdoca|bkpf|bseg|ekko|ekpo|mara|lfa1/.test(q)))
+      return { ok: false, code: "ROUTE_NOT_ALLOWED", system: "sap", agent: AGENTS[1], text: "Für diese Anfrage gibt es keinen zulässigen Weg. " + SAP_POLICY_NOTE + " Zulässig sind Joule (A2A), das MCP Gateway und freigegebene Schnittstellen." };
+    const nc = NOT_CONNECTED.find(n => q.includes(n));
+    if (nc) return { ok: false, code: "NO_ROUTE", system: null, agent: null, text: `Für „${nc[0].toUpperCase() + nc.slice(1)}“ gibt es in dieser Demo keinen angebundenen Konnektor und damit keinen zulässigen Weg. Angebunden sind die NEXORA-Engine sowie simuliert SAP S/4HANA, Microsoft 365, ServiceNow und Workday.` };
+    let best = AGENTS[0], score = 0;
+    for (const a of AGENTS.slice(1)) { const sc = a.keywords.reduce((n, k) => n + (q.includes(k) ? (k.length > 4 ? 2 : 1) : 0), 0); if (sc > score) { best = a; score = sc; } }
+    const r = routeOf(best.system, best.route);
+    const what = best.system === "sap" ? (/rechnung|kreditor/.test(q) ? "invoices" : /bestellanforderung|banf/.test(q) ? "prs" : "materials") : null;
+    return { ok: true, agent: best, system: best.system, route: r, cost: r.costPerCall, what, cmd: best.system === "nexora" ? null : `conn.${best.system}.query` };
+  }
+
   /* ---------- Hilfen ---------- */
   function mulberry32(a) { return function () { a |= 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
   function hashStr(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
@@ -1944,7 +1974,7 @@ return { WORK_CENTERS, CATALOG, CATEGORY_DEFAULT, deriveDrawing, ROLE_DESC, dueM
       const fn = CMD[sys] && Object.prototype.hasOwnProperty.call(CMD[sys], cmd) ? CMD[sys][cmd] : null; if (!fn) fail("CMD", `Befehl ${sys}.${cmd} unbekannt.`);
       const route = resolveRoute(sys, cmd, params.route); const { u, role } = who(w, tid, ctx);
       const res = fn(w, tid, params, ctx || {}, s, route) || {};
-      const entry = { seq: ++s.seq, date: t.date, period: t.date.slice(0, 7), user: u.id, userName: u.name, role: role.name, sys, system: CONNECTORS[sys] ? CONNECTORS[sys].name : "NEXORA-Konfiguration", route: route.label, routeId: route.id, agent: route.viaAgent, cmd, ref: params.ref || null, cost: route.costPerCall, ok: true, text: res.text, via: ctx && ctx.via ? ctx.via : "Mensch" };
+      const entry = { seq: ++s.seq, date: t.date, period: t.date.slice(0, 7), user: u.id, userName: u.name, role: role.name, sys, system: CONNECTORS[sys] ? CONNECTORS[sys].name : "NEXORA-Konfiguration", route: route.label, routeId: route.id, agent: route.viaAgent, cmd, ref: params.ref || null, cost: route.costPerCall, ok: true, text: res.text, via: params.via || (ctx && ctx.via) || "Mensch" };
       s.ledger.push(entry);
       return { ok: true, cmd: "conn." + sys + "." + cmd, sys, text: res.text, cost: route.costPerCall, route: route.label, agent: route.viaAgent, objects: res.objects || [], follow: res.follow || [], result: res.result, user: u.name, docs: [] };
     } catch (e) {
@@ -1959,7 +1989,7 @@ return { WORK_CENTERS, CATALOG, CATEGORY_DEFAULT, deriveDrawing, ROLE_DESC, dueM
   function owners(w, tid) { return Object.assign({}, state(w, tid).owners); }
   function setProvider(name, fn) { PROVIDERS[name] = fn; }
 
-  return { VERSION, ROUTES, ALLOWED, CONNECTORS, PROCESSES, FOUR_EYES_LIMIT, COST_NOTE, SAP_POLICY_NOTE, state, hash, listTasks, tasksOf, search, getObject, dispatch, dispatchAny, ledger, costs, owners, setProvider, parseRef, resolveRoute };
+  return { VERSION, ROUTES, ALLOWED, AGENTS, routeQuery, CONNECTORS, PROCESSES, FOUR_EYES_LIMIT, COST_NOTE, SAP_POLICY_NOTE, state, hash, listTasks, tasksOf, search, getObject, dispatch, dispatchAny, ledger, costs, owners, setProvider, parseRef, resolveRoute };
 });
 
 </script>
@@ -3323,8 +3353,8 @@ act = function (cmd, payload, opt) {
 
 /* ---------- Phase 2: ein Kartenformat, eine Inbox, eine Suche, Deep Links ---------- */
 var LAYER_READY = true;
-LAYER_ROUTES.splice(0, LAYER_ROUTES.length, "tasks", "ai", "systems", "documents", "admin");
-MODS.systems = ["Systeme", "db", "live"]; MODS.obj = ["Objekt", "doc", "live"]; ROUTES.push("systems", "obj");
+LAYER_ROUTES.splice(0, LAYER_ROUTES.length, "tasks", "ai", "systems", "agents", "documents", "admin");
+MODS.systems = ["Systeme", "db", "live"]; MODS.agents = ["Agenten", "ai", "live"]; MODS.obj = ["Objekt", "doc", "live"]; ROUTES.push("systems", "agents", "obj");
 const SYS_ORDER = ["nexora", "sap", "m365", "servicenow", "workday"];
 const sysName = id => (C.CONNECTORS[id] || { name: id }).name;
 const simBadge = sys => C.CONNECTORS[sys] && C.CONNECTORS[sys].simulated ? `<span class="ly-sim" title="Keine echte Integration – Daten aus dem Seed erzeugt">Demo-Konnektor · simuliert</span>` : `<span class="ly-sim live">Live-Engine</span>`;
@@ -3434,11 +3464,14 @@ Experience Layer: Du siehst Aufgaben aus allen Systemen über die Werkzeuge aufg
 const _askClaude8 = askClaude;
 askClaude = async function (q) {
   if (S.layer !== "layer") return _askClaude8(q);
-  // AI_RULES ist eine Konstante: Layer-Regeln werden an die erste Nachricht des Aufrufs angehängt
-  const smp = BK.sample; S.aiRefs = [];
-  if (smp) BK.sample = (turns, o) => smp([Object.assign({}, turns[0], { content: turns[0].content + AI_RULES_LAYER() })].concat(turns.slice(1)), o);
+  // Router zuerst: ohne zulässigen Weg keine Anfrage an Claude, keine Kosten
+  const rq = routeAsk(q);
+  if (!rq.d.ok) { S.chat[S.tenant].push({ u: q }, { a: rejectHtml(rq.d), via: viaOf(rq) }); if (route() !== "ai") go("ai"); else render(); return; }
+  // AI_RULES ist eine Konstante: Layer-Regeln (und das Ergebnis des gerouteten Agenten) werden an die erste Nachricht angehängt
+  const smp = BK.sample; S.aiRefs = []; const extra = AI_RULES_LAYER() + (rq.r && rq.r.ok ? `\nDer Router hat diese Frage an ${rq.d.agent.name} über ${rq.d.route.label} geleitet (simulierter Demo-Konnektor). Ergebnis dieser Abfrage: ${JSON.stringify(rq.r.result).slice(0, 6000)}` : "");
+  if (smp) BK.sample = (turns, o) => smp([Object.assign({}, turns[0], { content: turns[0].content + extra })].concat(turns.slice(1)), o);
   try { await _askClaude8(q); } finally { if (smp) BK.sample = smp; } const ch = S.chat[S.tenant]; const slot = ch[ch.length - 1];
-  if (slot && S.aiRefs.length) { slot.cards = S.aiRefs.slice(0, AI_CARD_MAX); render(); } S.aiRefs = [];
+  if (slot) { slot.via = viaOf(rq); if (S.aiRefs.length) slot.cards = S.aiRefs.slice(0, AI_CARD_MAX); render(); } S.aiRefs = [];
 };
 // Regel-Rückfall: dieselben Karten, ohne Sprachmodell
 const AI_CARD_MARK = /<!--cards:([^>]*)-->/;
@@ -3446,6 +3479,12 @@ const cardsMark = refs => refs.length ? `<!--cards:${refs.slice(0, AI_CARD_MAX).
 const _answer8 = answer;
 answer = function (q) {
   if (S.layer !== "layer") return _answer8(q);
+  const rq = routeAsk(q); const mk = viaMark(viaOf(rq));
+  if (!rq.d.ok) return rejectHtml(rq.d) + mk;
+  if (rq.d.system !== "nexora") return agentAnswer(rq) + mk;
+  return answerLayer(q) + mk;
+};
+function answerLayer(q) {
   const ql = q.toLowerCase(); const t = T(), d = t.date;
   if (/(freigeben|freigabe|genehmig|aufgaben|zu tun|inbox|erledigen)/.test(ql) && !/(marge|budget|nachbestell|projekt)/.test(ql)) {
     const l = layerTasks(); const due = l.filter(k => !k.due || k.due <= d); const by = {}; for (const k of l) by[k.source] = (by[k.source] || 0) + 1;
@@ -3465,7 +3504,7 @@ answer = function (q) {
       + cardsMark(r.filter(x => x.task).map(x => x.task.ref)) + basis("Suche über alle Konnektoren", "Stand " + dDe(d), "Textsuche in Nummer, Bezeichnung und Person");
   }
   return _answer8(q);
-};
+}
 function aiCardsHtml(refs) {
   const open = new Map(layerTasks().map(k => [k.ref, k]));
   return `<div class="ly-grid ai-cards">${refs.map(r => { const k = open.get(r); if (k) return cardHtml(k, { ai: true }); const o = C.getObject(W, S.tenant, r);
@@ -3476,9 +3515,49 @@ VIEWS.ai = () => {
   if (S.layer !== "layer") return _aiView8();
   const ch = S.chat[S.tenant]; const saved = ch.map(m => m.a);
   for (const m of ch) { if (m.u) continue; let refs = m.cards || null; const mk = !refs && m.a && m.a.match(AI_CARD_MARK); if (mk) refs = mk[1].split(",").filter(Boolean);
-    if (refs && refs.length) m.a = mk ? m.a.replace(AI_CARD_MARK, aiCardsHtml(refs)) : m.a + aiCardsHtml(refs); }
+    if (refs && refs.length) m.a = mk ? m.a.replace(AI_CARD_MARK, aiCardsHtml(refs)) : m.a + aiCardsHtml(refs);
+    let via = m.via || null; const vm = !via && m.a && m.a.match(VIA_MARK); if (vm) { try { via = JSON.parse(decodeURIComponent(vm[1])); } catch (e) {} }
+    if (via) m.a += viaChip(via); }
   const sugg = AI_SUGG.slice(); AI_SUGG.unshift("Was muss ich heute freigeben?", "Suche Monitor", "Was haben die Zugriffe diesen Monat gekostet?");
   try { return _aiView8(); } finally { ch.forEach((m, i) => { m.a = saved[i]; }); AI_SUGG.splice(0, AI_SUGG.length, ...sugg); }
+};
+
+/* ---------- Phase 4: Orchestrierung – Agenten-Register, Router, Chip unter jeder Antwort ---------- */
+const AGENT_BY = Object.fromEntries(C.AGENTS.map(a => [a.id, a]));
+S.agentErr = S.agentErr || {};
+// Router entscheidet; ein simulierter Agent wird als protokollierte Abfrage über seinen A2A-Weg aufgerufen (kostet den Beispielsatz)
+function routeAsk(q) {
+  const d = C.routeQuery(q); let r = null;
+  if (!d.ok) { const k = d.agent ? d.agent.id : "kein Agent"; S.agentErr[k] = (S.agentErr[k] || 0) + 1; return { d, r }; }
+  if (d.cmd) { r = act(d.cmd, { what: d.what, route: d.route.id, via: "Assistent" }); if (!r || !r.ok) { S.agentErr[d.agent.id] = (S.agentErr[d.agent.id] || 0) + 1; } }
+  return { d, r };
+}
+const viaOf = rq => rq.d.ok ? { agent: rq.d.agent.name, route: rq.d.route.label, cost: rq.r && rq.r.ok ? rq.r.cost : 0, sim: rq.d.agent.simulated, err: rq.r && !rq.r.ok ? rq.r.text : null } : { agent: rq.d.agent ? rq.d.agent.name : "Router", route: null, cost: 0, rejected: true };
+const VIA_MARK = /<!--via:([^>]*)-->/;
+const viaMark = v => `<!--via:${encodeURIComponent(JSON.stringify(v))}-->`;
+const viaChip = v => `<div class="ai-via${v.rejected ? " rej" : ""}">${v.rejected ? `${ic("shield", 13)} Abgelehnt · kein zulässiger Weg · keine Kosten` : `${ic("ai", 13)} beantwortet über ${esc(v.route && v.route.includes("A2A") ? v.route : v.agent + (v.route ? " · " + v.route : ""))} · ${eur4(v.cost)} (Beispielwert)${v.sim ? ` <span class="ly-sim">simuliert</span>` : ""}`}</div>`;
+const rejectHtml = d => `<p><b>Nicht ausgeführt.</b> ${esc(d.text)}</p>` + basis("Router des Experience Layers", "–", "Regelprüfung der zulässigen Zugriffswege je System; abgelehnte Anfragen kosten nichts und erreichen kein System");
+function agentAnswer(rq) {
+  const { d, r } = rq; if (!r || !r.ok) return `<p>${esc(d.agent.name)} konnte die Anfrage nicht beantworten: ${esc(r ? r.text : "unbekannter Fehler")}</p>`;
+  const res = r.result; const rows = Array.isArray(res) ? res : res && (res.mails || res.abwesenheiten) ? (res.mails || res.abwesenheiten) : [];
+  const cols = rows.length ? Object.keys(rows[0]).filter(k => typeof rows[0][k] !== "object").slice(0, 5) : [];
+  return `<p>${esc(d.agent.name)} liefert ${rows.length} Einträge aus ${esc(sysName(d.system))}.</p>` + (rows.length ? `<table><thead><tr>${cols.map(c => `<th>${esc(c)}</th>`).join("")}</tr></thead><tbody>${rows.slice(0, 10).map(x => `<tr>${cols.map(c => `<td>${esc(typeof x[c] === "number" && c.match(/betrag|wert|kosten|preis/) ? eur(x[c]) : String(fmtVal(x[c]) ?? ""))}</td>`).join("")}</tr>`).join("")}</tbody></table>` : "")
+    + basis(`${esc(sysName(d.system))} – simulierter Demo-Konnektor, Daten aus dem Seed`, "Stand " + dDe(T().date), `Abfrage über ${esc(d.route.label)}, protokolliert mit ${eur4(r.cost)} (${C.COST_NOTE})`);
+}
+// Claude-Werkzeug „route“: zeigt die Entscheidung des Routers ohne Ausführung
+const _aiTools8b = AI_TOOLS;
+AI_TOOLS = () => S.layer !== "layer" ? _aiTools8b() : _aiTools8b().concat([{ name: "route", description: "Zeigt, über welchen Agenten und Zugriffsweg eine Anfrage laufen würde (Router des Experience Layers), inklusive Beispielkosten oder Ablehnungsgrund. Führt nichts aus.", inputSchema: { type: "object", properties: { frage: { type: "string" } }, required: ["frage"] }, execute: i => { const d = C.routeQuery(String(i.frage || "")); return d.ok ? { agent: d.agent.name, system: sysName(d.system), weg: d.route.label, kosten_je_aufruf: d.cost, hinweis: C.COST_NOTE } : { abgelehnt: true, grund: d.text }; } }]);
+VIEWS.agents = () => {
+  const L = C.ledger(W, S.tenant); const by = {}; for (const x of L) { const b = by[x.agent] = by[x.agent] || { calls: 0, cost: 0, queries: 0 }; b.calls++; b.cost = Math.round((b.cost + x.cost) * 1000) / 1000; if (/\.query$/.test("." + x.cmd)) b.queries++; }
+  const examples = ["Welche Kreditorenrechnungen sind in SAP offen?", "Welche Mails warten im Postfach auf Antwort?", "Zeig mir offene Tickets in ServiceNow", "Wer hat nächste Woche Urlaub?", "Wie hoch ist der Umsatz im Oktober?", "Lies die SAP-Tabelle ACDOCA direkt über die API", "Hole die Opportunities aus Salesforce"];
+  return head("Experience Layer · " + esc(T_NAMES[S.tenant]), "Agenten-Register") + `<div class="note acc small sn"><div>Agentenkarten im A2A-Stil. Alle Agenten außer der NEXORA-Engine sind <b>simuliert</b> – keine echte Integration. Der Router wählt je Frage oder Aktion den Agenten; ohne zulässigen Weg wird abgelehnt. Kosten sind ${C.COST_NOTE}.</div></div>`
+   + `<div class="ly-grid">${C.AGENTS.map(a => { const r = C.ROUTES[a.system].find(x => x.id === a.route); const b = by[a.id] || { calls: 0, cost: 0, queries: 0 };
+     return `<section class="card card-pad ag-card" data-agent="${a.id}" style="display:flex;flex-direction:column;gap:10px"><div class="row between"><h3>${esc(a.name)}</h3>${simBadge(a.system)}</div>
+       <div class="kv small"><span>System</span><span>${esc(sysName(a.system))}</span><span>Zugriffsweg</span><span>${esc(r.label)}</span><span>je Aufruf</span><span class="num">${eur4(r.costPerCall)}</span><span>Fähigkeiten</span><span>${esc(a.skills.join(", "))}</span></div>
+       <div class="row" style="gap:16px"><div><div class="eyebrow">Aufrufe</div><b class="num">${b.calls}</b><span class="small faint"> davon ${b.queries} Abfragen</span></div><div><div class="eyebrow">Fehler</div><b class="num">${S.agentErr[a.id] || 0}</b></div><div><div class="eyebrow">Kosten</div><b class="num">${eur4(b.cost)}</b></div></div>${a.id === "nexora" ? `<p class="small faint">Gezählt werden Aufrufe über freigegebene Schnittstellen. Befehle in der eigenen Engine stehen im Ereignisprotokoll und kosten nichts.</p>` : ""}</section>`; }).join("")}</div>`
+   + `<section class="card card-pad"><h3>Router</h3><p class="small muted" style="margin:4px 0 10px">So würde der Router diese Fragen leiten. Die Vorschau kostet nichts; erst eine gestellte Frage ruft den Agenten auf.</p><table class="small"><thead><tr><th>Frage</th><th>Agent</th><th>Weg</th><th class="r">je Aufruf</th></tr></thead><tbody>${examples.map(q => { const d = C.routeQuery(q);
+       return `<tr><td><button class="link-btn" data-act="ask" data-q="${esc(q)}">${esc(q)}</button></td>${d.ok ? `<td>${esc(d.agent.name)}</td><td>${esc(d.route.label)}</td><td class="r num">${eur4(d.cost)}</td>` : `<td colspan="3"><span class="pill p-crit">abgelehnt</span> <span class="faint">${esc(d.code === "NO_ROUTE" ? "System nicht angebunden" : "kein zulässiger Weg")}</span></td>`}</tr>`; }).join("")}</tbody></table>
+       <p class="small faint" style="margin-top:8px">Fehler werden in dieser Sitzung gezählt (abgelehnte Anfragen und fehlgeschlagene Aufrufe); sie erreichen kein System und erzeugen keine Kosten.</p></section>`;
 };
 
 /* ---------- Start ---------- */
