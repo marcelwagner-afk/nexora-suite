@@ -2240,7 +2240,7 @@ return { MIG_PROJECTS, WORK_CENTERS, CATALOG, CATEGORY_DEFAULT, deriveDrawing, R
 });
 
 /* NEXORA PE Command Center – Rechenkern (v0.9 MVP). Reine Logik, kein DOM, in Node testbar.
-   NEXORA AI – A brand of TRUESCALE.
+   NEXORA AI.
    Alle Organisationen, Fonds, Unternehmen und Zahlen sind SYNTHETISCH: deterministisch aus dem Seed erzeugt.
    Jede Lesefunktion verlangt einen Principal und prüft die Berechtigung selbst (Organisation, Fonds, Unternehmen,
    Freigabestufe). In dieser Auslieferung läuft die Prüfung im selben Programm wie die Oberfläche – kein Server. */
@@ -3365,7 +3365,7 @@ function render() {
   const live = S.live && rt !== "admin";
   document.getElementById("root").innerHTML = `<div class="app ${live ? "live" : ""}">
    <nav class="side nav" aria-label="Hauptnavigation">
-    <a class="brand" href="#home" aria-label="NEXORA AI">${LOGO(32)}<span><b>NEXORA AI</b><small>A brand of TRUESCALE · Demo</small></span></a>
+    <a class="brand" href="#home" aria-label="NEXORA AI">${LOGO(32)}<span><b>NEXORA AI</b><small>Demo</small></span></a>
     ${mods.filter(m => modSt(m) === "live" && m !== "admin").map(navA).join("")}
     <div class="nav-sep"></div><div class="nav-label">Weitere Module</div>
     ${mods.filter(m => modSt(m) !== "live" && m !== "admin").map(navA).join("")}
@@ -4870,7 +4870,7 @@ VIEWS.admin = () => { const h = _adminV8(); if (S.layer !== "layer") return h; r
 S.embed = false;
 function enterEmbed() { S.embed = true; S.layer = "layer"; S.live = false; if (!["tasks", "ai", "obj"].includes(route())) location.hash = "tasks"; render(); }
 ACT.leaveEmbed = () => { S.embed = false; try { const u = new URL(location.href); u.searchParams.delete("embed"); history.replaceState(null, "", u.pathname + u.search + location.hash); } catch (e) {} render(); };
-const embedBar = () => { const rt = route(); return `<div class="emb-bar"><div class="row between" style="gap:8px"><span class="emb-brand">${LOGO(20)}<b>NEXORA</b><small class="faint">A brand of TRUESCALE</small></span><button class="btn sm" data-act="userMenu">${esc(U().name)} · ${esc((R() || {}).name || "")}</button></div>
+const embedBar = () => { const rt = route(); return `<div class="emb-bar"><div class="row between" style="gap:8px"><span class="emb-brand">${LOGO(20)}<b>NEXORA</b></span><button class="btn sm" data-act="userMenu">${esc(U().name)} · ${esc((R() || {}).name || "")}</button></div>
   <div class="seg emb-tabs" role="tablist"><a role="tab" class="${rt !== "ai" ? "on" : ""}" href="#tasks" aria-selected="${rt !== "ai"}">Inbox <b>${C.listTasks(W, S.tenant, { user: S.users[S.tenant] }).length}</b></a><a role="tab" class="${rt === "ai" ? "on" : ""}" href="#ai" aria-selected="${rt === "ai"}">Assistent</a></div>
   <div class="emb-note">Vorschau einer Einbettung (z. B. in Teams oder Copilot) · Fremdsysteme simuliert · <button class="link-btn" data-act="leaveEmbed">Vollansicht</button></div></div>`; };
 const _render6 = render;
@@ -5011,7 +5011,7 @@ const _startStory8 = ACT.startStory;
 ACT.startStory = function (d) { const st = STORIES.find(s => s.id === d.id); if (st && st.layer) S.layer = "layer"; return _startStory8(d); };
 
 /* ===== v0.9 NEXORA PE Command Center – Oberfläche (MVP, PE-Phase 2) =====
-   NEXORA AI – A brand of TRUESCALE. Rechenkern: src/pe.js (window.NexoraPE). Alle Daten synthetisch.
+   NEXORA AI. Rechenkern: src/pe.js (window.NexoraPE). Alle Daten synthetisch.
    Jede Anzeige ruft die Lesefunktionen mit dem gewählten Principal auf; die Prüfung liegt im Rechenkern, nicht hier. */
 const PE = window.NexoraPE;
 const PE_KEY = "nexora-pe-v09";
@@ -5276,7 +5276,7 @@ function peAiTools(p) { const w = peWorld(); const run = f => { try { return f()
     { name: "pe_fonds", description: "Fondskennzahlen (Paid-in, NAV, DPI, RVPI, TVPI, MOIC, Gross/Net IRR) eines Fonds (F1, F2, F3) – nur mit Fondsberechtigung.", inputSchema: { type: "object", properties: { fund: { type: "string" } }, required: ["fund"] }, execute: i => slim(run(() => { const m = PE.fundMetrics(w, p, String(i.fund)); delete m.lpFlows; return m; })) },
     { name: "pe_kennzahl_definitionen", description: "Formeln und Ebenen aller Kennzahlen.", execute: () => PE.KPI_DEFS }
   ]; }
-const PE_AI_RULES = p => `Du bist der AI Financial Advisor im NEXORA PE Command Center (NEXORA AI – A brand of TRUESCALE). Angemeldet: ${p.name}, Rolle ${p.label}. Alle Unternehmen und Zahlen sind synthetische Demodaten.
+const PE_AI_RULES = p => `Du bist der AI Financial Advisor im NEXORA PE Command Center (NEXORA AI). Angemeldet: ${p.name}, Rolle ${p.label}. Alle Unternehmen und Zahlen sind synthetische Demodaten.
 Regeln: Antworte auf Deutsch, knapp. Verwende ausschließlich Zahlen aus den Werkzeugen; rechne nichts selbst nach und erfinde keine Werte. Fehlt eine Information oder verweigert ein Werkzeug den Zugriff, sage das ausdrücklich als Datenlücke bzw. fehlende Berechtigung. Unterscheide Management-Aggregation (100 %, nicht konsolidiert) und Fondskennzahlen.
 Gliedere jede Antwort: kurze Antwort, dann „Belege:“ (Kennzahlen mit Werten), „Zeitraum:“, „Quelle:“, „Methode:“, „Sicherheit:“, „Empfehlung:“. Du führst nichts aus.`;
 async function peAsk(q) {

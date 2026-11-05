@@ -1,5 +1,5 @@
 /* NEXORA PE Command Center – Rechenkern (v0.9 MVP). Reine Logik, kein DOM, in Node testbar.
-   NEXORA AI – A brand of TRUESCALE.
+   NEXORA AI.
    Alle Organisationen, Fonds, Unternehmen und Zahlen sind SYNTHETISCH: deterministisch aus dem Seed erzeugt.
    Jede Lesefunktion verlangt einen Principal und prüft die Berechtigung selbst (Organisation, Fonds, Unternehmen,
    Freigabestufe). In dieser Auslieferung läuft die Prüfung im selben Programm wie die Oberfläche – kein Server. */

@@ -100,7 +100,7 @@ try:
         "description": "Herstellerneutraler Assistent über NEXORA-Engine und simulierte Demo-Konnektoren (SAP S/4HANA, Microsoft 365, ServiceNow, Workday). Liest Aufgaben, sucht systemübergreifend, erklärt Kosten und schlägt Aktionen vor. Bucht nichts selbst.",
         "url": "https://marcelwagner-afk.github.io/nexora-suite/",
         "version": meta["v"],
-        "provider": {"organization": "TRUESCALE", "url": "https://github.com/marcelwagner-afk/nexora-suite"}, "brand": "NEXORA AI – A brand of TRUESCALE",
+        "provider": {"organization": "Marcel Wagner", "url": "https://github.com/marcelwagner-afk/nexora-suite"}, "brand": "NEXORA AI",
         "capabilities": {"streaming": False, "pushNotifications": False, "stateTransitionHistory": True},
         "defaultInputModes": ["text/plain"], "defaultOutputModes": ["text/plain", "application/json"],
         "skills": [{"id": t["name"], "name": t["name"].replace("_", " "), "description": t["description"], "tags": ["experience-layer", "read-only"], "examples": ex}
