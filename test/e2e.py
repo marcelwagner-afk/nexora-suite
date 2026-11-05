@@ -220,6 +220,16 @@ async def pe(p):
   n0 = await pg.evaluate("NexoraPE.portfolioKpis(peWorld(), peP(), {}).companies"); await pg.click("[data-act=peOnbAct]"); await pg.wait_for_timeout(150); n1 = await pg.evaluate("NexoraPE.portfolioKpis(peWorld(), peP(), {}).companies"); print("Onboarding aktiviert: Unternehmen im Reporting", n0, "→", n1); assert n1 == n0 + 1
   await pg.screenshot(path=SP + "pe_onboarding.png", full_page=True)
   await pg.evaluate("S.pe.principal='p1'; S.pe.log=[]; PEW=null; peSave()")
+  # Modell B: Engine-Mandanten im PE-Portfolio, offene Periode live aus der Engine
+  await pg.evaluate("S.pe.principal='p12'; location.hash='pecos'; render()"); await pg.wait_for_timeout(200)
+  nx = await pg.evaluate("[...document.querySelectorAll('.pe-cos tbody tr')].map(r => r.innerText.split('\\t')[0])"); print("Nordlicht-Portfolio:", nx); assert len(nx) == 3 and any("Elevon" in x for x in nx), nx
+  await pg.evaluate("ACT.peOpen({id:'NX1'})"); await pg.wait_for_selector("[data-engine=elevon]", timeout=3000)
+  b0 = await pg.evaluate("W.tenants.elevon.docs.filter(d => d.period === '2026-11').length"); rev0 = await pg.evaluate("PE.company(peWorld(), peP(), 'NX1').kpis.revenue")
+  await pg.evaluate("""(() => { const go = (c, x) => { const r = E.dispatch(W, 'elevon', c, x, { auto: true }); if (!r.ok) throw new Error(c + ': ' + r.text); return r; }; const sv = go('createServiceTicket', { assetId: 'A-5000', text: 'E2E' }).objects[0]; go('scheduleTechnician', { svNo: sv }); go('reserveParts', { svNo: sv, mat: 'M-1008', qty: 1 }); go('executeService', { svNo: sv, hours: 3 }); go('invoiceService', { svNo: sv }); render(); })()""")
+  await pg.wait_for_timeout(150); card = await pg.evaluate("document.querySelector('[data-engine=elevon]').innerText"); b1 = await pg.evaluate("W.tenants.elevon.docs.filter(d => d.period === '2026-11').length"); rev1 = await pg.evaluate("PE.company(peWorld(), peP(), 'NX1').kpis.revenue")
+  print("Engine live: Belege offene Periode", b0, "→", b1, "· LTM-Umsatz unverändert", round(rev0) == round(rev1)); assert b1 > b0 and str(b1) in card and round(rev0) == round(rev1)
+  await pg.screenshot(path=SP + "pe_engine.png", full_page=True)
+  await pg.evaluate("S.pe.principal='p1'; S.pe.log=[]; PEW=null; peSave(); location.hash='pe'; render()")
   # PE-Phase 6: ERP-Transformation – Kandidat öffnen, Annahme ändern, Rechnung folgt
   await pg.evaluate("location.hash='pe-trans'; render()"); await pg.wait_for_timeout(200)
   tt = await pg.evaluate("document.querySelector('#page').innerText"); assert "Beispielwerte, keine Herstellerpreise" in tt and "Roadmap" in tt and "Castell" in tt, tt[:300]

@@ -157,7 +157,7 @@ Die Karten in der Inbox sehen vorher und nachher gleich aus, nur Quelle und Zugr
 - Direkter Agentenzugriff auf SAP-Tabellen oder -Schnittstellen wird abgelehnt. Der Hinweis bezieht sich auf die SAP API Policy (v4/2026), ausdrücklich ohne Rechtsbewertung.
 - Keine Herstellerlogos; Herstellernamen stehen nur als Text.
 
-## PE Command Center (v0.9.6)
+## PE Command Center (v0.9.7)
 
 Ein Bereich **Private Equity** in derselben Navigation, für PE-Investoren. Plan, Datenmodell, Berechtigungsmodell und Roadmap stehen in [`docs/pe-command-center.md`](docs/pe-command-center.md).
 
@@ -165,6 +165,7 @@ Ein Bereich **Private Equity** in derselben Navigation, für PE-Investoren. Plan
   - Investor „Nexora Global Equity Partners“ mit drei Fonds (10/8/7 Unternehmen, 25 insgesamt) und 36 Monaten Historie.
   - Verschiedene Länder, Währungen, ERP-Systeme, Rechnungslegungsstandards und Beteiligungsquoten.
   - Ein zweiter Investor („Rheintal Capital“) prüft die Mandantentrennung.
+  - Ein dritter Investor („Nordlicht Beteiligungen“) hält die Engine-Mandanten Elevon, NovaMart und Aventra (Modell B). Ihre Zahlen ab Nov 2025 kommen aus den Buchungen der NEXORA-Engine.
   - Alles ist **synthetisch** und deterministisch aus dem Seed erzeugt; ERP-Anbindungen sind simuliert.
 - **Rechenkern** `src/pe.js` (UMD, in Node testbar):
   - Lokale Kontenpläne je ERP-Familie werden auf den Konzernkontenplan gemappt.
@@ -182,7 +183,7 @@ Ein Bereich **Private Equity** in derselben Navigation, für PE-Investoren. Plan
   - Administration: Organisation, Fonds und Unternehmen anlegen, mit Rollenprüfung.
   - Financial Intelligence, Cash & Liquidity, AI Financial Advisor, ERP Integration Hub, Konsolidierung, Investment Performance mit Exit-Simulation, Value Creation, Risk Intelligence, Portfolio Onboarding und ERP-Transformation (Szenarien A–D mit Beispielwerten, keine Herstellerpreise). Details je Phase im CHANGELOG.
 - **Aggregation:** Portfolio-Summen sind eine Management-Aggregation zu 100 % der aktiven Unternehmen, nicht anteilig und keine Konsolidierung. Unternehmen im Onboarding sind ausgeschlossen und werden benannt.
-- **Tests:** `node test/pe.test.js` (55 Tests, in CI) und `python test/e2e.py` (Block „PE Command Center“). Leistungsmessung des Rechenkerns: `node test/pe.bench.js 100` (2.500 Unternehmen).
+- **Tests:** `node test/pe.test.js` (60 Tests, in CI) und `python test/e2e.py` (Block „PE Command Center“). Leistungsmessung des Rechenkerns: `node test/pe.bench.js 100` (2.500 Unternehmen).
 
 ## Marktposition pflegen
 
