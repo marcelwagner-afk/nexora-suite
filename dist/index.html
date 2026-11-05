@@ -344,6 +344,10 @@ body.present .note.sn{display:none}
 body.present .app{zoom:1.08}
 body.present .page h1{font-size:30px}
 
+/* Experience Layer (v0.8) – ergänzt das NEXORA-Design, ohne die Suite-Ansicht zu verändern */
+.top2 .layer-sw{flex:none;flex-wrap:nowrap;gap:4px}
+.top2 .layer-sw button{padding:4px 10px;font-size:12px;white-space:nowrap;line-height:1.4}
+
 </style>
 <div id="root"></div>
 <div id="layer"></div>
@@ -1734,7 +1738,7 @@ const LOGO=(s=34)=>`<svg width="${s}" height="${s}" viewBox="0 0 40 40" aria-hid
 
 /* NEXORA AI Suite – Oberfläche. Alle Zahlen kommen aus der Engine (Belege, Nebenbücher), nichts ist fest eingetragen. */
 const E = window.NexoraEngine;
-const LS_KEY = "nexora-suite-v03";
+const LS_KEY = "nexora-suite-v08", LS_KEY_OLD = "nexora-suite-v03";
 const T_NAMES = { elevon: "Elevon Industries", novamart: "NovaMart Retail", aventra: "Aventra Consulting" };
 const ON_PAGES = /github\.io$/.test(location.hostname); const PROTO_URL = ON_PAGES ? "prototyp.html" : "https://claude.ai/artifact/6p7imWPiPw1T5V3ABFq2Di";
 
@@ -1743,7 +1747,7 @@ let W, LOG = [], BASE = {};
 const S = { tenant: "elevon", users: { elevon: "u1", novamart: "u1", aventra: "u1" }, mode: "free", live: true, last: null, story: null, admin: false, chat: { elevon: [], novamart: [], aventra: [] }, sel: {}, tab: {}, modal: null, toast: null, pending: null, size: "S" };
 function saveLog() { try { localStorage.setItem(LS_KEY, JSON.stringify({ size: S.size, log: LOG, tenant: S.tenant, users: S.users, mode: S.mode })); } catch (e) {} }
 function boot() {
-  let saved = null; try { saved = JSON.parse(localStorage.getItem(LS_KEY) || "null"); } catch (e) {}
+  let saved = null; try { if (!localStorage.getItem(LS_KEY) && localStorage.getItem(LS_KEY_OLD)) localStorage.setItem(LS_KEY, localStorage.getItem(LS_KEY_OLD)); saved = JSON.parse(localStorage.getItem(LS_KEY) || "null"); } catch (e) {}
   if (saved) { S.size = saved.size || "S"; S.tenant = saved.tenant || "elevon"; S.users = saved.users || S.users; S.mode = saved.mode || "free"; }
   W = E.createWorld({ size: S.size }); captureBase();
   if (saved && saved.log) { for (const x of saved.log) { try { applyLog(x); LOG.push(x); } catch (e) { LOG = []; W = E.createWorld({ size: S.size }); break; } } }
@@ -3008,6 +3012,29 @@ window.addEventListener("resize", () => { if (window.innerWidth < 700 && route()
 const _adminV7 = VIEWS.admin;
 VIEWS.admin = () => { const h = _adminV7(); if (!/Demo-Unternehmen und Reproduzierbarkeit/.test(h)) return h;
   return h.replace(/(<\/div>)(<section class="card"><div class="card-h"><h3>Demo-Unternehmen und Reproduzierbarkeit)/, `$1<section class="card card-pad row between" style="gap:14px"><div><h3>Live-Demo vorbereiten</h3><p class="small muted">Setzt alle Unternehmen zurück, prüft Bücher und Reproduzierbarkeit, schaltet Guided Demo und Präsentationsmodus ein und zeigt den QR-Code für das zweite Gerät. Ohne Netz: <a href="https://marcelwagner-afk.github.io/nexora-suite/" target="_blank" rel="noopener">Offline-Version auf GitHub</a>.</p></div><button class="btn pri" data-act="prepareDemo">Demo vorbereiten</button></section>$2`); };
+
+/* ===== v0.8 Experience Layer: herstellerneutrale Oberfläche über NEXORA-Engine und simulierte Fremdsysteme =====
+   Additiv: alle Erweiterungen über das Wrapper-Muster; die Suite-Ansicht bleibt unverändert. */
+const APP_VERSION = "v0.8";
+const UI_KEY = "nexora-suite-v08-ui";
+S.layer = (() => { try { return (JSON.parse(localStorage.getItem(UI_KEY) || "{}").layer) || "suite"; } catch (e) { return "suite"; } })();
+function saveUi() { try { localStorage.setItem(UI_KEY, JSON.stringify({ layer: S.layer })); } catch (e) {} }
+
+/* ---------- Ansichts-Umschalter in der Kopfzeile ---------- */
+const _topExtras8 = topExtras;
+topExtras = function () {
+  return `<div class="seg layer-sw" role="group" aria-label="Ansicht"><button class="${S.layer === "suite" ? "on" : ""}" data-act="setLayer" data-v="suite" aria-pressed="${S.layer === "suite"}">Suite</button><button class="${S.layer === "layer" ? "on" : ""}" data-act="setLayer" data-v="layer" aria-pressed="${S.layer === "layer"}">Experience Layer</button></div>` + _topExtras8();
+};
+ACT.setLayer = d => { S.layer = d.v === "layer" ? "layer" : "suite"; saveUi(); if (S.layer === "layer" && !LAYER_ROUTES.includes(route())) go("tasks"); else render(); };
+
+/* ---------- Navigation im Layer-Modus ---------- */
+const LAYER_ROUTES = ["tasks", "ai", "documents", "admin"];
+const _vm8 = visibleMods;
+visibleMods = function () { return S.layer === "layer" ? LAYER_ROUTES.slice() : _vm8(); };
+const _home8 = VIEWS.home;
+VIEWS.home = () => S.layer === "layer" ? VIEWS.tasks() : _home8();
+const _tasks8 = VIEWS.tasks;
+VIEWS.tasks = () => S.layer === "layer" && !(typeof LAYER_READY !== "undefined" && LAYER_READY) ? statusNote("proto", "Experience Layer " + APP_VERSION + " im Aufbau: Hier entsteht die gemeinsame Inbox über NEXORA und die simulierten Fremdsysteme. Die Suite-Ansicht bleibt über den Umschalter oben erreichbar.") + _tasks8() : _tasks8();
 
 /* ---------- Start ---------- */
 boot(); adoptAccounts(); if (window.innerWidth < 700 && route() === "home" && !location.search.includes("story=")) location.hash = "tasks"; render(); startBackend(); startRoom();
