@@ -1,12 +1,20 @@
 # Changelog
 
+## v0.9.7 – Modell B mit Engine-Daten (2026-11)
+
+- **Elevon, NovaMart und Aventra im PE-Portfolio:** neuer Demo-Investor „Nordlicht Beteiligungen“ mit Fonds „Nordlicht Plattform I“ und Zugang Nora Lindqvist. Ab Nov 2025 kommen alle Monatswerte aus den Buchungen der NEXORA-Engine (Kontenplan der Engine, kein Mapping). Davor steht eine gekennzeichnete synthetische Fortschreibung ohne Belege.
+- **Drill-down bis zum Engine-Beleg** (Belegnummer, Datum, Text; Summe = Kontosaldo). Für die Fortschreibung meldet der Drill-down eine Datenlücke.
+- **Live-Karte** auf der Unternehmensseite: offene Periode (Nov 2026) direkt aus der Engine, mit Sprung in den Mandanten. Das abgeschlossene Reporting bis Okt 2026 ändert sich durch neue Buchungen nicht.
+- **Ehrlichkeit:** Für Engine-Mandanten gibt es keinen Vorjahresvergleich und keine Anomalieprüfung gegen die Fortschreibung. Finanzierung: ohne Fremdkapital.
+- **Aufgeräumt:** Die Reiter der Unternehmensseite verweisen nicht mehr auf „folgt in Phase …“, sondern auf die umgesetzten Module. Der Reiter Value Creation zeigt die Initiativen des Unternehmens.
+- **Tests:** `test/pe.test.js` hat jetzt 60 Tests (Abgleich mit den Engine-Buchungen je Monat, Belege, Mandantentrennung, offene Periode). Der e2e-Block bucht eine Servicerechnung in der Suite und prüft die Live-Karte.
+
 ## v0.9.6 – PE ERP-Transformation (2026-11)
 
 - **ERP-Transformation** (`PE.transformation`): Bewertung je Unternehmen mit Nutzerzahl, Lizenz/Abo, Wartung, Hosting, Schnittstellen, Individualentwicklung, funktionaler Abdeckung, technischer Schuld, Migrationskomplexität und geschätzter Implementierung.
 - **Szenarien A–D** über einen wählbaren Zeitraum: A unverändert, B nur Finanzintegration, C teilweise NEXORA (Finanzen), D vollständige Transformation. TCO = Einmalkosten + Jahre × laufende Kosten; Einsparung = TCO A − TCO Szenario. Negative Werte bleiben sichtbar.
 - **Kandidaten und Roadmap:** Bewertung aus technischer Schuld, Abdeckung und Einsparquote; Unternehmen mit Liquiditätsrisiko oder laufendem Onboarding werden zurückgestellt. Die Roadmap ist ein Vorschlag in drei Wellen.
 - **Annahmen** sind offen, in der Ansicht änderbar und als „Beispielwerte, keine Herstellerpreise“ gekennzeichnet. Herstellernamen nur als Text, keine echte Integration. Verweis auf das Ablöse-Cockpit.
-- **Offen:** Engine-Mandanten (Elevon, NovaMart, Aventra) noch ohne Live-Daten im PE-Portfolio.
 - **Tests:** `test/pe.test.js` hat jetzt 55 Tests; der e2e-Block öffnet einen Kandidaten, ändert den Parallelbetrieb und prüft die Rechnung sowie die Darstellung bei 400 px.
 
 ## v0.9.5 – PE Advanced Capabilities (2026-11)

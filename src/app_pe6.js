@@ -28,3 +28,12 @@ VIEWS["pe-trans"] = () => {
       <details><summary class="small">Lizenzsätze je Nutzer und Jahr (Beispielwerte)</summary><table class="small pe-tbl"><tbody>${Object.entries(A.licensePerUser).map(([k, v]) => `<tr><td>${esc(k)}</td><td class="r num">${peM(v)}</td></tr>`).join("")}</tbody></table></details>
       <p class="small faint">Die Annahmen gelten nur in dieser Ansicht und werden nicht gespeichert. Die Hinweise zu Wartungsenden beruhen auf öffentlichen Herstellerangaben und sind ohne Gewähr; für SAP gilt zusätzlich: kein direkter Agentenzugriff, Verweis auf die SAP API Policy v4/2026, ausdrücklich ohne Rechtsbewertung.</p></section>`;
 };
+
+/* ---------- Modell B: Engine-Mandant im PE-Portfolio – offene Periode live aus der Engine ---------- */
+function peEngineCard(pr) {
+  const t = W && W.tenants && W.tenants[pr.engine.tenant]; if (!t) return "";
+  const open = Object.keys(t.periods).filter(x => t.periods[x] === "open").sort().pop(); const pl = open ? E.plOf(t, open) : null; const docs = t.docs.filter(d => d.period === open); const last = docs[docs.length - 1];
+  return `<section class="card card-pad" data-engine="${esc(pr.engine.tenant)}"><div class="row between" style="flex-wrap:wrap;gap:8px"><h3>Live aus der NEXORA-Engine <span class="small faint">· Mandant ${esc(t.name)}</span></h3><button class="btn sm" data-act="tenant" data-id="${esc(pr.engine.tenant)}" data-go="home">Mandant in der Suite öffnen</button></div>
+    <p class="small muted">${esc(pr.engine.note)} Das PE-Reporting zeigt die abgeschlossenen Perioden bis Oktober 2026. Die offene Periode erscheint nur hier und ändert sich mit jeder Buchung in der Suite.</p>
+    ${pl ? `<div class="pe-kpis">${[["Offene Periode", esc(open)], ["Umsatz bisher", peM(pl.revenue)], ["Rohertrag", peM(pl.grossMargin)], ["Betriebsergebnis", peM(pl.ebit)], ["Belege", String(docs.length)]].map(([l, v]) => `<div class="pe-kpi"><span class="eyebrow">${l}</span><b class="num">${v}</b></div>`).join("")}</div>${last ? `<p class="small faint">Letzter Beleg: ${esc(last.no)} vom ${esc(dDe(last.date))} – ${esc(last.text)}</p>` : ""}` : `<p class="small">Keine offene Periode.</p>`}</section>`;
+}

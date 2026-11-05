@@ -40,6 +40,8 @@
     CAPEX: ["Investitionen in Anlagevermögen", "Cashflow"], DIV: ["Ausschüttungen", "Cashflow"], EQIN: ["Eigenkapitalzuführung", "Cashflow"]
   };
   const COA_FAMILY = {
+    engine: { REV: [["4000", "Umsatzerlöse Waren und Anlagen"], ["4400", "Umsatzerlöse Dienstleistungen"]], COGS: [["5000", "Materialaufwand / Wareneinsatz"]], OPEX_PERS: [["6000", "Personalaufwand"], ["6990", "Verrechnete Fertigungsleistung"]], OPEX_OTHER: [["6300", "Sonstige betriebliche Aufwendungen"], ["6650", "Reisekosten"], ["6800", "Fremdleistungen"], ["6855", "Gebühren Zahlungsverkehr"]], DA: [["6220", "Abschreibungen (in der Engine nicht gebucht)"]], INT: [["7310", "Zinsaufwand (keiner)"]], TAX: [["7610", "Ertragsteuern (in der Engine nicht gebucht)"]],
+      CASH: [["1100", "Bank"]], AR: [["1200", "Forderungen aus Lieferungen und Leistungen"], ["1500", "Abziehbare Vorsteuer"], ["1590", "Forderungen Zahlungsdienstleister"]], INV: [["1300", "Roh-, Hilfs- und Betriebsstoffe"], ["1310", "Handelswaren"], ["1320", "Unfertige Erzeugnisse"], ["1330", "Fertige Erzeugnisse"]], FA: [["0700", "Technische Anlagen und Maschinen"]], AP: [["1600", "Verbindlichkeiten aus Lieferungen und Leistungen"], ["1700", "Wareneingangs-/Rechnungseingangs-Verrechnung"], ["1776", "Umsatzsteuer 19 %"]], DEBT: [["1750", "Darlehen (keine)"]], EQ: [["2000", "Eigenkapital inkl. laufendes Ergebnis"]], CAPEX: [["CF-INV", "Investitionen"]], DIV: [["CF-DIV", "Ausschüttung"]], EQIN: [["CF-EK", "Einlage"]] },
     sap: { REV: [["400000", "Umsatzerlöse Inland"], ["410000", "Umsatzerlöse Ausland"]], COGS: [["500000", "Materialaufwand"]], OPEX_PERS: [["600000", "Löhne und Gehälter"]], OPEX_OTHER: [["690000", "Sonstige betriebliche Aufwendungen"]], DA: [["700000", "Abschreibungen Sachanlagen"]], INT: [["750000", "Zinsaufwand"]], TAX: [["770000", "Steuern vom Einkommen"]], CASH: [["113100", "Bank"]], AR: [["140000", "Forderungen LuL"]], INV: [["300000", "Vorräte"]], FA: [["021000", "Sachanlagen"]], AP: [["160000", "Verbindlichkeiten LuL"]], DEBT: [["170000", "Bankdarlehen"]], EQ: [["090000", "Eigenkapital"]], CAPEX: [["CF-INV", "Zugänge Anlagevermögen"]], DIV: [["CF-DIV", "Ausschüttung"]], EQIN: [["CF-EK", "Kapitalerhöhung"]] },
     datev: { REV: [["4400", "Erlöse 19 % USt"], ["4120", "Steuerfreie Umsätze"]], COGS: [["5400", "Wareneingang"]], OPEX_PERS: [["6000", "Löhne und Gehälter"]], OPEX_OTHER: [["6300", "Sonstige betriebliche Aufwendungen"]], DA: [["6220", "Abschreibungen auf Sachanlagen"]], INT: [["7300", "Zinsen und ähnliche Aufwendungen"]], TAX: [["7600", "Körperschaftsteuer"]], CASH: [["1800", "Bank"]], AR: [["1200", "Forderungen aus LuL"]], INV: [["1140", "Warenbestand"]], FA: [["0400", "Technische Anlagen"]], AP: [["3300", "Verbindlichkeiten aus LuL"]], DEBT: [["3150", "Verbindlichkeiten gegenüber Kreditinstituten"]], EQ: [["2900", "Gezeichnetes Kapital und Rücklagen"]], CAPEX: [["CF-INV", "Investitionen"]], DIV: [["CF-DIV", "Gewinnausschüttung"]], EQIN: [["CF-EK", "Einlagen"]] },
     dynamics: { REV: [["4000-REV", "Revenue – Products"], ["4100-REV", "Revenue – Services"]], COGS: [["5000-COGS", "Cost of goods sold"]], OPEX_PERS: [["6000-PAY", "Payroll"]], OPEX_OTHER: [["6900-OPX", "Other operating expenses"]], DA: [["7000-DEP", "Depreciation"]], INT: [["7500-INT", "Interest expense"]], TAX: [["7700-TAX", "Income tax"]], CASH: [["1100-CSH", "Cash at bank"]], AR: [["1200-AR", "Accounts receivable"]], INV: [["1300-INV", "Inventory"]], FA: [["1600-PPE", "Property, plant and equipment"]], AP: [["2100-AP", "Accounts payable"]], DEBT: [["2500-LTD", "Long-term debt"]], EQ: [["3000-EQ", "Shareholders' equity"]], CAPEX: [["CF-CAPEX", "Capital expenditure"]], DIV: [["CF-DIV", "Dividends paid"]], EQIN: [["CF-EQ", "Equity contribution"]] },
@@ -147,6 +149,53 @@
   }
   function genFx(rng) { const out = {}; for (const [cur, base] of Object.entries(FX_BASE)) { let x = base; out[cur] = {}; for (const p of PERIODS) { const open = x; x = cur === "EUR" ? 1 : x * (1 + between(rng, -0.012, 0.012)); out[cur][p] = { avg: cur === "EUR" ? 1 : (open + x) / 2, close: x }; } } return out; }
 
+
+  /* ---------- Modell B: Engine-Mandanten (Elevon, NovaMart, Aventra) mit gebuchten Daten der NEXORA-Engine ----------
+     engineFeed liest nur die Belegstruktur der Engine (period, lines: acct/dr/cr) – keine Abhängigkeit vom Engine-Modul.
+     Ab Nov 2025 sind alle Monatswerte Salden aus Buchungen; davor (Nov 2023 – Okt 2025) eine synthetische Fortschreibung. */
+  const ENGINE_FROM = "2025-11"; const ENGINE_BACK_GROWTH = 0.04;
+  const ENGINE_META = { elevon: { pc: "NX1", industry: "Industrie", ownership: 1, acquired: "2025-10-15" }, novamart: { pc: "NX2", industry: "Handel", ownership: 0.8, acquired: "2025-10-15" }, aventra: { pc: "NX3", industry: "IT-Services", ownership: 1, acquired: "2025-10-15" } };
+  const ENGINE_NOTE = "Ab Nov 2025 Salden aus Buchungen der NEXORA-Engine (Demo-Mandant, synthetische Geschäftsvorfälle); Nov 2023 – Okt 2025 synthetische Fortschreibung des ersten Engine-Jahres (4 % p. a. Wachstum), keine Buchungen.";
+  const ENGINE_KIND = (() => { const m = {}; for (const [cat, list] of Object.entries(COA_FAMILY.engine)) for (const [no] of list) m[no] = cat; return m; })();
+  function engineFeed(tenants) {
+    return tenants.filter(t => ENGINE_META[t.id]).map(t => {
+      const engMonths = PERIODS.filter(p => p >= ENGINE_FROM); const bal = {}; const mov = {}; for (const p of engMonths) mov[p] = {};
+      const docs = t.docs.filter(d => d.period <= LAST).slice().sort((a, b) => a.period < b.period ? -1 : a.period > b.period ? 1 : 0);
+      const months = []; let k = 0; let plCum = 0;
+      for (const p of engMonths) {
+        for (; k < docs.length && docs[k].period <= p; k++) for (const l of docs[k].lines) { const v = (l.dr || 0) - (l.cr || 0); bal[l.acct] = (bal[l.acct] || 0) + v; if (docs[k].period === p) mov[p][l.acct] = (mov[p][l.acct] || 0) + v; }
+        const acc = {}; let pl = 0;
+        for (const [no, v] of Object.entries(mov[p])) { const cat = ENGINE_KIND[no]; if (!cat || GROUP_COA[cat][1] === "Bilanz") continue; const nat = cat === "REV" ? -v : v; acc[no] = r2((acc[no] || 0) + nat); pl += cat === "REV" ? nat : -nat; }
+        plCum += pl;
+        for (const [no, v] of Object.entries(bal)) { const cat = ENGINE_KIND[no]; if (!cat || GROUP_COA[cat][1] !== "Bilanz" || cat === "EQ") continue; acc[no] = r2(["AP", "DEBT"].includes(cat) ? -v : v); }
+        acc["2000"] = r2(-(bal["2000"] || 0) + plCum);
+        months.push({ period: p, accounts: acc });
+      }
+      const docsByAcct = {}; for (const d of docs) if (d.period >= ENGINE_FROM) for (const l of d.lines) { const cat = ENGINE_KIND[l.acct]; if (!cat || GROUP_COA[cat][1] === "Bilanz") continue; (docsByAcct[d.period + "|" + l.acct] = docsByAcct[d.period + "|" + l.acct] || []).push({ doc: d.no, date: d.date, text: d.text, amount: r2(cat === "REV" ? (l.cr || 0) - (l.dr || 0) : (l.dr || 0) - (l.cr || 0)) }); }
+      return { id: t.id, name: t.name, months, docs: docsByAcct };
+    });
+  }
+  function engineMonths(f) { // 36 Monate: 24 Monate Fortschreibung + 12 Monate aus Buchungen
+    const real = f.months; const plAvg = {}; const base = real.slice(1); // erster Monat = Anlaufmonat, nicht repräsentativ
+    for (const m of base) for (const [no, v] of Object.entries(m.accounts)) if (GROUP_COA[ENGINE_KIND[no]][1] !== "Bilanz") plAvg[no] = (plAvg[no] || 0) + v / base.length;
+    const bs0 = real[0].accounts; const pre = PERIODS.filter(p => p < ENGINE_FROM).map((p, i, all) => { const back = (all.length - i) / 12; const g = Math.pow(1 + ENGINE_BACK_GROWTH, -back); const acc = {};
+      for (const [no, v] of Object.entries(plAvg)) acc[no] = r2(v * g);
+      let a = 0, l = 0; for (const [no, v] of Object.entries(bs0)) { const cat = ENGINE_KIND[no]; if (GROUP_COA[cat][1] !== "Bilanz" || cat === "EQ") continue; acc[no] = r2(v * g); if (["AP", "DEBT"].includes(cat)) l += acc[no]; else a += acc[no]; }
+      acc["2000"] = r2(a - l); return { period: p, accounts: acc, synthetic: true }; });
+    return pre.concat(real);
+  }
+  function addEngineCompanies(W, feed) {
+    W.orgs.push({ id: "nlb", name: "Nordlicht Beteiligungen (Demo-Investor der NEXORA-Mandanten)", currency: "EUR", demo: true });
+    const fund = { id: "N1", orgId: "nlb", name: "Nordlicht Plattform I", vintage: "2025-06-01", size: 150e6, commitments: 150e6, fees: { mgmtPct: 0.02, carryPct: 0.2, hurdlePct: 0.08 } }; W.funds.push(fund); W.portfolios.push({ id: "N1-P", fundId: "N1", orgId: "nlb", name: "Kernportfolio Nordlicht Plattform I" });
+    for (const f of feed) { const meta = ENGINE_META[f.id]; const id = meta.pc; const months = engineMonths(f); W.data[id] = months;
+      const ltm = months.slice(-12); const S = cat => sum(ltm.map(m => sum(Object.entries(m.accounts).filter(([no]) => ENGINE_KIND[no] === cat).map(([, v]) => v)))); const rev = S("REV"), cogs = S("COGS"), pers = S("OPEX_PERS"), other = S("OPEX_OTHER");
+      const c = { id, orgId: "nlb", fundId: "N1", portfolioId: "N1-P", name: f.name, industry: meta.industry, country: "Deutschland", currency: "EUR", erp: "NEXORA AI Suite", erpFamily: "engine", model: "B", engine: { tenant: f.id, from: ENGINE_FROM, note: ENGINE_NOTE },
+        standard: "HGB", fyStart: 1, acquired: meta.acquired, ownership: meta.ownership, scenario: null, size: rev, margin: rev ? (rev - cogs - pers - other) / rev : 0, growth: ENGINE_BACK_GROWTH, gm: rev ? 1 - cogs / rev : 0, ps: rev ? pers / rev : 0,
+        status: "Halten", onboarding: "Aktiv", integration: "Synchron", leaseShare: r2(0.14 + 0.12 * mulberry32(hashStr(id + "lease"))()), dsa: { level: "transactions" },
+        entities: [{ id: id + "-LE1", name: f.name, weight: 1 }], units: [{ id: id + "-BU1", name: "Kerngeschäft", weight: 1 }], costCenters: ["Vertrieb", "Betrieb", "Verwaltung", "IT"].map((n, i) => ({ id: id + "-CC" + (i + 1), name: n })),
+        debtInfo: { rate: 0, maturity: "–", covenantMaxLeverage: 3.5, dso: 0, dio: 0, dpo: 0, initialLeverage: 0 } };
+      W.companies.push(c); W.engineDocs[id] = f.docs; }
+  }
   function createWorld(opt) {
     opt = opt || {}; const seed = opt.seed || SEED; const rng = mulberry32(seed ^ hashStr("pe-command-center")); const scale = opt.scale || 1;
     const fx = genFx(rng);
@@ -163,7 +212,8 @@
     // Beteiligungsstruktur der Plattform-Holding (Fund I): Gemeinschaftsunternehmen 50 %, Minderheitsbeteiligung 30 %
     for (const c of companies) { if (c.id === "PC07") { c.ownership = 0.5; c.jointControl = true; } if (c.id === "PC09") c.ownership = 0.3; }
     const data = {}; for (const c of companies) { const g = genMonthly(mulberry32(hashStr(c.id) ^ seed), c); data[c.id] = g.months; c.debtInfo = g.debt; }
-    const W = { adjust: {}, version: VERSION, seed, valuationDate: VALUATION_DATE, periods: PERIODS.slice(), orgs, funds, portfolios, companies, data, fx, note: DEMO_NOTE };
+    const W = { adjust: {}, engineDocs: {}, version: VERSION, seed, valuationDate: VALUATION_DATE, periods: PERIODS.slice(), orgs, funds, portfolios, companies, data, fx, note: DEMO_NOTE };
+    if (opt.engine) addEngineCompanies(W, opt.engine);
     for (const c of companies) c.investment = genInvestment(mulberry32(hashStr(c.id + "inv") ^ seed), W, c);
     W.principals = demoPrincipals(W); hubInit(W); W.ic = { resolved: {} }; W.vc = seedInitiatives(W); W.onb = { req: {}, dsaOk: {} };
     return W;
@@ -193,7 +243,7 @@
     if (basis === "ifrs") { const adj = gaapAdjust(W, c, a, b); if (adj.applied) { o.OPEX_OTHER -= adj.lease; o.DA += adj.da; o.INT += adj.interest; } o._adj = adj; }
     return o; }
   function companyKpis(W, c, key, basis) {
-    const r = rangeIdx(W, key); const f = flowsSum(W, c, r.a, r.b, basis); const end = Object.assign({}, eurMonth(W, c, r.b)); const pr = priorRange(W, r); const fp = pr ? flowsSum(W, c, pr.a, pr.b, basis) : null;
+    const r = rangeIdx(W, key); const f = flowsSum(W, c, r.a, r.b, basis); const end = Object.assign({}, eurMonth(W, c, r.b)); const pr = priorRange(W, r); const fp = pr && !(c.engine && W.periods[pr.a] < c.engine.from) ? flowsSum(W, c, pr.a, pr.b, basis) : null; // Engine-Mandanten: kein Vorjahresvergleich gegen die Fortschreibung
     if (f._adj && f._adj.applied) end.DEBT += f._adj.liability; // IFRS 16: Leasingverbindlichkeit in der Nettoverschuldung
     const ltm = flowsSum(W, c, W.periods.length - 12, W.periods.length - 1, basis); const ltmEbitda = ltm.REV - ltm.COGS - ltm.OPEX_PERS - ltm.OPEX_OTHER;
     const ebitda = f.REV - f.COGS - f.OPEX_PERS - f.OPEX_OTHER; const gp = f.REV - f.COGS; const ebit = ebitda - f.DA; const ni = ebit - f.INT - f.TAX;
@@ -253,7 +303,7 @@
     rvpi: { label: "RVPI", unit: "x", level: "nur Fonds", formula: "NAV (netto) / eingezahltes Kapital" },
     tvpi: { label: "TVPI", unit: "x", level: "nur Fonds", formula: "DPI + RVPI" }
   };
-  const SOURCE = c => `${c.erp} (${ERP[c.erp].method}) → Harmonisierung (Kontenplan ${c.erpFamily.toUpperCase()} → Konzernkontenplan, ${c.currency} → EUR) · ${DEMO_NOTE}`;
+  const SOURCE = c => c.engine ? `NEXORA-Engine, Mandant ${c.engine.tenant} (Belege und Salden direkt, ohne Mapping) · ${ENGINE_NOTE}` : `${c.erp} (${ERP[c.erp].method}) → Harmonisierung (Kontenplan ${c.erpFamily.toUpperCase()} → Konzernkontenplan, ${c.currency} → EUR) · ${DEMO_NOTE}`;
 
   /* ---------- Investments: datierte Cashflows des Fonds ---------- */
   function genInvestment(rng, W, c) {
@@ -265,7 +315,7 @@
     const fx = W.fx[c.currency]; const coaDiv = COA_FAMILY[c.erpFamily].DIV[0][0], coaEq = COA_FAMILY[c.erpFamily].EQIN[0][0];
     W.data[c.id].forEach(m => { const r = fx[m.period].close; if (m.accounts[coaDiv] > 0 && monthEnd(m.period) > c.acquired) flows.push({ date: monthEnd(m.period), amount: r2(m.accounts[coaDiv] / r * c.ownership), type: "Ausschüttung" }); if (m.accounts[coaEq] > 0) flows.push({ date: monthEnd(m.period), amount: -r2(m.accounts[coaEq] / r * c.ownership), type: "Follow-on" }); });
     if (c.id === "PC13") flows.push({ date: "2025-06-30", amount: r2(invest * 0.45), type: "Teilverkauf (Rekapitalisierung)" });
-    return { acquiredEV: entryEV, acquiredNetDebt: entryNetDebt, acquiredEquity: entryEquity, entryMultiple: entryMult, invested: invest, flows, financing: `Senior Term Loan, Zins ${(c.debtInfo.rate * 100).toFixed(1)} %, Fälligkeit ${c.debtInfo.maturity}`, exitAssumption: { year: 2029, multiple: SECTOR_MULT[c.industry] } };
+    return { acquiredEV: entryEV, acquiredNetDebt: entryNetDebt, acquiredEquity: entryEquity, entryMultiple: entryMult, invested: invest, flows, financing: c.engine ? "Ohne Fremdfinanzierung (Eigenkapital des Fonds)" : `Senior Term Loan, Zins ${(c.debtInfo.rate * 100).toFixed(1)} %, Fälligkeit ${c.debtInfo.maturity}`, exitAssumption: { year: 2029, multiple: SECTOR_MULT[c.industry] } };
   }
   function dealMetrics(W, c) {
     const k = companyKpis(W, c, "LTM"); const inv = c.investment; const nav = Math.max(0, k.equityValue) * c.ownership;
@@ -317,7 +367,7 @@
       { id: "p8", name: "Ben Schuster", role: "company_admin", companyId: byScen("wc") },
       { id: "p9", name: "Prüfgesellschaft (Demo)", role: "auditor", orgId: "ngep", funds: ["F1"] },
       { id: "p10", name: "Max Rheinberger", role: "pe_admin", orgId: "rtc" }
-    ].map(p => Object.assign({ label: ROLES[p.role].label }, p));
+    ].concat(W.orgs.some(o => o.id === "nlb") ? [{ id: "p12", name: "Nora Lindqvist", role: "pe_admin", orgId: "nlb" }] : []).map(p => Object.assign({ label: ROLES[p.role].label }, p));
   }
   /* Darf der Principal das Unternehmen auf dieser Stufe sehen? Organisation, Geltungsbereich, Rollen-Obergrenze, Datenfreigabe (DSA). */
   function access(W, p, c, level) {
@@ -345,9 +395,9 @@
   }
   function company(W, p, id, key, basis) {
     const c = guard(W, p, W.companies.find(x => x.id === id), "kpi");
-    if (c.noData) return { profile: { id: c.id, name: c.name, industry: c.industry, country: c.country, currency: c.currency, standard: c.standard, erp: c.erp, erpMethod: ERP[c.erp].method, model: c.model, acquired: c.acquired, ownership: c.ownership, status: c.status, integration: c.integration, onboarding: c.onboarding, fund: (W.funds.find(f => f.id === c.fundId) || {}).name, entities: c.entities, units: c.units, costCenters: c.costCenters, dsa: c.dsa.level }, kpis: null, noData: true, gap: "Noch keine Finanzdaten: ERP-Anbindung und Mapping im Onboarding (Phase 5) ausstehend." }; const k = companyKpis(W, c, key || "LTM", basis); const st = access(W, p, c, "statements"); const tx = access(W, p, c, "transactions") && ERP[c.erp].lineItems;
+    if (c.noData) return { profile: { id: c.id, name: c.name, industry: c.industry, country: c.country, currency: c.currency, standard: c.standard, erp: c.erp, erpMethod: ERP[c.erp].method, model: c.model, acquired: c.acquired, ownership: c.ownership, status: c.status, integration: c.integration, onboarding: c.onboarding, fund: (W.funds.find(f => f.id === c.fundId) || {}).name, entities: c.entities, units: c.units, costCenters: c.costCenters, dsa: c.dsa.level }, kpis: null, noData: true, gap: "Noch keine Finanzdaten: ERP-Anbindung und Mapping im Portfolio-Onboarding ausstehend." }; const k = companyKpis(W, c, key || "LTM", basis); const st = access(W, p, c, "statements"); const tx = access(W, p, c, "transactions") && ERP[c.erp].lineItems;
     const R = ROLES[p.role]; const showInvest = R.fund && p.orgId === c.orgId;
-    return { profile: { id: c.id, name: c.name, industry: c.industry, country: c.country, currency: c.currency, standard: c.standard, fyStart: c.fyStart, erp: c.erp, erpMethod: ERP[c.erp].method, lineItems: ERP[c.erp].lineItems, model: c.model, acquired: c.acquired, ownership: c.ownership, status: c.status, integration: c.integration, onboarding: c.onboarding, fund: (W.funds.find(f => f.id === c.fundId) || {}).name, entities: c.entities, units: c.units, costCenters: c.costCenters, dsa: c.dsa.level, scenario: c.scenario },
+    return { profile: { id: c.id, name: c.name, industry: c.industry, country: c.country, currency: c.currency, standard: c.standard, fyStart: c.fyStart, erp: c.erp, erpMethod: ERP[c.erp].method, lineItems: ERP[c.erp].lineItems, model: c.model, acquired: c.acquired, ownership: c.ownership, status: c.status, integration: c.integration, onboarding: c.onboarding, fund: (W.funds.find(f => f.id === c.fundId) || {}).name, entities: c.entities, units: c.units, costCenters: c.costCenters, dsa: c.dsa.level, scenario: c.scenario, engine: c.engine || null },
       kpis: k, source: SOURCE(c), access: { statements: st, transactions: tx, transactionsReason: tx ? null : !ERP[c.erp].lineItems ? `${c.erp}: Quellsystem liefert keine Einzelposten (${ERP[c.erp].method})` : "Datenfreigabe oder Rolle erlaubt keine Buchungen" },
       statements: st ? statements(W, c, key) : null, investment: showInvest ? Object.assign({ entry: { date: c.acquired, ev: c.investment.acquiredEV, equity: c.investment.acquiredEquity, multiple: c.investment.entryMultiple, netDebt: c.investment.acquiredNetDebt }, flows: c.investment.flows, financing: c.investment.financing, exitAssumption: c.investment.exitAssumption }, dealMetrics(W, c)) : null,
       budget: budgetVsActual(W, c), debt: c.debtInfo };
@@ -401,7 +451,9 @@
     const a = accounts.find(x => x.no === path.account); if (!a) fail("NOT_FOUND", "Konto unbekannt.");
     if (!ERP[c.erp].lineItems) fail("DATA_GAP", `${c.erp} liefert über ${ERP[c.erp].method} nur Salden, keine Einzelposten.`);
     guard(W, p, c, "transactions");
-    if (GROUP_COA[a.category][1] === "Bilanz") fail("DATA_GAP", "Bestandskonten: Drill-down auf Bewegungen folgt mit dem Integration Hub (Phase 4).");
+    if (GROUP_COA[a.category][1] === "Bilanz") fail("DATA_GAP", "Bestandskonten zeigen den Saldo zum Monatsende; Bewegungen je Bestandskonto werden nicht aufgelöst (Abstimmung der Salden im ERP Integration Hub).");
+    if (c.engine) { if (W.periods[i] < c.engine.from) fail("DATA_GAP", "Für " + W.periods[i] + " gibt es keine Buchungen: synthetische Fortschreibung vor dem Start auf NEXORA (" + c.engine.from + ")."); const tx = (W.engineDocs[c.id] || {})[W.periods[i] + "|" + a.no] || [];
+      return { company: c.name, entity: le ? le.name : "alle Gesellschaften", period: W.periods[i], account: a, transactions: tx, source: "engine", note: "Belege aus der NEXORA-Engine (Demo-Mandant " + c.engine.tenant + ", synthetische Geschäftsvorfälle); Summe = Kontosaldo" }; }
     const rng = mulberry32(hashStr(c.id + a.no + W.periods[i] + (le ? le.id : ""))); const n = 4 + Math.floor(rng() * 7); const wts = Array.from({ length: n }, () => 0.3 + rng()); const ws = sum(wts); let rest = a.local;
     const tx = wts.map((x, j) => { const amt = j === n - 1 ? r2(rest) : r2(a.local * x / ws); rest = r2(rest - amt); return { doc: `${c.id}-${W.periods[i].replace("-", "")}-${String(j + 1).padStart(4, "0")}`, date: `${W.periods[i]}-${String(1 + Math.floor(rng() * 27)).padStart(2, "0")}`, text: a.category === "REV" ? "Ausgangsrechnung Kunde " + (100 + Math.floor(rng() * 800)) : a.category === "COGS" ? "Eingangsrechnung Lieferant " + (500 + Math.floor(rng() * 400)) : a.category === "OPEX_PERS" ? "Lohnlauf / Personalkosten" : "Buchung " + a.name, amount: amt }; });
     return { company: c.name, entity: le ? le.name : "alle Gesellschaften", period: W.periods[i], account: a, transactions: tx, note: "Synthetische Einzelposten, deterministisch erzeugt; Summe = Kontosaldo" };
@@ -498,7 +550,7 @@
   /* Anomalien: Monatsumsatz weicht mehr als 15 % von der saisonalen Erwartung ab (gleicher Monat Vorjahr × Wachstumsfaktor) */
   function anomalies(W, p, filter) {
     const out = []; const n = W.periods.length;
-    for (const c of visibleCompanies(W, p, filter).filter(x => reportingActive(x) && !x.noData)) { const rev = W.periods.map((_, i) => eurMonth(W, c, i).REV);
+    for (const c of visibleCompanies(W, p, filter).filter(x => reportingActive(x) && !x.noData && !x.engine)) { const rev = W.periods.map((_, i) => eurMonth(W, c, i).REV); // Engine-Mandanten: Vorjahr ist Fortschreibung, kein Vergleich
       for (let i = 24; i < n; i++) { const g = sum(rev.slice(i - 12, i)) / sum(rev.slice(i - 24, i - 12)); const exp = rev[i - 12] * g; const dev = rev[i] / exp - 1;
         if (Math.abs(dev) > 0.15) out.push({ id: c.id, company: c.name, period: W.periods[i], metric: "Umsatz", actual: rev[i], expected: exp, deviation: dev, method: "Erwartung = gleicher Monat Vorjahr × Wachstumsfaktor der 12 Vormonate; Schwelle ±15 %" }); } }
     return out.sort((a, b) => Math.abs(b.deviation) - Math.abs(a.deviation));
@@ -710,7 +762,7 @@
   function onboardingList(W, p) { return visibleCompanies(W, p, {}).filter(c => c.onboarding !== "Aktiv" || W.onb.req[c.id] || c.created).map(c => onboarding(W, p, c.id)); }
 
   /* ===== PE-Phase 6: ERP-Transformation – Bewertung und Szenarien A–D mit offenen Annahmen (Beispielwerte) ===== */
-  const ERP_FAMILY_LABEL = { sap: "SAP", dynamics: "Microsoft", oracle: "Oracle", netsuite: "Oracle", datev: "DATEV", sage: "Sage", infor: "Infor", custom: "Eigenentwicklung", nexora: "NEXORA" };
+  const ERP_FAMILY_LABEL = { engine: "NEXORA", sap: "SAP", dynamics: "Microsoft", oracle: "Oracle", netsuite: "Oracle", datev: "DATEV", sage: "Sage", infor: "Infor", custom: "Eigenentwicklung", nexora: "NEXORA" };
   const TA = { // Annahmen (Beispielwerte, keine Herstellerpreise) – in der Oberfläche sichtbar und anpassbar
     licensePerUser: { "SAP ECC": 1700, "SAP S/4HANA": 2100, "SAP Business One": 900, "Microsoft Dynamics 365": 1300, "Oracle ERP Cloud": 1900, "Oracle NetSuite": 1400, "DATEV": 450, "Sage": 600, "Infor": 1300, "Eigenentwicklung": 0, "NEXORA AI Suite": 0 },
     maintenancePct: 0.22, onPrem: ["SAP ECC", "Sage", "Infor", "Eigenentwicklung", "DATEV"], hostingFix: 60000, hostingPerUser: 180, interfaceCost: 15000, customDevPerYear: 250000,
@@ -785,6 +837,6 @@
   function checkConsistency(W, c) { const errs = []; for (let i = 0; i < W.periods.length; i++) { const h = harmonizedMonth(W, c, i); const d = h.CASH + h.AR + h.INV + h.FA - h.AP - h.DEBT - h.EQ; if (Math.abs(d) > 1) errs.push(`${W.periods[i]}: Bilanzdifferenz ${d.toFixed(2)}`); } return errs; }
 
   return { VERSION, SEED, VALUATION_DATE, PERIODS, PERIOD_SETS, DEMO_NOTE, GROUP_COA, COA_FAMILY, ERP, FX_BASE, SECTOR_MULT, KPI_DEFS, HEALTH_FORMULA, ROLES, LEVEL,
-    createWorld, apply, xirr, access, transformation, TRANSFORM_ASSUMPTIONS: TA, consolidate, GROUPS, METHOD_LABEL, investments, exitSim, LIFECYCLE, vcSummary, VC_CATS, covenantForecast, riskRegister, onboarding, onboardingList, ONB_STEPS, hubMonitor, hubDetail, CONNECTOR_SPECS, HUB_PERIOD, adjustments, compare, marginBridge, forecast, liquidityForecast, wcPotential, planVariance, anomalies, advise, EXAMPLES, WC_METHOD, FC_METHOD, principal, companies, company, portfolioKpis, fundMetrics, funds, series, drill, insights, visibleCompanies,
+    createWorld, engineFeed, ENGINE_NOTE, apply, xirr, access, transformation, TRANSFORM_ASSUMPTIONS: TA, consolidate, GROUPS, METHOD_LABEL, investments, exitSim, LIFECYCLE, vcSummary, VC_CATS, covenantForecast, riskRegister, onboarding, onboardingList, ONB_STEPS, hubMonitor, hubDetail, CONNECTOR_SPECS, HUB_PERIOD, adjustments, compare, marginBridge, forecast, liquidityForecast, wcPotential, planVariance, anomalies, advise, EXAMPLES, WC_METHOD, FC_METHOD, principal, companies, company, portfolioKpis, fundMetrics, funds, series, drill, insights, visibleCompanies,
     _internal: { translation, icData, lifecycleOf, gaapAdjust, seasonalForecast, harmonizedMonth, eurMonth, companyKpis, dealMetrics, fundCalc, checkConsistency, flowsSum, statements, budgetVsActual } };
 });
