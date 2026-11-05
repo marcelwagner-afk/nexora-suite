@@ -189,6 +189,10 @@ Ein Bereich **Private Equity** in derselben Navigation, für PE-Investoren. Plan
 
 Seite „IT-Infrastruktur“ in der Suite (je Mandant, live aus Engine und Konnektoren) und im PE-Bereich (Portfolio und je Unternehmen, Integrationsstatus live aus dem Hub). Sizing mit Formeln, Ziel NEXORA und Was-wäre-wenn. Alles Beispielwerte – keine Herstellerangaben. Details: [`docs/it-infrastruktur.md`](docs/it-infrastruktur.md). Tests: `node test/infra.test.js`.
 
+## Filme
+
+Web-Fassungen der Filme liegen in `media/` (16:9, 720p, je 2–4 MB, mit Vorschaubild); die Originale bleiben außerhalb des Repos. Zuordnung in `src/app_media.js` (`VIDEOS`) und in `src/truescale.html`. Neue Filme: Datei nach `media/` (Name `nexora-<thema>.mp4` und `.jpg`), Eintrag in `VIDEOS`, Einbau mit `vidAfterH1`.
+
 ## Marktposition pflegen
 
 Die Positionierungsmatrix „Wer liefert die eine Oberfläche für alle Anwendungen?“ steht auf der TRUESCALE-Seite unter `truescale.html#markt`. Die Suite verlinkt sie in der Navigation („Marktposition · TRUESCALE“). Die Referenzumsetzung liegt in `docs/positionierung-referenz.html`.

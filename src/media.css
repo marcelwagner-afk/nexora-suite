@@ -1,0 +1,12 @@
+/* Filme (v0.9.10) */
+.vid-chip{display:inline-flex;align-items:center;gap:10px;margin-top:10px;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:5px 12px 5px 5px;cursor:pointer;color:var(--fg);text-align:left;box-shadow:var(--shadow);max-width:100%}
+.vid-chip:hover{border-color:var(--accent-line)}
+.vid-chip small{display:block;font-size:11.5px;color:var(--fg-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vid-chip b{font-size:13px}
+.vid-thumb{width:64px;aspect-ratio:16/9;border-radius:7px;background:var(--nav-bg) center/cover no-repeat;display:grid;place-items:center;flex:none}
+.vid-thumb i{font-style:normal;color:#fff;font-size:12px;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,.45);display:grid;place-items:center}
+.vid-overlay{position:fixed;inset:0;z-index:60;background:rgba(10,8,30,.78);display:flex;align-items:center;justify-content:center;padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.vid-box{width:min(1100px,100%);background:var(--surface);border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:8px;box-shadow:0 24px 60px rgba(0,0,0,.4)}
+.vid-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.vid-box video{width:100%;aspect-ratio:16/9;border-radius:10px;background:#000;display:block}
+.page-head .vid-chip{display:flex;width:fit-content}

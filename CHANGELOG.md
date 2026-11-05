@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.9.10 – Filme (2026-11)
+
+- **Vier Filme (16:9)** in `media/`, als Web-Fassung (1280 × 720, H.264, Schnellstart) mit Vorschaubild: Imagespot, Experience Layer, PE Command Center, IT-Infrastruktur. Englisch mit eingebrannten Untertiteln; im Film als Demo mit synthetischen Daten gekennzeichnet.
+- **Suite:** Knopf „Film ansehen“ unter der Überschrift von Startseite (Suite: Imagespot, Experience Layer: Experience-Layer-Film), Systeme, PE Command Center, IT-Infrastruktur (Suite und PE). Der Spieler ist eine eigene Ebene: Neuzeichnen der Seite unterbricht die Wiedergabe nicht; Esc oder ✕ schließt.
+- **TRUESCALE-Seite:** Imagespot direkt nach dem Einstieg, Experience-Layer-Film im Abschnitt Layer, neuer Abschnitt „Für Investoren und IT“ mit PE- und Infrastruktur-Film; strukturierte Daten (VideoObject) für Suchmaschinen.
+- **Tests:** e2e prüft Zuordnung je Seite, Spieler übersteht Neuzeichnen, Esc schließt.
+
 ## v0.9.9 – IT-Infrastruktur und Sizing (2026-11)
 
 - **Neuer Kern `src/infra.js`:** Architekturprofile für alle ERP-Systeme des Portfolios und NEXORA, Sizing mit Formeln (Nutzer, Spitzenlast, vCPU/RAM, Datenbank inkl. In-Memory, Datenbestand heute und Prognose, Speicher, Netz, IOPS), Ziel-Sizing NEXORA, Was-wäre-wenn mit Zukauf, Live-Auslastung. Alles Beispielwerte, Herstellernamen nur als Text, SAP-Hinweis auf das Hersteller-Sizing.
