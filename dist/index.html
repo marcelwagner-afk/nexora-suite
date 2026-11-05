@@ -347,6 +347,72 @@ body.present .note.sn{display:none}
 body.present .app{zoom:1.08}
 body.present .page h1{font-size:30px}
 
+/* Experience Layer (v0.8) – ergänzt das NEXORA-Design, ohne die Suite-Ansicht zu verändern */
+.top2 .layer-sw{flex:none;flex-wrap:nowrap;gap:4px}
+.top2 .layer-sw button{padding:4px 10px;font-size:12px;white-space:nowrap;line-height:1.4}
+.ly-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px}
+.ly-card{padding:16px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.ly-card h3{font-size:15.5px;line-height:1.3}
+.ly-src{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:11.5px}
+.ly-chip{font-weight:700;border-radius:7px;padding:2px 8px;background:var(--sunk);color:var(--fg)}
+.ly-chip.s-nexora{background:var(--accent-soft);color:var(--accent)}
+.ly-route{color:var(--fg-2);border:1px solid var(--line-strong);border-radius:7px;padding:1px 7px}
+.ly-sim{color:var(--warn);background:var(--warn-soft);border-radius:7px;padding:2px 7px;font-weight:600}
+.ly-sim.live{color:var(--good);background:var(--good-soft)}
+.ly-fields{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:3px 12px;margin:2px 0;font-size:13px}
+.ly-fields dt{color:var(--fg-3)} .ly-fields dd{margin:0;overflow-wrap:anywhere}
+.ly-fields.wide{font-size:14px;gap:6px 18px}
+.ly-acts{margin-top:auto;gap:6px}
+body.layer .top2 [data-act=toggleMode]{display:none}
+body.layer .top2 .search{flex:0 0 auto;width:auto} body.layer .top2 .search span,body.layer .top2 .search kbd{display:none}
+.msg.a .ai-cards{margin-top:10px;grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}
+.ly-card.done{opacity:.7}
+.ai-via{display:inline-flex;align-items:center;gap:6px;margin-top:10px;padding:4px 10px;border-radius:999px;border:1px solid var(--line);background:var(--surface);font-size:12px;color:var(--fg-2)}
+.ai-via.rej{border-color:color-mix(in srgb,var(--crit) 40%,transparent);color:var(--crit)}
+.ai-via .ly-sim{font-size:11px;padding:1px 6px}
+.link-btn{background:none;border:0;padding:0;color:var(--accent);cursor:pointer;text-align:left;font:inherit}
+.link-btn:hover{text-decoration:underline}
+.cost-ctr{display:inline-flex;flex-direction:column;gap:0;align-items:stretch;padding:3px 10px;border:1px solid var(--line);border-radius:10px;font-size:11px;line-height:1.25;color:var(--fg-2);text-decoration:none;white-space:nowrap;flex:none}
+.cost-ctr b{color:var(--fg);font-weight:600}
+.cost-ctr:hover{border-color:var(--accent-line)}
+.au-tbl td,.au-tbl th{white-space:nowrap}
+.au-tbl tr.rej td{background:var(--crit-soft)}
+.num.big{font-size:22px;display:block;margin-top:4px}
+.priv-mx td.c,.priv-mx th.c{text-align:center}
+.cost-ctr span{display:flex;justify-content:space-between;gap:8px}.cost-ctr i{font-style:normal}
+.priv-mx td,.priv-mx th{padding-left:8px;padding-right:8px}
+/* Einbettungsmodus */
+body.embed .app{grid-template-columns:minmax(0,1fr)!important}
+body.embed .side,body.embed .top2,body.embed .livecol{display:none!important}
+body.embed .main{padding-top:0}
+body.embed section:has(#qrBox){display:none}
+body.embed .ly-grid{grid-template-columns:minmax(0,1fr)!important}
+.emb-bar{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line);padding:10px 14px;display:flex;flex-direction:column;gap:8px}
+.emb-brand{display:inline-flex;align-items:center;gap:6px;font-size:14px}
+.emb-tabs{display:flex}.emb-tabs a{flex:1;text-align:center;text-decoration:none}
+.emb-note{font-size:11.5px;color:var(--fg-3)}
+.emb-tabs a{border:1px solid var(--line);background:var(--surface);border-radius:20px;padding:5px 12px;font-weight:600;color:var(--fg-2);display:inline-flex;gap:8px;align-items:center;justify-content:center}
+.emb-tabs a b{font-size:11.5px;background:var(--sunk);border-radius:10px;padding:0 7px}
+.emb-tabs a.on{background:var(--accent-soft);border-color:var(--accent-line);color:var(--accent)}
+body.embed .inline-live,body.embed .page-head,body.embed .page>.note.sn,body.embed .page>.sn{display:none!important}
+body.embed .page{padding-top:12px}
+/* Dashboard */
+.dash-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.dash-tile{display:flex;flex-direction:column;gap:10px}
+.dt-kpi{font-size:24px;font-weight:700;color:var(--fg)}
+.dt-row{display:flex;gap:8px;align-items:center;width:100%;background:none;border:0;border-top:1px solid var(--line);padding:7px 0;text-align:left;font:inherit;color:var(--fg);cursor:pointer}
+.dt-row.static{cursor:default}.dt-row .grow{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dt-trend{width:100%;height:auto}.dt-trend .b{fill:var(--accent-soft);stroke:var(--accent-line)}.dt-trend .l{fill:none;stroke:var(--accent);stroke-width:2}.dt-trend .tx{font-size:9px;fill:var(--fg-3)}
+.icon-btn.sm{width:26px;height:26px;font-size:13px}
+/* Ablöse-Cockpit */
+.tr-tbl td{vertical-align:middle}
+.tr-bar{display:inline-block;width:70px;height:6px;border-radius:3px;background:var(--sunk);margin-right:6px;vertical-align:middle;overflow:hidden}.tr-bar i{display:block;height:100%;background:var(--good)}
+.tr-step{display:flex;flex-direction:column;gap:10px}.tr-step:not(.active):not(.done){opacity:.75}
+.tr-step.active{border-color:var(--accent-line)}
+.tr-n{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--accent-soft);color:var(--accent);font-size:12px;margin-right:4px}
+.tr-tbl td:nth-child(4){white-space:nowrap}
+body.layer .app.live .cost-ctr{display:none}
+
 </style>
 <div id="root"></div>
 <div id="layer"></div>
@@ -1156,8 +1222,8 @@ function migApply(t, obj, valid, src, rules, user) {
 }
 function migReconcile(obj, src, res) {
   const srcCount = src[obj].length; const tgt = res.ok.length; const sum = a => r2(a.reduce((x, r) => x + (r.BETRAG || r.WERT || 0), 0));
-  const excl = res.warns.filter(w => /ausgeschlossen/.test(w[1])).map(w => w[0]); const exRows = src[obj].filter(r => excl.includes(r.ANLNR || r.BELNR || r.MATNR || r.KUNNR));
-  const money = ["openItems", "stock"].includes(obj);
+  const excl = res.warns.filter(w => /ausgeschlossen/.test(w[1])).map(w => w[0]); const exRows = src[obj].filter(r => excl.includes(r.ANLNR || r.BELNR || r.MATNR || r.BANFN || r.KUNNR));
+  const money = ["openItems", "stock", "requisitions"].includes(obj);
   return { object: obj, source: srcCount, loaded: tgt, merged: res.warns.filter(w => /Dublette/.test(w[1])).length, excluded: excl.length, errors: res.errs.length, sourceSum: money ? sum(src[obj]) : null, loadedSum: money ? sum(res.ok) : null, excludedSum: money ? sum(exRows) : null };
 }
 
@@ -1628,7 +1694,79 @@ Object.assign(CMD, {
   }
 });
 
-return { WORK_CENTERS, CATALOG, CATEGORY_DEFAULT, deriveDrawing, ROLE_DESC, dueMaintenance, returnRate, personnelCost, cutoverStatus, legacyData, MIG_OBJECTS, MIG_LABEL, isAbsent, absHoursInPeriod, SERVICE_RATE, VERSION, START_DATE, TENANT_IDS, COA, SIZES, E5, createWorld, resetTenant, resetAll, dispatch, kpis, plOf, trialBalance, balance, projectMetrics, replenishmentProposals, processInstances, tenantHash, costing, avail, periodOf, customerName, supplierName, articleName, materialOf, QUERY_ONLY, _internal: { HIST, crossHistory } };
+/* ===== v0.8: Migrationsprojekte – Ablösung eines Prozesses aus einem (simulierten) Altsystem =====
+   Nutzt das bestehende Migrationsmodul (Testlauf auf Kopie, Fehlerliste, Vier-Augen-Freigabe, Abstimmung).
+   Die Übernahme Liftservice Nord bleibt unverändert; Projekte werden über p.project angesprochen.
+   Das Extrakt aus dem Altsystem kommt als Parameter (Teil des Ereignisprotokolls, damit reproduzierbar). */
+const MIG_PROJECTS = { "sap-pr": { label: "Bestellanforderungen aus SAP S/4HANA (simuliert)", objects: ["requisitions"], process: "bestellanforderung", system: "SAP S/4HANA (simuliert)" } };
+MIG_LABEL.requisitions = "Bestellanforderungen";
+function migProject(t, id, create) {
+  if (!MIG_PROJECTS[id]) fail("PROJECT", "Unbekanntes Migrationsprojekt."); t.migProjects = t.migProjects || {};
+  if (!t.migProjects[id] && create) t.migProjects[id] = { id, label: MIG_PROJECTS[id].label, source: null, tests: {}, done: {}, rules: { fillCostCenter: false, excludeUnmapped: false }, approval: null, tested: false, map: {}, log: [] };
+  const M = t.migProjects[id]; if (!M) fail("ORDER", "Migrationsprojekt noch nicht begonnen."); return M;
+}
+const ccFallback = t => (t.master.costCenters.find(c => /Einkauf/.test(c.name)) || t.master.costCenters[0] || {}).id;
+function prValidate(t, src, rules) {
+  const ok = [], errs = [], warns = [];
+  for (const r0 of src.requisitions) { const r = Object.assign({}, r0);
+    if (t.reqs.some(q => q.legacy === r.BANFN && q.status !== "zurückgezogen")) { errs.push([r.BANFN, "bereits übernommen"]); continue; }
+    if (!(r.MENGE > 0) || !(r.PREIS > 0)) { errs.push([r.BANFN, "Menge oder Preis fehlt"]); continue; }
+    if (!t.master.costCenters.some(c => c.id === r.KOSTL)) {
+      if (rules.fillCostCenter) { warns.push([r.BANFN, `Kostenstelle „${r.KOSTL || "–"}“ unbekannt, ${ccFallback(t)} (Einkauf) gesetzt`]); r.KOSTL = ccFallback(t); }
+      else if (rules.excludeUnmapped) { warns.push([r.BANFN, `ausgeschlossen, Klärungsliste: Kostenstelle „${r.KOSTL || "–"}“ unbekannt`]); continue; }
+      else { errs.push([r.BANFN, `Kostenstelle „${r.KOSTL || "–"}“ im Ziel unbekannt`]); continue; } }
+    ok.push(r); }
+  return { ok, errs, warns };
+}
+function prApply(t, M, valid, user) {
+  const made = [];
+  for (const r of valid) { const cat = r.KATALOG ? t.catalog.find(c => c.id === r.KATALOG) : null; const def = CATEGORY_DEFAULT[r.WARENGRUPPE] || CATEGORY_DEFAULT.IT; const net = r2(r.MENGE * r.PREIS);
+    const q = { no: nextNo(t, "BANF"), date: t.date, due: r.FAELLIG || t.date, requester: "legacy:" + r.BANFN, requesterName: r.AFNAM, net, status: "zur Freigabe", level: reqApprovalLevel(net) || "übernommen", approvedBy: null, po: null,
+      type: "indirekt", text: r.TXZ01, qty: r.MENGE, unit: r.MEINS || "Stk", price: r.PREIS, supplier: cat ? cat.supplier : def[0], acct: cat ? cat.acct : def[1], category: cat ? cat.category : (r.WARENGRUPPE || "IT"), catalog: cat ? cat.id : undefined, costCenter: r.KOSTL, legacy: r.BANFN, legacySys: MIG_PROJECTS[M.id].system, migProject: M.id, migratedBy: user };
+    t.reqs.push(q); M.map[r.BANFN] = q.no; made.push(q.no); }
+  return made;
+}
+function prSource(p) { if (!p || !Array.isArray(p.requisitions)) fail("SOURCE", "Extrakt aus dem Altsystem fehlt."); return { requisitions: p.requisitions.map(r => ({ BANFN: String(r.BANFN), TXZ01: String(r.TXZ01 || ""), MENGE: +r.MENGE, MEINS: r.MEINS || "Stk", PREIS: +r.PREIS, WERT: r2(+r.MENGE * +r.PREIS), KOSTL: r.KOSTL || "", AFNAM: String(r.AFNAM || ""), FAELLIG: r.FAELLIG || null, KATALOG: r.KATALOG || null, WARENGRUPPE: r.WARENGRUPPE || null })) }; }
+(function () {
+  const base = { test: CMD.migrationTest, req: CMD.migrationRequestApproval, appr: CMD.migrationApprove, run: CMD.migrationRun };
+  CMD.migrationTest = function (w, t, p, ctx) {
+    if (!p.project) return base.test(w, t, p, ctx);
+    need(t, ctx, "view"); const M = migProject(t, p.project, true); if (M.done.requisitions) fail("DONE", "Bestellanforderungen bereits übernommen.");
+    if (p.source) M.source = prSource(p.source); if (!M.source) fail("SOURCE", "Extrakt aus dem Altsystem fehlt."); Object.assign(M.rules, p.rules || {});
+    const res = prValidate(t, M.source, M.rules); M.tests.requisitions = migReconcile("requisitions", M.source, res); M.tests.requisitions.issues = res.errs.slice(0, 12).concat(res.warns.slice(0, 6).map(x => [x[0], "Hinweis: " + x[1]]));
+    M.tested = true; M.approval = null; M.log.push({ date: t.date, by: ctx.userName, text: `Testlauf: ${res.errs.length} Fehler` });
+    const x = M.tests.requisitions; return { text: `Testmigration ${M.label}: ${x.errors} Fehler, ${x.loaded}/${x.source} übernehmbar, Summe ${x.loadedSum} € von ${x.sourceSum} € – Produktivdaten unverändert` };
+  };
+  CMD.migrationRequestApproval = function (w, t, p, ctx) {
+    if (!p.project) return base.req(w, t, p, ctx);
+    need(t, ctx, "view"); const M = migProject(t, p.project); if (!M.tested) fail("ORDER", "Zuerst Testmigration durchführen."); if (M.tests.requisitions.errors) fail("ERRORS", `Freigabe erst bei fehlerfreiem Testlauf (${M.tests.requisitions.errors} Fehler offen).`);
+    M.approval = { status: "offen", requester: ctx.user, requesterName: ctx.userName, date: t.date }; M.log.push({ date: t.date, by: ctx.userName, text: "Freigabe angefordert" }); return { text: `Freigabe der Übernahme ${M.label} angefordert (Vier-Augen-Prinzip)` };
+  };
+  CMD.migrationApprove = function (w, t, p, ctx) {
+    if (!p.project) return base.appr(w, t, p, ctx);
+    need(t, ctx, "approve"); const M = migProject(t, p.project); if (!M.approval || M.approval.status !== "offen") fail("ORDER", "Keine offene Freigabe."); if (M.approval.requester === ctx.user) fail("FOUR_EYES", "Vier-Augen-Prinzip: Die anfordernde Person darf nicht freigeben.");
+    M.approval.status = "freigegeben"; M.approval.by = ctx.userName; M.log.push({ date: t.date, by: ctx.userName, text: "Übernahme freigegeben" }); return { text: `Übernahme ${M.label} freigegeben durch ${ctx.userName}` };
+  };
+  CMD.migrationRun = function (w, t, p, ctx) {
+    if (!p.project) return base.run(w, t, p, ctx);
+    need(t, ctx, "post"); const M = migProject(t, p.project); if (!M.approval || M.approval.status !== "freigegeben") fail("APPROVAL", "Produktivübernahme nur mit erteilter Freigabe."); if (M.done.requisitions) fail("DONE", "Bestellanforderungen bereits übernommen.");
+    const res = prValidate(t, M.source, M.rules); if (res.errs.length) fail("ERRORS", `${res.errs.length} Fehler: ${res.errs[0][1]} …`);
+    const made = prApply(t, M, res.ok, ctx.userName); const rec = migReconcile("requisitions", M.source, res); M.done.requisitions = Object.assign(rec, { date: t.date, by: ctx.userName, reqs: made });
+    M.log.push({ date: t.date, by: ctx.userName, text: `Produktivübernahme: ${made.length} Bestellanforderungen` });
+    return { text: `${MIG_LABEL.requisitions} produktiv übernommen: ${rec.loaded} von ${rec.source}, Summe ${rec.loadedSum} € = Quelle ${r2(rec.sourceSum - (rec.excludedSum || 0))} €${rec.excluded ? ` (${rec.excluded} auf Klärungsliste)` : ""}`, objects: made };
+  };
+})();
+Object.assign(CMD, {
+  /* Rückweg einer Ablösung: offene Bestellanforderungen aus Übernahme und Parallelbetrieb zurückziehen; Projekt kann neu beginnen */
+  withdrawRequisitions(w, t, p, ctx) {
+    need(t, ctx, "approve"); const nos = Array.isArray(p.reqNos) ? p.reqNos : []; let n = 0;
+    for (const no of nos) { const q = t.reqs.find(x => x.no === no); if (q && q.status === "zur Freigabe" && !q.po) { q.status = "zurückgezogen"; q.approvedBy = ctx.userName; q.note = p.reason || "Rückweg"; n++; } }
+    if (p.project && t.migProjects && t.migProjects[p.project]) { const M = t.migProjects[p.project]; M.done = {}; M.approval = null; M.tested = false; M.source = null; M.map = {}; M.log.push({ date: t.date, by: ctx.userName, text: "Rückweg: Projekt zurückgesetzt" }); }
+    return { text: `${n} offene Bestellanforderung(en) zurückgezogen (${p.reason || "Rückweg"})` };
+  }
+});
+
+return { MIG_PROJECTS, WORK_CENTERS, CATALOG, CATEGORY_DEFAULT, deriveDrawing, ROLE_DESC, dueMaintenance, returnRate, personnelCost, cutoverStatus, legacyData, MIG_OBJECTS, MIG_LABEL, isAbsent, absHoursInPeriod, SERVICE_RATE, VERSION, START_DATE, TENANT_IDS, COA, SIZES, E5, createWorld, resetTenant, resetAll, dispatch, kpis, plOf, trialBalance, balance, projectMetrics, replenishmentProposals, processInstances, tenantHash, costing, avail, periodOf, customerName, supplierName, articleName, materialOf, QUERY_ONLY, _internal: { HIST, crossHistory } };
 });
 
 /* NEXORA DXF-Leser: liest ASCII-DXF (R12 bis aktuelle Versionen), Schriftfeld- und Positionsattribute
@@ -1692,6 +1830,311 @@ return { WORK_CENTERS, CATALOG, CATEGORY_DEFAULT, deriveDrawing, ROLE_DESC, dueM
   return { parse, toDrawing, length: len };
 });
 
+/* NEXORA Experience Layer – Konnektor-Schicht (v0.8). Reine Logik, kein DOM, in Node testbar.
+   Die NEXORA-Engine ist ein Konnektor unter mehreren. Alle anderen Konnektoren sind SIMULIERT:
+   deterministisch aus dem Seed erzeugt, ohne Netzwerkzugriff, ohne echte Daten.
+   Zustand je Unternehmen, an das Engine-Mandantenobjekt gebunden: Wird ein Mandant zurückgesetzt
+   (neues Mandantenobjekt), beginnen auch seine Konnektoren wieder im Ausgangszustand. */
+(function (root, factory) { if (typeof module === "object" && module.exports) module.exports = factory(); else root.NexoraConnectors = factory(); })(typeof self !== "undefined" ? self : this, function () {
+  const VERSION = "0.8.0";
+  /* ---------- Konfiguration: Kosten (Beispielwerte, keine Herstellerpreise) ---------- */
+  const COST_NOTE = "Beispielwerte, keine Herstellerpreise";
+  const ROUTES = {
+    nexora: [{ id: "engine", label: "NEXORA-Engine (intern)", viaAgent: "nexora", costPerCall: 0, note: "Eigene Engine, kein Fremdsystem" }],
+    sap: [
+      { id: "joule-a2a", label: "Joule (A2A)", viaAgent: "joule", costPerCall: 0.04, note: "Agent-zu-Agent über den SAP-Assistenten" },
+      { id: "mcp-gateway", label: "MCP Gateway (kostenpflichtig)", viaAgent: "nexora", costPerCall: 0.12, note: "Werkzeugzugriff über ein lizenziertes Gateway" },
+      { id: "released-api", label: "Freigegebene Schnittstelle", viaAgent: "nexora", costPerCall: 0.01, note: "Von SAP freigegebene Schnittstelle (z. B. OData), Systembenutzer" }
+    ],
+    m365: [{ id: "copilot-a2a", label: "Copilot (A2A)", viaAgent: "copilot", costPerCall: 0.03, note: "Agent-zu-Agent über den Microsoft-Assistenten" }, { id: "graph", label: "Graph-Schnittstelle", viaAgent: "nexora", costPerCall: 0.002, note: "Freigegebene Schnittstelle" }],
+    servicenow: [{ id: "nowassist-a2a", label: "Now Assist (A2A)", viaAgent: "nowassist", costPerCall: 0.03, note: "Agent-zu-Agent über den ServiceNow-Assistenten" }, { id: "rest", label: "REST-Schnittstelle", viaAgent: "nexora", costPerCall: 0.005, note: "Freigegebene Schnittstelle" }],
+    workday: [{ id: "workday-agent-a2a", label: "Workday-Agent (A2A)", viaAgent: "workday-agent", costPerCall: 0.03, note: "Agent-zu-Agent über den Workday-Assistenten" }, { id: "integration", label: "Integrationsschnittstelle", viaAgent: "nexora", costPerCall: 0.005, note: "Freigegebene Schnittstelle" }],
+    layer: [{ id: "config", label: "NEXORA-Konfiguration", viaAgent: "nexora", costPerCall: 0, note: "Einstellungen des Experience Layers" }]
+  };
+  const SAP_POLICY_NOTE = "Direkter Zugriff eines Agenten auf SAP-Schnittstellen ist in dieser Demo nicht vorgesehen. Die Zugriffswege orientieren sich am Hinweis auf die SAP API Policy (v4/2026) – ausdrücklich ohne Rechtsbewertung.";
+  const FOUR_EYES_LIMIT = 10000; // Beispielwert: systemübergreifende Freigaben darüber brauchen zwei Personen
+  const CONNECTORS = {
+    nexora: { id: "nexora", name: "NEXORA-Engine", kind: "erp", simulated: false, capabilities: { tasks: true, search: true, actions: true, kpis: true } },
+    sap: { id: "sap", name: "SAP S/4HANA (simuliert)", kind: "erp", simulated: true, capabilities: { tasks: true, search: true, actions: true, kpis: true }, originalUi: "SAP Fiori" },
+    m365: { id: "m365", name: "Microsoft 365 (simuliert)", kind: "collaboration", simulated: true, capabilities: { tasks: true, search: true, actions: true, kpis: false }, originalUi: "Outlook" },
+    servicenow: { id: "servicenow", name: "ServiceNow (simuliert)", kind: "itsm", simulated: true, capabilities: { tasks: true, search: true, actions: true, kpis: true }, originalUi: "ServiceNow Service Portal" },
+    workday: { id: "workday", name: "Workday (simuliert)", kind: "hcm", simulated: true, capabilities: { tasks: true, search: true, actions: true, kpis: false }, originalUi: "Workday" }
+  };
+  for (const id in CONNECTORS) CONNECTORS[id].routes = ROUTES[id];
+  /* Erlaubte Wege je Befehl. Nicht aufgeführte Wege (insbesondere "direct-api") werden abgelehnt. */
+  const ALLOWED = {
+    sap: { approveInvoice: ["joule-a2a", "released-api"], rejectInvoice: ["joule-a2a", "released-api"], approvePR: ["joule-a2a", "released-api"], rejectPR: ["joule-a2a", "released-api"], createPR: ["joule-a2a", "mcp-gateway"], mirrorPR: ["released-api"], markMigrated: ["released-api"], query: ["joule-a2a", "mcp-gateway", "released-api"] },
+    m365: { replyApproval: ["copilot-a2a", "graph"], archiveMail: ["graph"], query: ["copilot-a2a", "graph"] },
+    servicenow: { approveRITM: ["nowassist-a2a", "rest"], rejectRITM: ["nowassist-a2a", "rest"], createRITM: ["rest", "nowassist-a2a"], query: ["nowassist-a2a", "rest"] },
+    workday: { approveAbsence: ["workday-agent-a2a", "integration"], rejectAbsence: ["workday-agent-a2a", "integration"], completeOnboardingTask: ["integration", "workday-agent-a2a"], query: ["workday-agent-a2a", "integration"] },
+    layer: { setOwner: ["config"], setDash: ["config"], transition: ["config"] }
+  };
+  /* Prozesse und System of Record (Standard). Karten, Inbox, Suche und Dashboard lesen über diese Zuordnung. */
+  const PROCESSES = {
+    bestellanforderung: { label: "Bestellanforderung", systems: ["sap", "nexora"], owner: "sap" },
+    rechnungsfreigabe: { label: "Rechnungsfreigabe", systems: ["sap", "nexora"], owner: "sap" },
+    ticket_einkauf: { label: "IT- und Einkaufsanfrage", systems: ["servicenow"], owner: "servicenow" },
+    abwesenheit: { label: "Abwesenheit", systems: ["workday", "nexora"], owner: "workday" },
+    freigabebitte: { label: "Freigabebitte per Mail", systems: ["m365"], owner: "m365" },
+    onboarding: { label: "Onboarding", systems: ["workday", "nexora"], owner: "workday" },
+    auftrag: { label: "Aufträge, Fertigung, Finanzen", systems: ["nexora"], owner: "nexora" }
+  };
+
+  /* ---------- Agenten-Register (A2A-Stil) und Router ----------
+     Jeder Agent hat eine Agentenkarte: Name, System, Fähigkeiten, Zugriffsweg. Alle außer der NEXORA-Engine sind simuliert. */
+  const AGENTS = [
+    { id: "nexora", name: "NEXORA-Engine", system: "nexora", route: "engine", simulated: false, skills: ["Kennzahlen und GuV", "Aufträge, Fertigung, Service", "Einkauf und Lager", "HR und Personalkosten", "Datenmigration", "Inbox über alle Systeme"], keywords: [] },
+    { id: "joule", name: "Joule (simuliert)", system: "sap", route: "joule-a2a", simulated: true, skills: ["Bestellanforderungen", "Kreditorenrechnungen", "Materialbestand je Werk"], keywords: ["sap", "s/4", "s4", "fiori", "banf", "bestellanforderung 1000", "kreditor", "eingangsrechnung", "rechnungsfreigabe", "werk 1000", "materialbestand"] },
+    { id: "copilot", name: "Copilot (simuliert)", system: "m365", route: "copilot-a2a", simulated: true, skills: ["Mails und Freigabebitten", "Termine", "Dokumente"], keywords: ["microsoft", "m365", "outlook", "teams", "mail", "e-mail", "postfach", "termin", "kalender", "sharepoint", "dokument"] },
+    { id: "nowassist", name: "Now Assist (simuliert)", system: "servicenow", route: "nowassist-a2a", simulated: true, skills: ["IT- und Einkaufsanfragen", "Störungen", "Katalog"], keywords: ["servicenow", "ticket", "ritm", "incident", "störung", "it-anfrage", "service portal", "lizenz"] },
+    { id: "workday-agent", name: "Workday-Agent (simuliert)", system: "workday", route: "workday-agent-a2a", simulated: true, skills: ["Abwesenheiten", "Onboarding", "Mitarbeitende"], keywords: ["workday", "urlaub", "abwesenheit", "krank", "onboarding", "neue mitarbeiter", "eintritt"] }
+  ];
+  const NOT_CONNECTED = ["salesforce", "oracle", "dynamics", "datev", "hubspot", "jira", "zendesk", "successfactors", "ariba", "coupa"];
+  function routeOf(sys, id) { return (ROUTES[sys] || []).find(r => r.id === id) || null; }
+  /* Router: wählt je Anfrage den Agenten. Liefert { ok, agent, system, route, cost, what } oder { ok:false, code, text }. Rein lesend, ohne Kosten. */
+  function routeQuery(text) {
+    const q = String(text || "").toLowerCase();
+    if (/\b(direkt\w*|direct)\b[^.?!]{0,40}\b(api|schnittstelle|tabelle|datenbank|odata|rfc|bapi)\b|\b(rfc|bapi|se16|hana-datenbank|tabelle (bkpf|bseg|ekko|ekpo|mara|lfa1|acdoca))\b/.test(q) && (/sap|s\/4|joule|bapi|rfc|se16|hana|acdoca|bkpf|bseg|ekko|ekpo|mara|lfa1/.test(q)))
+      return { ok: false, code: "ROUTE_NOT_ALLOWED", system: "sap", agent: AGENTS[1], text: "Für diese Anfrage gibt es keinen zulässigen Weg. " + SAP_POLICY_NOTE + " Zulässig sind Joule (A2A), das MCP Gateway und freigegebene Schnittstellen." };
+    const nc = NOT_CONNECTED.find(n => q.includes(n));
+    if (nc) return { ok: false, code: "NO_ROUTE", system: null, agent: null, text: `Für „${nc[0].toUpperCase() + nc.slice(1)}“ gibt es in dieser Demo keinen angebundenen Konnektor und damit keinen zulässigen Weg. Angebunden sind die NEXORA-Engine sowie simuliert SAP S/4HANA, Microsoft 365, ServiceNow und Workday.` };
+    let best = AGENTS[0], score = 0;
+    for (const a of AGENTS.slice(1)) { const sc = a.keywords.reduce((n, k) => n + (q.includes(k) ? (k.length > 4 ? 2 : 1) : 0), 0); if (sc > score) { best = a; score = sc; } }
+    const r = routeOf(best.system, best.route);
+    const what = best.system === "sap" ? (/rechnung|kreditor/.test(q) ? "invoices" : /bestellanforderung|banf/.test(q) ? "prs" : "materials") : null;
+    return { ok: true, agent: best, system: best.system, route: r, cost: r.costPerCall, what, cmd: best.system === "nexora" ? null : `conn.${best.system}.query` };
+  }
+
+  /* ---------- Ablösung: unterstützte Prozesse, Extrakt, Abstimmung, Fortschritt ---------- */
+  const SUPPORTED_TRANSITION = { bestellanforderung: "sap-pr" };
+  /* Extrakt offener Bestellanforderungen aus dem simulierten SAP (rein lesend) */
+  function prExtract(w, tid) { return { requisitions: state(w, tid).sap.prs.filter(o => o.status === "zur Freigabe" || o.status === "1. Freigabe erteilt").map(o => ({ BANFN: o.no, TXZ01: o.text, MENGE: o.qty, MEINS: o.unit || "Stk", PREIS: o.price, KOSTL: o.costCenter && o.costCenter !== "–" ? o.costCenter : "", AFNAM: o.requester, FAELLIG: o.due, KATALOG: o.catalog || null })) }; }
+  /* Abstimmung im Parallelbetrieb: neue Vorgänge in NEXORA gegen Spiegelungen im Altsystem (Stückzahl und Summe) */
+  function reconcile(w, tid, process) {
+    const s = state(w, tid), t = w.tenants[tid]; const st = s.transition[process] || {}; const base = st.reqBase == null ? t.reqs.length : st.reqBase;
+    const nx = t.reqs.slice(base).filter(q => q.type === "indirekt" && !q.legacy); const mir = s.sap.prs.filter(o => o.mirrorOf && nx.some(q => q.no === o.mirrorOf));
+    const sum = a => r2(a.reduce((x, y) => x + y, 0)); const nSum = sum(nx.map(q => q.net)), lSum = sum(mir.map(o => o.value));
+    const missing = nx.filter(q => !mir.some(o => o.mirrorOf === q.no)).map(q => q.no);
+    return { nexora: { count: nx.length, sum: nSum }, legacy: { count: mir.length, sum: lSum }, diffCount: nx.length - mir.length, diffSum: r2(nSum - lSum), missing, qty: { nexora: nx.reduce((a, q) => a + q.qty, 0), legacy: mir.reduce((a, o) => a + o.qty, 0) } };
+  }
+  /* Anteil der Vorgänge eines Prozesses auf der NEXORA-Engine */
+  function share(w, tid, process) {
+    const s = state(w, tid), t = w.tenants[tid];
+    if (process === "bestellanforderung") { const nx = t.reqs.filter(q => q.type === "indirekt" && q.status !== "zurückgezogen").length; const sap = s.sap.prs.filter(o => o.status !== "gespiegelt" && o.status !== "übernommen nach NEXORA").length; return nx + sap ? nx / (nx + sap) : 0; }
+    return s.owners[process] === "nexora" ? 1 : 0;
+  }
+
+  /* ---------- Hilfen ---------- */
+  function mulberry32(a) { return function () { a |= 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+  function hashStr(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+  const r2 = x => Math.round(x * 100) / 100; const pick = (rng, a) => a[Math.floor(rng() * a.length)]; const int = (rng, a, b) => a + Math.floor(rng() * (b - a + 1));
+  const addDays = (iso, n) => { const d = new Date(iso + "T00:00:00Z"); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+  function fail(code, text) { const e = new Error(text); e.code = code; throw e; }
+  const STATE = new WeakMap(); // Mandantenobjekt → Konnektor-Zustand
+  const PROVIDERS = { nexoraTasks: null };
+
+  /* ---------- Deterministische Seed-Daten der simulierten Systeme ---------- */
+  function seedState(w, tid) {
+    const t = w.tenants[tid]; const rng = mulberry32((w.seed ^ hashStr("conn-" + tid)) >>> 0); const d0 = t.date;
+    const emp = (i) => (t.master.employees[i % t.master.employees.length] || { name: "Mitarbeitende" }).name;
+    const cc = t.master.costCenters && t.master.costCenters.length ? t.master.costCenters : [{ id: "KS100", name: "Zentrale" }];
+    const sups = (t.master.suppliers || []).filter(s => !s.link && !s.indirect).slice(0, 6); const supName = i => (sups[i % Math.max(1, sups.length)] || { name: "Lieferant " + (i + 1) }).name;
+    const items = { elevon: [["Schweißdraht SG2 1,0 mm, 15 kg", 89], ["Schleifscheiben 125 mm, 50 Stk", 64], ["Prüfmittel Messschieber digital", 129], ["Kranwartung Halle 2", 2400]], novamart: [["Regalsystem Filiale Bonn", 6800], ["Kassenrollen, 100 Stk", 42], ["Reinigungsmittel Filialen", 310], ["Beschilderung Aktion Winter", 1450]], aventra: [["Fachbuch S/4HANA Finance", 79], ["Workshop-Raum Frankfurt, 2 Tage", 1600], ["Software-Lizenz Prozessmodellierung", 2900], ["Schulung Projektleitung", 1850]] }[tid];
+    const sap = { prs: [], invoices: [], materials: [] }, m365 = { mails: [], events: [], docs: [] }, sn = { tickets: [] }, wd = { absences: [], onboarding: [] };
+    for (let i = 0; i < 3; i++) { const [txt, price] = items[i + (i === 2 ? 1 : 0)]; const qty = price > 1000 ? 1 : int(rng, 2, 6); sap.prs.push({ no: String(10004711 + i), text: txt, qty, unit: "Stk", price, value: r2(qty * price), requester: emp(20 + i * 3), costCenter: cc[i % cc.length].id, created: addDays(d0, -int(rng, 1, 6)), due: addDays(d0, int(rng, 0, 4)), status: "zur Freigabe", approvals: [], history: [["angelegt", addDays(d0, -2)]] }); }
+    const amts = [r2(1800 + rng() * 2500), r2(4200 + rng() * 3000), r2(12800 + rng() * 6000)];
+    amts.forEach((a, i) => sap.invoices.push({ no: String(5105600120 + i * 7), supplier: supName(i), amount: a, net: r2(a / 1.19), po: "45000" + (17250 + i * 13), received: addDays(d0, -int(rng, 2, 9)), due: addDays(d0, int(rng, 1, 12)), status: "zur Freigabe", approvals: [], reason: i === 1 ? "Preisabweichung 2,4 % zur Bestellung" : "Drei-Wege-Abgleich in Ordnung", history: [["eingegangen", addDays(d0, -3)]] }));
+    const mats = (t.master.materials || t.master.articles || []).slice(0, 5); mats.forEach((m, i) => sap.materials.push({ no: "MAT-" + (i + 1), name: m.name, plant: tid === "novamart" ? "ZL1" : "1000", available: int(rng, 0, 80), reserved: int(rng, 0, 20) }));
+    const mailSubj = [["Bitte Freigabe: Reisekosten Messe Hannover", 1240], ["Freigabe Sonderrabatt Großkunde", 0], ["Rückfrage zur Budgetverschiebung Q4", 0]];
+    mailSubj.forEach(([s, a], i) => m365.mails.push({ no: "MSG-" + (3101 + i), from: emp(5 + i * 4), subject: s, amount: a || null, received: addDays(d0, -i), due: addDays(d0, i === 0 ? 0 : 2), needsApproval: i < 2, status: i < 2 ? "Antwort erwartet" : "gelesen", history: [] }));
+    m365.events.push({ no: "EVT-1", title: "Lenkungskreis Digitalisierung", date: d0, time: "10:00" }, { no: "EVT-2", title: "Lieferantengespräch Quartalsziele", date: d0, time: "14:30" });
+    m365.docs.push({ no: "DOC-1", title: "Budgetplanung 2027.xlsx", owner: emp(2) }, { no: "DOC-2", title: "Lieferantenbewertung Q3.pptx", owner: emp(9) }, { no: "DOC-3", title: "Richtlinie Reisekosten.docx", owner: emp(1) });
+    sn.tickets.push({ no: "RITM00" + (14021 + 0), kind: "Einkauf", text: "Monitor 27 Zoll für Arbeitsplatz", requestedFor: emp(11), cost: 219, status: "zur Freigabe", approvals: [], created: addDays(d0, -1), due: addDays(d0, 1), history: [] },
+      { no: "RITM00" + (14021 + 1), kind: "Software", text: "Lizenz Visualisierungssoftware, 12 Monate", requestedFor: emp(14), cost: 1380, status: "zur Freigabe", approvals: [], created: addDays(d0, -2), due: addDays(d0, 0), history: [] },
+      { no: "INC00" + 88213, kind: "Störung", text: "VPN-Verbindung bricht ab", requestedFor: emp(3), cost: 0, status: "in Bearbeitung", approvals: [], created: addDays(d0, -1), due: addDays(d0, 2), history: [] });
+    wd.absences.push({ no: "ABS-" + 501, worker: emp(7), type: "Urlaub", from: addDays(d0, 10), days: 5, status: "beantragt", history: [] }, { no: "ABS-" + 502, worker: emp(12), type: "Fortbildung", from: addDays(d0, 4), days: 2, status: "beantragt", history: [] });
+    wd.onboarding.push({ no: "ONB-" + 77, worker: ["Lea Hartwig", "Jonas Petri", "Mara Lindqvist"][["elevon", "novamart", "aventra"].indexOf(tid)], start: addDays(d0, 12), tasks: [{ id: "laptop", text: "Laptop bereitstellen", done: false, cost: 779 }, { id: "access", text: "Zugänge einrichten", done: false, cost: 0 }], status: "offen", history: [] });
+    const owners = {}; for (const k in PROCESSES) owners[k] = PROCESSES[k].owner;
+    return { sap, m365, servicenow: sn, workday: wd, ledger: [], seq: 0, owners, dash: {}, transition: {} };
+  }
+  function state(w, tid) { const t = w.tenants[tid]; if (!t) fail("TENANT", "Unbekannter Mandant."); let s = STATE.get(t); if (!s) { s = seedState(w, tid); STATE.set(t, s); } return s; }
+  function stableHash(o) { return hashStr(JSON.stringify(o)).toString(16).padStart(8, "0"); }
+  function hash(w, tid) { return stableHash(state(w, tid)); }
+
+  /* ---------- Rechte (gleiche Rollen wie die Engine) ---------- */
+  function who(w, tid, ctx) { const t = w.tenants[tid]; const u = t.users.find(x => x.id === (ctx && ctx.user)) || t.users[0]; const role = t.roles.find(r => r.id === u.role) || { id: "?", name: "?", perms: [] }; return { u, role }; }
+  function need(w, tid, ctx, perms) { const { u, role } = who(w, tid, ctx); if (u.active === false) fail("INACTIVE", `Der Account ${u.name} ist geschlossen.`); const list = [].concat(perms); if (!list.some(p => role.perms.includes(p))) fail("FORBIDDEN", `${u.name} (${role.name}) hat keine Berechtigung für diese Aktion.`); return { u, role }; }
+  const can = (w, tid, ctx, perms) => { try { need(w, tid, ctx, perms); return true; } catch (e) { return false; } };
+
+  /* ---------- Zugriffsweg und Kosten ---------- */
+  function resolveRoute(sys, cmd, routeId) {
+    if (routeId === "direct-api") fail("ROUTE_NOT_ALLOWED", `Kein zulässiger Zugriffsweg: direkter Schnittstellenzugriff durch einen Agenten ist nicht erlaubt. ${sys === "sap" ? SAP_POLICY_NOTE : ""}`.trim());
+    const allowed = (ALLOWED[sys] || {})[cmd]; if (!allowed) fail("CMD", `Befehl ${cmd} gibt es für ${sys} nicht.`);
+    const id = routeId || allowed[0]; if (!allowed.includes(id)) fail("ROUTE_NOT_ALLOWED", `Weg „${(ROUTES[sys].find(r => r.id === id) || { label: id }).label}“ ist für diese Aktion nicht zulässig. Zulässig: ${allowed.map(a => ROUTES[sys].find(r => r.id === a).label).join(", ")}.${sys === "sap" ? " " + SAP_POLICY_NOTE : ""}`);
+    return ROUTES[sys].find(r => r.id === id);
+  }
+
+  /* ---------- Normalisierte Aufgaben (Aktionskarten-Daten) ---------- */
+  const eur = v => Number(v || 0).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
+  function prCard(sys, ref, o, tid) { return { process: "bestellanforderung", sys, ref, title: `Bestellanforderung ${o.no}`, fields: [["Bedarf", o.text], ["Menge", o.qty + " " + (o.unit || "Stk")], ["Wert", eur(o.value)], ["Anforderer", o.requester], ["Kostenstelle", o.costCenter]], amount: o.value, due: o.due, status: o.status, approvedBy: (o.approvals || []).map(a => a.user), actions: [{ label: "Freigeben", cmd: sys === "sap" ? "conn.sap.approvePR" : "approveRequisition", p: sys === "sap" ? { ref } : { reqNo: o.no }, perm: "approve", primary: true, fourEyes: o.value > FOUR_EYES_LIMIT }, { label: "Ablehnen", cmd: sys === "sap" ? "conn.sap.rejectPR" : "approveRequisition", p: sys === "sap" ? { ref } : { reqNo: o.no, reject: true }, perm: "approve", confirm: true }] }; }
+  function tasksOf(w, tid, sys, ctx) {
+    const s = state(w, tid); const out = []; const own = p => s.owners[p] === sys; const allow = perms => can(w, tid, ctx, perms);
+    if (sys === "sap") {
+      if (own("bestellanforderung") && allow("approve")) for (const o of s.sap.prs.filter(x => x.status === "zur Freigabe")) out.push(prCard("sap", "sap:pr:" + o.no, o, tid));
+      if (own("rechnungsfreigabe") && allow("approve")) for (const o of s.sap.invoices.filter(x => x.status !== "freigegeben" && x.status !== "abgelehnt")) out.push({ process: "rechnungsfreigabe", sys, ref: "sap:inv:" + o.no, title: `Kreditorenrechnung ${o.no}`, fields: [["Lieferant", o.supplier], ["Betrag", eur(o.amount)], ["Bestellung", o.po], ["Prüfung", o.reason], ["Fällig", o.due]].concat(o.approvals.length ? [["1. Freigabe", o.approvals[0].name]] : []), amount: o.amount, due: o.due, status: o.status, approvedBy: o.approvals.map(a => a.user), actions: [{ label: o.approvals.length ? "2. Freigabe erteilen" : "Freigeben", cmd: "conn.sap.approveInvoice", p: { ref: "sap:inv:" + o.no }, perm: "approve", primary: true, fourEyes: o.amount > FOUR_EYES_LIMIT }, { label: "Ablehnen", cmd: "conn.sap.rejectInvoice", p: { ref: "sap:inv:" + o.no }, perm: "approve", confirm: true }] });
+    }
+    if (sys === "m365" && allow("view")) for (const o of s.m365.mails.filter(x => x.needsApproval && x.status === "Antwort erwartet")) out.push({ process: "freigabebitte", sys, ref: "m365:mail:" + o.no, title: o.subject, fields: [["Von", o.from], ["Eingang", o.received]].concat(o.amount ? [["Betrag", eur(o.amount)]] : []), amount: o.amount || 0, due: o.due, status: o.status, actions: [{ label: "Zustimmen", cmd: "conn.m365.replyApproval", p: { ref: "m365:mail:" + o.no, decision: "zugestimmt" }, perm: "view", primary: true }, { label: "Ablehnen", cmd: "conn.m365.replyApproval", p: { ref: "m365:mail:" + o.no, decision: "abgelehnt" }, perm: "view", confirm: true }] });
+    if (sys === "servicenow" && own("ticket_einkauf") && allow("approve")) for (const o of s.servicenow.tickets.filter(x => x.status === "zur Freigabe")) out.push({ process: "ticket_einkauf", sys, ref: "servicenow:ritm:" + o.no, title: `${o.kind}-Anfrage ${o.no}`, fields: [["Anfrage", o.text], ["Für", o.requestedFor], ["Kosten", eur(o.cost)]].concat(o.approvals.length ? [["1. Freigabe", o.approvals[0].name]] : []), amount: o.cost, due: o.due, status: o.status, approvedBy: o.approvals.map(a => a.user), actions: [{ label: o.approvals.length ? "2. Freigabe erteilen" : "Freigeben", cmd: "conn.servicenow.approveRITM", p: { ref: "servicenow:ritm:" + o.no }, perm: "approve", primary: true, fourEyes: o.cost > FOUR_EYES_LIMIT }, { label: "Ablehnen", cmd: "conn.servicenow.rejectRITM", p: { ref: "servicenow:ritm:" + o.no }, perm: "approve", confirm: true }] });
+    if (sys === "workday") {
+      if (own("abwesenheit") && allow(["hr", "approve"])) for (const o of s.workday.absences.filter(x => x.status === "beantragt")) out.push({ process: "abwesenheit", sys, ref: "workday:abs:" + o.no, title: `${o.type}: ${o.worker}`, fields: [["Zeitraum", `${o.days} Tage ab ${o.from}`], ["Art", o.type]], amount: 0, due: o.from, status: o.status, actions: [{ label: "Genehmigen", cmd: "conn.workday.approveAbsence", p: { ref: "workday:abs:" + o.no }, perm: "hr", primary: true }, { label: "Ablehnen", cmd: "conn.workday.rejectAbsence", p: { ref: "workday:abs:" + o.no }, perm: "hr", confirm: true }] });
+      if (own("onboarding") && allow("hr")) for (const o of s.workday.onboarding) for (const k of o.tasks.filter(x => !x.done)) out.push({ process: "onboarding", sys, ref: `workday:onb:${o.no}:${k.id}`, title: `Onboarding ${o.worker}: ${k.text}`, fields: [["Start", o.start], ["Aufgabe", k.text]].concat(k.cost ? [["Folge", "IT-Anfrage in ServiceNow"]] : []), amount: k.cost || 0, due: addDays(o.start, -5), status: "offen", actions: [{ label: "Erledigen", cmd: "conn.workday.completeOnboardingTask", p: { ref: `workday:onb:${o.no}:${k.id}` }, perm: "hr", primary: true }] });
+    }
+    if (sys === "nexora") {
+      const t = w.tenants[tid];
+      if (own("bestellanforderung") && allow("approve")) { const { u } = who(w, tid, ctx); for (const q of (t.reqs || []).filter(x => x.status === "zur Freigabe" && x.requester !== u.id && (x.level !== "ceo" || u.role === "ceo"))) out.push(prCard("nexora", "nexora:req:" + q.no, { no: q.no, text: q.text, qty: q.qty, unit: q.unit, value: q.net, requester: q.requesterName, costCenter: q.costCenter || "–", due: q.due || q.date, status: q.status }, tid)); }
+      if (PROVIDERS.nexoraTasks) for (const k of PROVIDERS.nexoraTasks(tid, ctx && ctx.user)) { if (k.cmd === "approveRequisition") continue; out.push({ process: k.cmd === "approveAbsence" ? "abwesenheit" : "auftrag", sys: "nexora", ref: "nexora:task:" + k.id, title: k.title, fields: [["Details", k.sub || ""]], amount: 0, due: t.date, status: "offen", actions: [{ label: k.label, cmd: k.cmd, p: k.p, perm: null, primary: true }].concat(k.reject ? [{ label: "Ablehnen", cmd: k.cmd, p: k.reject, perm: null, confirm: true }] : []) }); }
+      else for (const m of t.inbox.filter(x => x.status === "offen")) out.push({ process: "auftrag", sys: "nexora", ref: "nexora:inbox:" + m.id, title: m.text, fields: [], amount: 0, due: t.date, status: "offen", actions: [{ label: "Prüfen und buchen", cmd: "processInbox", p: { id: m.id }, perm: "view", primary: true }] });
+    }
+    // Vier-Augen: wer schon freigegeben hat, bekommt die zweite Freigabe nicht als Aufgabe angeboten
+    const uid = ctx && ctx.user;
+    return out.filter(k => !(uid && k.approvedBy && k.approvedBy.includes(uid))).map(k => Object.assign(k, { source: CONNECTORS[sys].name, simulated: CONNECTORS[sys].simulated, route: defaultRouteLabel(sys, k), deepLink: k.ref }));
+  }
+  function defaultRouteLabel(sys, k) { if (sys === "nexora") return ROUTES.nexora[0].label; const a = k.actions.find(x => x.cmd && x.cmd.startsWith("conn.")); if (!a) return ROUTES[sys][0].label; const cmd = a.cmd.split(".")[2]; return ROUTES[sys].find(r => r.id === ALLOWED[sys][cmd][0]).label; }
+  function listTasks(w, tid, ctx) { const out = []; for (const sys of ["nexora", "sap", "m365", "servicenow", "workday"]) out.push(...tasksOf(w, tid, sys, ctx)); return out.sort((a, b) => (a.due || "").localeCompare(b.due || "") || b.amount - a.amount); }
+
+  /* ---------- Suche und Objekte ---------- */
+  function search(w, tid, q, ctx) {
+    const s = state(w, tid), t = w.tenants[tid]; const needle = String(q || "").toLowerCase().trim(); if (needle.length < 2) return [];
+    const hit = (sys, ref, kind, title, sub) => ({ sys, source: CONNECTORS[sys].name, simulated: CONNECTORS[sys].simulated, ref, kind, title, sub });
+    const m = (...xs) => xs.some(x => String(x || "").toLowerCase().includes(needle)); const out = [];
+    for (const o of s.sap.prs) if (m(o.no, o.text, o.requester)) out.push(hit("sap", "sap:pr:" + o.no, "Bestellanforderung", `${o.no} ${o.text}`, `${o.status} · ${eur(o.value)}`));
+    for (const o of s.sap.invoices) if (m(o.no, o.supplier, o.po)) out.push(hit("sap", "sap:inv:" + o.no, "Kreditorenrechnung", `${o.no} ${o.supplier}`, `${o.status} · ${eur(o.amount)}`));
+    for (const o of s.sap.materials) if (m(o.no, o.name)) out.push(hit("sap", "sap:mat:" + o.no, "Material", o.name, `Werk ${o.plant} · verfügbar ${o.available - o.reserved}`));
+    for (const o of s.m365.mails) if (m(o.no, o.subject, o.from)) out.push(hit("m365", "m365:mail:" + o.no, "Mail", o.subject, `von ${o.from} · ${o.status}`));
+    for (const o of s.m365.docs) if (m(o.title, o.owner)) out.push(hit("m365", "m365:doc:" + o.no, "Dokument", o.title, "von " + o.owner));
+    for (const o of s.m365.events) if (m(o.title)) out.push(hit("m365", "m365:evt:" + o.no, "Termin", o.title, `${o.date} ${o.time}`));
+    for (const o of s.servicenow.tickets) if (m(o.no, o.text, o.requestedFor)) out.push(hit("servicenow", "servicenow:ritm:" + o.no, o.kind + "-Ticket", `${o.no} ${o.text}`, `${o.status}${o.cost ? " · " + eur(o.cost) : ""}`));
+    for (const o of s.workday.absences) if (m(o.worker, o.type)) out.push(hit("workday", "workday:abs:" + o.no, "Abwesenheit", `${o.type}: ${o.worker}`, `${o.days} Tage · ${o.status}`));
+    for (const o of s.workday.onboarding) if (m(o.worker, "onboarding")) out.push(hit("workday", "workday:onb:" + o.no, "Onboarding", o.worker, `Start ${o.start}`));
+    for (const d of t.docs.slice(-400)) if (m(d.no, d.text)) out.push(hit("nexora", "nexora:doc:" + d.no, "Beleg", `${d.no} ${d.text}`, d.date));
+    for (const so of t.salesOrders || []) if (m(so.no, so.customer)) out.push(hit("nexora", "nexora:so:" + so.no, "Kundenauftrag", so.no, `${so.status} · ${eur(so.net)}`));
+    for (const po of t.purchaseOrders || []) if (m(po.no, po.supplier)) out.push(hit("nexora", "nexora:po:" + po.no, "Bestellung", po.no, `${po.status} · ${eur(po.net)}`));
+    for (const q2 of t.reqs || []) if (m(q2.no, q2.text)) out.push(hit("nexora", "nexora:req:" + q2.no, "Bestellanforderung", `${q2.no} ${q2.text}`, `${q2.status} · ${eur(q2.net)}`));
+    for (const c of (t.master.customers || []).slice(0, 300)) if (m(c.id, c.name)) out.push(hit("nexora", "nexora:cust:" + c.id, "Kunde", c.name, c.city || ""));
+    for (const x of (t.master.materials || t.master.articles || []).slice(0, 300)) if (m(x.id, x.name)) out.push(hit("nexora", "nexora:mat:" + x.id, t.master.materials ? "Material" : "Artikel", x.name, x.id));
+    return out.slice(0, 60);
+  }
+  function parseRef(ref) { const [sys, kind, ...rest] = String(ref).split(":"); return { sys, kind, id: rest.join(":") }; }
+  function getObject(w, tid, ref) {
+    const s = state(w, tid), t = w.tenants[tid]; const { sys, kind, id } = parseRef(ref); const f = (title, fields, history, o) => ({ sys, source: CONNECTORS[sys] ? CONNECTORS[sys].name : sys, simulated: !!(CONNECTORS[sys] && CONNECTORS[sys].simulated), originalUi: CONNECTORS[sys] && CONNECTORS[sys].originalUi, ref, kind, title, fields, history: history || [], raw: o });
+    if (sys === "sap" && kind === "pr") { const o = s.sap.prs.find(x => x.no === id); if (o) return f(`Bestellanforderung ${o.no}`, [["Bedarf", o.text], ["Menge", o.qty + " " + o.unit], ["Preis", eur(o.price)], ["Wert", eur(o.value)], ["Anforderer", o.requester], ["Kostenstelle", o.costCenter], ["Status", o.status], ["Quelle", o.source || "SAP"]], o.history, o); }
+    if (sys === "sap" && kind === "inv") { const o = s.sap.invoices.find(x => x.no === id); if (o) return f(`Kreditorenrechnung ${o.no}`, [["Lieferant", o.supplier], ["Brutto", eur(o.amount)], ["Netto", eur(o.net)], ["Bestellung", o.po], ["Eingang", o.received], ["Fällig", o.due], ["Prüfung", o.reason], ["Status", o.status], ["Freigaben", o.approvals.map(a => a.name).join(", ") || "–"]], o.history, o); }
+    if (sys === "sap" && kind === "mat") { const o = s.sap.materials.find(x => x.no === id); if (o) return f(o.name, [["Werk", o.plant], ["Bestand", o.available], ["Reserviert", o.reserved], ["Verfügbar", o.available - o.reserved]], [], o); }
+    if (sys === "m365" && kind === "mail") { const o = s.m365.mails.find(x => x.no === id); if (o) return f(o.subject, [["Von", o.from], ["Eingang", o.received], ["Status", o.status]].concat(o.amount ? [["Betrag", eur(o.amount)]] : []), o.history, o); }
+    if (sys === "m365" && kind === "doc") { const o = s.m365.docs.find(x => x.no === id); if (o) return f(o.title, [["Besitzer", o.owner]], [], o); }
+    if (sys === "m365" && kind === "evt") { const o = s.m365.events.find(x => x.no === id); if (o) return f(o.title, [["Datum", o.date], ["Uhrzeit", o.time]], [], o); }
+    if (sys === "servicenow" && kind === "ritm") { const o = s.servicenow.tickets.find(x => x.no === id); if (o) return f(`${o.kind}-Ticket ${o.no}`, [["Anfrage", o.text], ["Für", o.requestedFor], ["Kosten", eur(o.cost)], ["Status", o.status], ["Freigaben", o.approvals.map(a => a.name).join(", ") || "–"]].concat(o.source ? [["Ursprung", o.source]] : []), o.history, o); }
+    if (sys === "workday" && kind === "abs") { const o = s.workday.absences.find(x => x.no === id); if (o) return f(`${o.type}: ${o.worker}`, [["Ab", o.from], ["Tage", o.days], ["Status", o.status]], o.history, o); }
+    if (sys === "workday" && kind === "onb") { const o = s.workday.onboarding.find(x => x.no === id.split(":")[0]); if (o) return f(`Onboarding ${o.worker}`, [["Start", o.start]].concat(o.tasks.map(k => [k.text, k.done ? "erledigt" : "offen"])), o.history, o); }
+    if (sys === "nexora") { const tt = { so: () => t.salesOrders.find(x => x.no === id), po: () => t.purchaseOrders.find(x => x.no === id), req: () => (t.reqs || []).find(x => x.no === id), doc: () => t.docs.find(x => x.no === id), cust: () => t.master.customers.find(x => x.id === id), mat: () => (t.master.materials || t.master.articles || []).find(x => x.id === id) }[kind]; const o = tt && tt(); if (o) return f(`${kind.toUpperCase()} ${id}`, Object.entries(o).filter(([k, v]) => ["string", "number"].includes(typeof v)).slice(0, 10), [], o); }
+    return null;
+  }
+
+  /* ---------- Befehle der simulierten Systeme ---------- */
+  function findBy(list, no, what) { const o = list.find(x => x.no === no); if (!o) fail("NOT_FOUND", `${what} ${no} nicht gefunden.`); return o; }
+  function approve4(w, tid, ctx, o, amount, label) { // Vier-Augen über Schwellenwert
+    const { u } = who(w, tid, ctx); if (o.approvals.some(a => a.user === u.id)) fail("FOUR_EYES", `Vier-Augen-Prinzip: ${u.name} hat ${label} bereits freigegeben – die zweite Freigabe muss eine andere Person erteilen.`);
+    o.approvals.push({ user: u.id, name: u.name }); if (amount > FOUR_EYES_LIMIT && o.approvals.length < 2) { o.status = "1. Freigabe erteilt"; return false; } return true;
+  }
+  const CMD = {
+    sap: {
+      approvePR(w, tid, p, ctx, s, route) { need(w, tid, ctx, "approve"); if (s.owners.bestellanforderung !== "sap") fail("READ_ONLY", "Bestellanforderungen werden nicht mehr in SAP geführt – das Altsystem ist für diesen Prozess nur noch lesend."); const o = findBy(s.sap.prs, parseRef(p.ref).id, "Bestellanforderung"); if (o.status !== "zur Freigabe") fail("STATUS", `Status „${o.status}“.`);
+        const done = approve4(w, tid, ctx, o, o.value, o.no); if (!done) return { text: `1. Freigabe für Bestellanforderung ${o.no} erteilt – zweite Person nötig (über ${eur(FOUR_EYES_LIMIT)})` };
+        o.status = "freigegeben"; o.history.push(["freigegeben", w.tenants[tid].date]); return { text: `Bestellanforderung ${o.no} in SAP freigegeben (${route.label})`, follow: o.catalog ? [{ cmd: "createRequisition", p: Object.assign({ catalogId: o.catalog, qty: o.qty }, o.costCenter && o.costCenter !== "–" ? { costCenter: o.costCenter } : {}), why: `Bestellung und Wareneingang laufen in der NEXORA-Engine (Bezug SAP ${o.no})` }] : [] }; },
+      rejectPR(w, tid, p, ctx, s) { need(w, tid, ctx, "approve"); const o = findBy(s.sap.prs, parseRef(p.ref).id, "Bestellanforderung"); if (o.status !== "zur Freigabe" && o.status !== "1. Freigabe erteilt") fail("STATUS", `Status „${o.status}“.`); o.status = "abgelehnt"; o.history.push(["abgelehnt", w.tenants[tid].date]); return { text: `Bestellanforderung ${o.no} abgelehnt` }; },
+      approveInvoice(w, tid, p, ctx, s, route) { need(w, tid, ctx, "approve"); const o = findBy(s.sap.invoices, parseRef(p.ref).id, "Rechnung"); if (!["zur Freigabe", "1. Freigabe erteilt"].includes(o.status)) fail("STATUS", `Status „${o.status}“.`);
+        const done = approve4(w, tid, ctx, o, o.amount, "die Rechnung " + o.no); if (!done) return { text: `1. Freigabe für Rechnung ${o.no} (${eur(o.amount)}) erteilt – Vier-Augen-Prinzip, zweite Person nötig` };
+        o.status = "freigegeben"; o.history.push(["zur Zahlung freigegeben", w.tenants[tid].date]); return { text: `Rechnung ${o.no} über ${eur(o.amount)} in SAP zur Zahlung freigegeben (${route.label})` }; },
+      rejectInvoice(w, tid, p, ctx, s) { need(w, tid, ctx, "approve"); const o = findBy(s.sap.invoices, parseRef(p.ref).id, "Rechnung"); if (o.status === "freigegeben") fail("STATUS", "Bereits freigegeben."); o.status = "abgelehnt"; o.history.push(["abgelehnt", w.tenants[tid].date]); return { text: `Rechnung ${o.no} abgelehnt und an den Lieferanten zurück` }; },
+      createPR(w, tid, p, ctx, s, route) { need(w, tid, ctx, "view"); if (s.owners.bestellanforderung !== "sap") fail("READ_ONLY", "Bestellanforderungen werden in der NEXORA-Engine geführt."); const text = String(p.text || "").trim(); if (text.length < 3 || !(p.price > 0)) fail("INPUT", "Bedarf und Preis fehlen.");
+        const no = String(10004711 + s.sap.prs.length); const qty = p.qty > 0 ? p.qty : 1; const { u } = who(w, tid, ctx); const o = { no, text, qty, unit: "Stk", price: p.price, value: r2(qty * p.price), requester: p.requester || u.name, costCenter: p.costCenter || "–", created: w.tenants[tid].date, due: addDays(w.tenants[tid].date, 2), status: "zur Freigabe", approvals: [], catalog: p.catalogId || null, source: p.sourceRef || null, history: [["angelegt über " + route.label, w.tenants[tid].date]] }; s.sap.prs.push(o);
+        return { text: `Bestellanforderung ${no} in SAP angelegt (${route.label})${p.sourceRef ? " aus " + p.sourceRef : ""}`, objects: ["sap:pr:" + no] }; },
+      mirrorPR(w, tid, p, ctx, s) { need(w, tid, ctx, "view"); if (!s.transition.bestellanforderung || s.transition.bestellanforderung.phase !== "parallel") fail("STATUS", "Spiegeln nur im Parallelbetrieb."); const no = String(10004711 + s.sap.prs.length); s.sap.prs.push({ no, text: p.text, qty: p.qty, unit: "Stk", price: p.price, value: r2(p.qty * p.price), requester: p.requester, costCenter: p.costCenter || "–", created: w.tenants[tid].date, due: w.tenants[tid].date, status: "gespiegelt", approvals: [], mirrorOf: p.reqNo, history: [["gespiegelt aus NEXORA " + p.reqNo, w.tenants[tid].date]] }); return { text: `Parallelbetrieb: ${p.reqNo} nach SAP gespiegelt (${no})` }; },
+      markMigrated(w, tid, p, ctx, s) { need(w, tid, ctx, "approve"); const st = s.transition.bestellanforderung; if (!st || st.phase !== "parallel") fail("STATUS", "Kennzeichnen nur im Parallelbetrieb."); const map = p.map || {}; let n = 0;
+        for (const o of s.sap.prs) if (map[o.no] && o.status !== "übernommen nach NEXORA") { o.prevStatus = o.status; o.status = "übernommen nach NEXORA"; o.migratedTo = map[o.no]; o.history.push(["übernommen nach NEXORA " + map[o.no] + " – nur noch lesend", w.tenants[tid].date]); n++; }
+        return { text: `${n} Bestellanforderung(en) in SAP als übernommen gekennzeichnet – Altsystem für diesen Prozess nur noch lesend` }; },
+      query(w, tid, p, ctx, s, route) { need(w, tid, ctx, "view"); const what = p.what || "materials"; const data = what === "invoices" ? s.sap.invoices.map(o => ({ no: o.no, lieferant: o.supplier, betrag: o.amount, status: o.status })) : what === "prs" ? s.sap.prs.map(o => ({ no: o.no, bedarf: o.text, wert: o.value, status: o.status })) : s.sap.materials.map(o => ({ material: o.name, werk: o.plant, verfuegbar: o.available - o.reserved })); return { text: `SAP-Abfrage ${what} über ${route.label}`, result: data, read: true }; }
+    },
+    m365: {
+      replyApproval(w, tid, p, ctx, s, route) { need(w, tid, ctx, "view"); const o = findBy(s.m365.mails, parseRef(p.ref).id, "Mail"); if (o.status !== "Antwort erwartet") fail("STATUS", "Bereits beantwortet."); const dec = p.decision === "abgelehnt" ? "abgelehnt" : "zugestimmt"; o.status = "beantwortet: " + dec; o.history.push(["Antwort " + dec, w.tenants[tid].date]); return { text: `Antwort an ${o.from}: ${dec} („${o.subject}“, ${route.label})` }; },
+      archiveMail(w, tid, p, ctx, s) { need(w, tid, ctx, "view"); const o = findBy(s.m365.mails, parseRef(p.ref).id, "Mail"); o.status = "archiviert"; return { text: `Mail „${o.subject}“ archiviert` }; },
+      query(w, tid, p, ctx, s, route) { need(w, tid, ctx, "view"); return { text: `Microsoft-365-Abfrage über ${route.label}`, result: { mails: s.m365.mails.map(o => ({ betreff: o.subject, von: o.from, status: o.status })), termine: s.m365.events }, read: true }; }
+    },
+    servicenow: {
+      approveRITM(w, tid, p, ctx, s, route) { need(w, tid, ctx, "approve"); const o = findBy(s.servicenow.tickets, parseRef(p.ref).id, "Ticket"); if (!["zur Freigabe", "1. Freigabe erteilt"].includes(o.status)) fail("STATUS", `Status „${o.status}“.`);
+        const done = approve4(w, tid, ctx, o, o.cost, "das Ticket " + o.no); if (!done) return { text: `1. Freigabe für ${o.no} erteilt – zweite Person nötig` };
+        o.status = "freigegeben"; o.history.push(["freigegeben", w.tenants[tid].date]); const owner = s.owners.bestellanforderung; const qty = 1;
+        const follow = o.cost > 0 ? [owner === "sap" ? { cmd: "conn.sap.createPR", p: { text: o.text, qty, price: o.cost, costCenter: o.costCenter || null, catalogId: o.catalog || null, requester: o.requestedFor, sourceRef: "ServiceNow " + o.no, route: "joule-a2a" }, why: "Bestellanforderung im System of Record (SAP, über Joule)" } : { cmd: "createRequisition", p: o.catalog ? { catalogId: o.catalog, qty, costCenter: o.costCenter || undefined } : { category: o.kind === "Software" ? "IT" : "IT", text: o.text, price: o.cost, costCenter: o.costCenter || undefined }, why: "Bestellanforderung im System of Record (NEXORA-Engine)" }] : [];
+        return { text: `${o.no} in ServiceNow freigegeben (${route.label})`, follow }; },
+      rejectRITM(w, tid, p, ctx, s) { need(w, tid, ctx, "approve"); const o = findBy(s.servicenow.tickets, parseRef(p.ref).id, "Ticket"); o.status = "abgelehnt"; o.history.push(["abgelehnt", w.tenants[tid].date]); return { text: `${o.no} abgelehnt` }; },
+      createRITM(w, tid, p, ctx, s, route) { need(w, tid, ctx, "view"); const no = "RITM00" + (14021 + s.servicenow.tickets.filter(x => x.no.startsWith("RITM")).length); const o = { no, kind: p.kind || "Einkauf", text: p.text, requestedFor: p.requestedFor, cost: r2(p.cost || 0), catalog: p.catalogId || null, costCenter: p.costCenter || null, status: "zur Freigabe", approvals: [], created: w.tenants[tid].date, due: addDays(w.tenants[tid].date, 1), source: p.sourceRef || null, history: [["angelegt über " + route.label, w.tenants[tid].date]] }; s.servicenow.tickets.push(o); return { text: `ServiceNow-Ticket ${no} angelegt: ${o.text}`, objects: ["servicenow:ritm:" + no] }; },
+      query(w, tid, p, ctx, s, route) { need(w, tid, ctx, "view"); return { text: `ServiceNow-Abfrage über ${route.label}`, result: s.servicenow.tickets.map(o => ({ no: o.no, art: o.kind, text: o.text, kosten: o.cost, status: o.status })), read: true }; }
+    },
+    workday: {
+      approveAbsence(w, tid, p, ctx, s, route) { need(w, tid, ctx, ["hr", "approve"]); const o = findBy(s.workday.absences, parseRef(p.ref).id, "Antrag"); if (o.status !== "beantragt") fail("STATUS", "Bereits entschieden."); o.status = "genehmigt"; o.history.push(["genehmigt", w.tenants[tid].date]); return { text: `${o.type} von ${o.worker} genehmigt (${route.label})` }; },
+      rejectAbsence(w, tid, p, ctx, s) { need(w, tid, ctx, ["hr", "approve"]); const o = findBy(s.workday.absences, parseRef(p.ref).id, "Antrag"); o.status = "abgelehnt"; return { text: `${o.type} von ${o.worker} abgelehnt` }; },
+      completeOnboardingTask(w, tid, p, ctx, s, route) { need(w, tid, ctx, "hr"); const [no, task] = parseRef(p.ref).id.split(":"); const o = findBy(s.workday.onboarding, no, "Onboarding"); const k = o.tasks.find(x => x.id === task); if (!k) fail("NOT_FOUND", "Aufgabe nicht gefunden."); if (k.done) fail("STATUS", "Bereits erledigt.");
+        k.done = true; o.history.push([k.text + " angestoßen", w.tenants[tid].date]); if (o.tasks.every(x => x.done)) o.status = "abgeschlossen";
+        return { text: `Onboarding ${o.worker}: „${k.text}“ angestoßen (${route.label})`, follow: k.cost ? [{ cmd: "conn.servicenow.createRITM", p: { kind: "Einkauf", text: "Notebook Standard (GWG bis 800 €) für " + o.worker, requestedFor: o.worker, cost: k.cost, catalogId: "K-05", sourceRef: "Workday " + o.no }, why: "IT-Anfrage in ServiceNow" }] : [] }; },
+      query(w, tid, p, ctx, s, route) { need(w, tid, ctx, "view"); return { text: `Workday-Abfrage über ${route.label}`, result: { abwesenheiten: s.workday.absences, onboarding: s.workday.onboarding.map(o => ({ mitarbeiter: o.worker, start: o.start, offen: o.tasks.filter(k => !k.done).map(k => k.text) })) }, read: true }; }
+    },
+    layer: {
+      setOwner(w, tid, p, ctx, s) { need(w, tid, ctx, "approve"); const pr = PROCESSES[p.process]; if (!pr) fail("PROCESS", "Unbekannter Prozess."); if (!pr.systems.includes(p.owner)) fail("OWNER", `${CONNECTORS[p.owner] ? CONNECTORS[p.owner].name : p.owner} kann ${pr.label} nicht führen.`); const old = s.owners[p.process]; s.owners[p.process] = p.owner; return { text: `System of Record für ${pr.label}: ${CONNECTORS[old].name} → ${CONNECTORS[p.owner].name}` }; },
+      setDash(w, tid, p, ctx, s) { need(w, tid, ctx, "view"); const { u } = who(w, tid, ctx); const key = p.scope === "role" ? "role:" + u.role : "user:" + u.id; if (!Array.isArray(p.tiles)) fail("INPUT", "Kacheln fehlen."); s.dash[key] = p.tiles.slice(0, 16).map(x => String(x)); return { text: `Dashboard gespeichert (${p.tiles.length} Kacheln)` }; },
+      transition(w, tid, p, ctx, s) { need(w, tid, ctx, "approve"); const pr = PROCESSES[p.process]; if (!pr) fail("PROCESS", "Unbekannter Prozess."); const st = s.transition[p.process] || (s.transition[p.process] = { phase: "überlagert", log: [] }); const date = w.tenants[tid].date; const { u } = who(w, tid, ctx);
+        const go = (phase, text) => { st.log.push({ phase, date, by: u.name, text }); st.phase = phase; return { text }; };
+        if (p.step === "parallel") { if (st.phase !== "überlagert" && st.phase !== "zurückgestellt") fail("STATUS", `Phase „${st.phase}“.`); if (!SUPPORTED_TRANSITION[p.process]) fail("PROCESS", `${pr.label} ist in dieser Demo nicht umstellbar.`);
+          const t = w.tenants[tid]; const mp = t.migProjects && t.migProjects[SUPPORTED_TRANSITION[p.process]]; if (!mp || !mp.done || !mp.done.requisitions) fail("ORDER", "Zuerst die Datenübernahme abschließen (Testlauf, Freigabe, Produktivübernahme).");
+          st.until = addDays(date, p.days || 14); st.reqBase = t.reqs.length; st.migrated = (mp.done.requisitions.reqs || []).slice(); s.owners[p.process] = "nexora"; return go("parallel", `${pr.label}: Parallelbetrieb bis ${st.until} – neue Vorgänge in der NEXORA-Engine, Spiegelung ins Altsystem`); }
+        if (p.step === "cutover") { if (st.phase !== "parallel") fail("STATUS", "Umschalten nur aus dem Parallelbetrieb."); const rc = reconcile(w, tid, p.process); if (rc.diffCount !== 0 || rc.diffSum !== 0) fail("RECON", `Abstimmung zeigt Differenzen (${rc.diffCount} Vorgänge, ${eur(rc.diffSum)}) – Umschalten nicht möglich.`); st.recon = rc; return go("abgelöst", `${pr.label} abgelöst: System of Record ist die NEXORA-Engine, das Altsystem bleibt lesend (Historie)`); }
+        if (p.step === "rollback") { if (st.phase !== "parallel") fail("STATUS", "Ein Rückweg ist nur bis zum Abschluss des Parallelbetriebs möglich."); const t = w.tenants[tid]; s.owners[p.process] = PROCESSES[p.process].owner;
+          // Altsystem führt wieder: übernommene Originale reaktivieren (Status aus NEXORA übernehmen), Spiegelungen werden echte Vorgänge
+          const byNo = no => t.reqs.find(q => q.no === no); const withdraw = [];
+          for (const o of s.sap.prs) { if (o.status === "übernommen nach NEXORA") { const q = byNo(o.migratedTo); o.status = q && q.status !== "zur Freigabe" ? q.status : o.prevStatus; o.history.push(["Rückweg: wieder im Altsystem führend", date]); delete o.prevStatus; delete o.migratedTo; if (q && q.status === "zur Freigabe") withdraw.push(q.no); }
+            else if (o.status === "gespiegelt") { const q = byNo(o.mirrorOf); o.status = q && q.status !== "zur Freigabe" ? q.status : "zur Freigabe"; o.history.push(["Rückweg: Spiegelung wird führender Vorgang", date]); if (q && q.status === "zur Freigabe") withdraw.push(q.no); } }
+          st.reqBase = null; st.migrated = [];
+          const r = go("zurückgestellt", `${pr.label}: Rückweg – System of Record wieder ${CONNECTORS[PROCESSES[p.process].owner].name}`);
+          return Object.assign(r, { follow: [{ cmd: "withdrawRequisitions", p: { reqNos: withdraw, project: SUPPORTED_TRANSITION[p.process], reason: "Rückweg der Ablösung" }, why: "offene Vorgänge in NEXORA zurückziehen" }] }); }
+        fail("STEP", "Unbekannter Schritt."); }
+    }
+  };
+
+  /* ---------- Dispatch: ein Aufruf = ein protokolliertes Ereignis mit Weg und Kosten ---------- */
+  function dispatch(w, tid, sys, cmd, params, ctx) {
+    const t = w.tenants[tid]; if (!t) return { ok: false, code: "TENANT", text: "Unbekannter Mandant." };
+    const s = state(w, tid); const snap = JSON.stringify(s); params = params || {};
+    try {
+      const fn = CMD[sys] && Object.prototype.hasOwnProperty.call(CMD[sys], cmd) ? CMD[sys][cmd] : null; if (!fn) fail("CMD", `Befehl ${sys}.${cmd} unbekannt.`);
+      const route = resolveRoute(sys, cmd, params.route); const { u, role } = who(w, tid, ctx);
+      const res = fn(w, tid, params, ctx || {}, s, route) || {};
+      const entry = { seq: ++s.seq, date: t.date, period: t.date.slice(0, 7), user: u.id, userName: u.name, role: role.name, sys, system: CONNECTORS[sys] ? CONNECTORS[sys].name : "NEXORA-Konfiguration", route: route.label, routeId: route.id, agent: route.viaAgent, cmd, ref: params.ref || null, cost: route.costPerCall, ok: true, text: res.text, via: params.via || (ctx && ctx.via) || "Mensch" };
+      s.ledger.push(entry);
+      return { ok: true, cmd: "conn." + sys + "." + cmd, sys, text: res.text, cost: route.costPerCall, route: route.label, agent: route.viaAgent, objects: res.objects || [], follow: res.follow || [], result: res.result, user: u.name, docs: [] };
+    } catch (e) {
+      const restored = JSON.parse(snap); for (const k of Object.keys(s)) delete s[k]; Object.assign(s, restored);
+      return { ok: false, code: e.code || "ERROR", text: e.message };
+    }
+  }
+  /* Ein Befehl für alles: "conn.<system>.<befehl>" geht an die Konnektoren, alles andere an die Engine. */
+  function dispatchAny(E, w, tid, cmd, params, ctx) { if (String(cmd).startsWith("conn.")) { const [, sys, c] = String(cmd).split("."); return dispatch(w, tid, sys, c, params, ctx); } return E.dispatch(w, tid, cmd, params, ctx); }
+  function ledger(w, tid) { return state(w, tid).ledger; }
+  function costs(w, tid, opts) { const L = ledger(w, tid).filter(x => !opts || ((!opts.date || x.date === opts.date) && (!opts.period || x.period === opts.period))); const by = {}; let total = 0; for (const x of L) { const k = x.system + " · " + x.route; by[k] = by[k] || { system: x.system, route: x.route, calls: 0, cost: 0 }; by[k].calls++; by[k].cost = r2(by[k].cost + x.cost); total = r2(total + x.cost); } return { total, rows: Object.values(by), note: COST_NOTE }; }
+  function owners(w, tid) { return Object.assign({}, state(w, tid).owners); }
+  function setProvider(name, fn) { PROVIDERS[name] = fn; }
+
+  return { VERSION, ROUTES, ALLOWED, AGENTS, routeQuery, SUPPORTED_TRANSITION, prExtract, reconcile, share, CONNECTORS, PROCESSES, FOUR_EYES_LIMIT, COST_NOTE, SAP_POLICY_NOTE, state, hash, listTasks, tasksOf, search, getObject, dispatch, dispatchAny, ledger, costs, owners, setProvider, parseRef, resolveRoute };
+});
+
 </script>
 <script>
 const IC={
@@ -1737,7 +2180,7 @@ const LOGO=(s=34)=>`<svg width="${s}" height="${s}" viewBox="0 0 40 40" aria-hid
 
 /* NEXORA AI Suite – Oberfläche. Alle Zahlen kommen aus der Engine (Belege, Nebenbücher), nichts ist fest eingetragen. */
 const E = window.NexoraEngine;
-const LS_KEY = "nexora-suite-v03";
+const LS_KEY = "nexora-suite-v08", LS_KEY_OLD = "nexora-suite-v03";
 const T_NAMES = { elevon: "Elevon Industries", novamart: "NovaMart Retail", aventra: "Aventra Consulting" };
 const ON_PAGES = /github\.io$/.test(location.hostname); const PROTO_URL = ON_PAGES ? "prototyp.html" : "https://claude.ai/artifact/6p7imWPiPw1T5V3ABFq2Di";
 
@@ -1746,7 +2189,7 @@ let W, LOG = [], BASE = {};
 const S = { tenant: "elevon", users: { elevon: "u1", novamart: "u1", aventra: "u1" }, mode: "free", live: true, last: null, story: null, admin: false, chat: { elevon: [], novamart: [], aventra: [] }, sel: {}, tab: {}, modal: null, toast: null, pending: null, size: "S" };
 function saveLog() { try { localStorage.setItem(LS_KEY, JSON.stringify({ size: S.size, log: LOG, tenant: S.tenant, users: S.users, mode: S.mode })); } catch (e) {} }
 function boot() {
-  let saved = null; try { saved = JSON.parse(localStorage.getItem(LS_KEY) || "null"); } catch (e) {}
+  let saved = null; try { if (!localStorage.getItem(LS_KEY) && localStorage.getItem(LS_KEY_OLD)) localStorage.setItem(LS_KEY, localStorage.getItem(LS_KEY_OLD)); saved = JSON.parse(localStorage.getItem(LS_KEY) || "null"); } catch (e) {}
   if (saved) { S.size = saved.size || "S"; S.tenant = saved.tenant || "elevon"; S.users = saved.users || S.users; S.mode = saved.mode || "free"; }
   W = E.createWorld({ size: S.size }); captureBase();
   if (saved && saved.log) { for (const x of saved.log) { try { applyLog(x); LOG.push(x); } catch (e) { LOG = []; W = E.createWorld({ size: S.size }); break; } } }
@@ -2833,7 +3276,7 @@ function roleTasks(tid, uid) {
   if (t.id === "aventra" && can("approve")) for (const pr of t.projects) { const n = t.timeEntries.filter(e => e.project === pr.id && e.status === "erfasst").length; if (n) add("approve", "t-" + pr.id, `${n} Zeiteinträge ${pr.id} freigeben`, pr.name, "approveTime", { projectId: pr.id }, "Freigeben", { kind: "Freigabe" }); }
   return out;
 }
-const taskCount = () => roleTasks(S.tenant, S.users[S.tenant]).length;
+let taskCount = () => roleTasks(S.tenant, S.users[S.tenant]).length;
 function checkNewTasks() { const all = {}; for (const id of E.TENANT_IDS) for (const k of roleTasks(id, S.users[id])) all[id + ":" + k.id] = k; if (S.taskSeen) { const fresh = Object.keys(all).filter(k => !S.taskSeen[k]); if (fresh.length) { const k = all[fresh[0]]; toast(`Neue Aufgabe${fresh.length > 1 ? "n (" + fresh.length + ")" : ""}: ${k.title}`); try { navigator.vibrate && navigator.vibrate(120); } catch (e) {} } } S.taskSeen = all; }
 
 /* ---------- Anwesenheit und Fernbedienung über den Raum ---------- */
@@ -2987,8 +3430,12 @@ async function pdfAction(kind, no, target) {
   const name = `${kind}_${no}.pdf`.replace(/[^\w.\-äöüÄÖÜß]/g, "_"); const blob = pdf.output("blob");
   if (target === "drive") { if (!BK.mcp) return toast("Google Drive ist nicht verfügbar.", true); S.gd = { busy: "PDF wird in Google Drive abgelegt …" }; render();
     try { const b64 = pdf.output("datauristring").split(",")[1]; const r = await BK.mcp.callTool("Google Drive", "create_file", { title: name, base64Content: b64, contentMimeType: "application/pdf", disableConversionToGoogleType: true }); const f = r.payload || {}; S.gd = { ok: `${kind} ${no} als PDF in Google Drive abgelegt.`, link: f.alternateLink || f.webViewLink || null }; } catch (e) { S.gd = { err: gdErr(e) }; } render(); return; }
+  return saveBlob(name, blob);
+}
+// Download über die Seite (claude.ai: Download-Freigabe; sonst neuer Tab bzw. Link). Auch für CSV-Exporte genutzt.
+async function saveBlob(name, blob, opt) {
   if (window.claude && window.claude.use) { const dl = await claude.use("downloads").catch(() => null); if (dl) { try { await dl.save({ filename: name, data: blob }); } catch (e) { if (e && e.code !== "declined" && e.code !== "cancelled") toast("Download nicht möglich (" + (e.code || e.message) + ").", true); } return; } }
-  const url = URL.createObjectURL(blob); const w = window.open(url, "_blank"); if (!w) { const a = document.createElement("a"); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove(); } setTimeout(() => URL.revokeObjectURL(url), 60000);
+  const url = URL.createObjectURL(blob); const w = opt && opt.noTab ? null : window.open(url, "_blank"); if (!w) { const a = document.createElement("a"); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove(); } setTimeout(() => URL.revokeObjectURL(url), 60000);
 }
 // PDF-Schaltflächen in Bestellungen und Fertigungsaufträgen
 const _poTable = poTable; poTable = function (t) { return _poTable(t).replace(/<td class="mono small">(PO-\d+)<\/td>/g, (m, no) => `<td class="mono small">${no} <button class="btn sm" data-act="pdf" data-k="Bestellung" data-no="${no}" title="Bestellung als PDF">PDF</button></td>`); };
@@ -3012,6 +3459,482 @@ window.addEventListener("resize", () => { if (window.innerWidth < 700 && route()
 const _adminV7 = VIEWS.admin;
 VIEWS.admin = () => { const h = _adminV7(); if (!/Demo-Unternehmen und Reproduzierbarkeit/.test(h)) return h;
   return h.replace(/(<\/div>)(<section class="card"><div class="card-h"><h3>Demo-Unternehmen und Reproduzierbarkeit)/, `$1<section class="card card-pad row between" style="gap:14px"><div><h3>Live-Demo vorbereiten</h3><p class="small muted">Setzt alle Unternehmen zurück, prüft Bücher und Reproduzierbarkeit, schaltet Guided Demo und Präsentationsmodus ein und zeigt den QR-Code für das zweite Gerät. Ohne Netz: <a href="https://marcelwagner-afk.github.io/nexora-suite/" target="_blank" rel="noopener">Offline-Version auf GitHub</a>.</p></div><button class="btn pri" data-act="prepareDemo">Demo vorbereiten</button></section>$2`); };
+
+/* ===== v0.8 Experience Layer: herstellerneutrale Oberfläche über NEXORA-Engine und simulierte Fremdsysteme =====
+   Additiv: alle Erweiterungen über das Wrapper-Muster; die Suite-Ansicht bleibt unverändert. */
+const APP_VERSION = "v0.8";
+const UI_KEY = "nexora-suite-v08-ui";
+// Ab v0.8 ist der Experience Layer Standard; die Suite-Ansicht bleibt per Umschalter erreichbar (Wahl wird gespeichert).
+S.layer = (() => { try { const q = new URLSearchParams(location.search).get("layer"); if (q === "1") return "layer"; if (q === "0") return "suite"; } catch (e) {} try { return (JSON.parse(localStorage.getItem(UI_KEY) || "{}").layer) || "layer"; } catch (e) { return "layer"; } })();
+function saveUi() { try { localStorage.setItem(UI_KEY, JSON.stringify({ layer: S.layer })); } catch (e) {} }
+
+/* ---------- Ansichts-Umschalter in der Kopfzeile ---------- */
+const _topExtras8 = topExtras;
+topExtras = function () {
+  return `<div class="seg layer-sw" role="group" aria-label="Ansicht"><button class="${S.layer === "suite" ? "on" : ""}" data-act="setLayer" data-v="suite" aria-pressed="${S.layer === "suite"}">Suite</button><button class="${S.layer === "layer" ? "on" : ""}" data-act="setLayer" data-v="layer" aria-pressed="${S.layer === "layer"}">Experience Layer</button></div>` + _topExtras8();
+};
+ACT.setLayer = d => { S.layer = d.v === "layer" ? "layer" : "suite"; saveUi(); if (S.layer === "layer" && !LAYER_ROUTES.includes(route())) go("tasks"); else render(); };
+
+/* ---------- Navigation im Layer-Modus ---------- */
+const LAYER_ROUTES = ["tasks", "ai", "documents", "admin"];
+const _vm8 = visibleMods;
+visibleMods = function () { return S.layer === "layer" ? LAYER_ROUTES.slice() : _vm8(); };
+const _home8 = VIEWS.home;
+VIEWS.home = () => S.layer === "layer" ? VIEWS.tasks() : _home8();
+const _tasks8 = VIEWS.tasks;
+VIEWS.tasks = () => S.layer === "layer" && !(typeof LAYER_READY !== "undefined" && LAYER_READY) ? statusNote("proto", "Experience Layer " + APP_VERSION + " im Aufbau: Hier entsteht die gemeinsame Inbox über NEXORA und die simulierten Fremdsysteme. Die Suite-Ansicht bleibt über den Umschalter oben erreichbar.") + _tasks8() : _tasks8();
+
+/* ---------- Phase 1: Konnektor-Schicht anbinden ---------- */
+const C = window.NexoraConnectors;
+C.setProvider("nexoraTasks", (tid, uid) => roleTasks(tid, uid));
+// Ein Befehlsweg für alles: "conn.<system>.<befehl>" geht an die Konnektoren, der Rest unverändert an die Engine.
+// Damit laufen Konnektor-Ereignisse durch dasselbe Protokoll (act → logEntry/persist, Wiedergabe, Reset).
+const _engineDispatch = E.dispatch;
+const AUDIT_ORDER = new WeakMap(); // Mandantenobjekt → Reihenfolge der Einträge aus Engine-Audit und Konnektor-Ledger
+E.dispatch = function (w, tid, cmd, p, ctx) {
+  const conn = String(cmd).startsWith("conn."); const r = conn ? C.dispatchAny({ dispatch: _engineDispatch }, w, tid, cmd, p, ctx) : _engineDispatch(w, tid, cmd, p, ctx);
+  const t = w && w.tenants && w.tenants[tid];
+  if (r && r.ok && t) { const o = AUDIT_ORDER.get(t) || []; if (conn) { const L = C.ledger(w, tid); if (L.length) o.push(["c", L[L.length - 1].seq]); } else if (t.audit && t.audit.length && (!o.length || !o.some(x => x[0] === "e" && x[1] === t.audit.length))) o.push(["e", t.audit.length]); AUDIT_ORDER.set(t, o); }
+  return r;
+};
+// Systemübergreifende Folgen: jede Folge ist ein eigenes protokolliertes Ereignis desselben Menschen.
+const _act8 = act;
+act = function (cmd, payload, opt) {
+  const r = _act8(cmd, payload, opt);
+  // Folgeschritte (und Spiegelungen im Parallelbetrieb) als eigene protokollierte Ereignisse
+  const more = (c, p, res) => (res && res.ok ? (res.follow || []) : []).concat(typeof mirrorFor === "function" ? mirrorFor(c, p, res) : []);
+  const queue = more(cmd, payload, r).slice(); let guard = 0;
+  while (queue.length && guard++ < 20) { const f = queue.shift(); const fr = _act8(f.cmd, f.p, Object.assign({}, opt || {}, { auto: false })); if (fr && fr.ok) { toast("Folgeschritt: " + fr.text); queue.push(...more(f.cmd, f.p, fr)); } }
+  return r;
+};
+
+/* ---------- Phase 2: ein Kartenformat, eine Inbox, eine Suche, Deep Links ---------- */
+var LAYER_READY = true;
+LAYER_ROUTES.splice(0, LAYER_ROUTES.length, "home", "tasks", "ai", "systems", "agents", "transition", "audit", "documents", "admin");
+MODS.systems = ["Systeme", "db", "live"]; MODS.agents = ["Agenten", "users", "live"]; MODS.audit = ["Protokoll", "check", "live"]; MODS.transition = ["Ablöse-Cockpit", "flag", "live"]; MODS.privacy = ["Mitbestimmung & Datenschutz", "shield", "live"]; MODS.obj = ["Objekt", "doc", "live"]; ROUTES.push("systems", "agents", "audit", "privacy", "obj", "transition");
+const SYS_ORDER = ["nexora", "sap", "m365", "servicenow", "workday"];
+const sysName = id => (C.CONNECTORS[id] || { name: id }).name;
+const simBadge = sys => C.CONNECTORS[sys] && C.CONNECTORS[sys].simulated ? `<span class="ly-sim" title="Keine echte Integration – Daten aus dem Seed erzeugt">Demo-Konnektor · simuliert</span>` : `<span class="ly-sim live">Live-Engine</span>`;
+function routeCost(cmd) { if (!String(cmd).startsWith("conn.")) return { label: C.ROUTES.nexora[0].label, cost: 0 }; const [, sys, c] = cmd.split("."); try { const r = C.resolveRoute(sys, c); return { label: r.label, cost: r.costPerCall }; } catch (e) { return { label: "–", cost: 0 }; } }
+const eur4 = v => Number(v || 0).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 3 }) + " €";
+/* Aktionskarte: { source, route, ref, title, fields[], status, actions[{ label, cmd, perm, confirm, fourEyes }], deepLink } – ein Renderer für alle Systeme */
+function cardHtml(k, o) {
+  o = o || {}; const pr = C.PROCESSES[k.process];
+  return `<article class="ly-card card" data-ref="${esc(k.ref)}" data-sys="${k.sys}">
+    <div class="ly-src"><span class="ly-chip s-${k.sys}">${esc(k.source)}</span><span class="ly-route" title="Zugriffsweg">${esc(k.route)}</span>${simBadge(k.sys)}</div>
+    <div class="row between" style="gap:8px;align-items:flex-start"><h3>${esc(k.title)}</h3>${k.status ? stPill(k.status) : ""}</div>
+    ${pr ? `<span class="small faint">${esc(pr.label)}${k.due ? " · fällig " + dDe(k.due) : ""}</span>` : ""}
+    ${k.fields && k.fields.length ? `<dl class="ly-fields">${k.fields.map(([a, b]) => `<dt>${esc(a)}</dt><dd>${esc(fmtVal(b))}</dd>`).join("")}</dl>` : ""}
+    ${o.preview ? "" : `<div class="row ly-acts">${(k.actions || []).map((a, i) => `<button class="btn sm ${a.primary ? "pri" : ""}" data-act="cardAct" data-ref="${esc(k.ref)}" data-i="${i}"${o.ai ? ' data-ai="1"' : ""}>${esc(a.label)}${a.fourEyes ? " · 4 Augen" : ""}</button>`).join("")}<button class="btn sm ghost" data-act="openObj" data-ref="${esc(k.deepLink || k.ref)}">Öffnen →</button></div>`}
+  </article>`;
+}
+let CARD_CACHE = {};
+const fmtVal = v => typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v) ? dDe(v) : v;
+function layerTasks() { const l = C.listTasks(W, S.tenant, { user: S.users[S.tenant] }); CARD_CACHE = {}; for (const k of l) CARD_CACHE[k.ref] = k; return l; }
+function confirmCard(k, a, onOk) {
+  const rc = routeCost(a.cmd); const pr = C.PROCESSES[k.process];
+  S.modal = () => `<div style="padding:20px;display:flex;flex-direction:column;gap:12px"><div class="row between"><h2>${esc(a.label)}?</h2><button class="icon-btn" data-act="closeModal" aria-label="Schließen">${ic("x", 15)}</button></div>
+    <p class="muted">${esc(k.title)}${pr ? " · " + esc(pr.label) : ""}</p>
+    <div class="kv"><span>System</span><span>${esc(k.source)} ${simBadge(k.sys)}</span><span>Zugriffsweg</span><span>${esc(rc.label)}</span><span>Kosten</span><span>${eur4(rc.cost)} <span class="faint small">(${C.COST_NOTE})</span></span><span>Ausführende Person</span><span>${esc(U().name)} · ${esc((R() || {}).name || "")}</span></div>
+    ${a.fourEyes ? `<div class="note warn small">Vier-Augen-Prinzip: Betrag über ${eur(C.FOUR_EYES_LIMIT)} (Beispielwert) – eine zweite Person muss ebenfalls freigeben.</div>` : ""}
+    <div class="row" style="justify-content:flex-end"><button class="btn" data-act="closeModal">Abbrechen</button><button class="btn pri" data-act="confirmOk">${esc(a.label)}</button></div></div>`;
+  S.pendingConfirm = onOk; renderLayer();
+}
+function runCardAction(k, a) { const r = act(a.cmd, a.p || {}); if (r && r.ok) toast(r.text); return r; }
+Object.assign(ACT, {
+  cardAct(d) { const k = layerTasks().find(x => x.ref === d.ref); if (!k) return toast("Aufgabe nicht mehr vorhanden.", true); const a = k.actions[+d.i]; if (!a) return;
+    if (d.ai || a.confirm || a.fourEyes || S.layerConfirmAll) confirmCard(k, a, () => runCardAction(k, a)); else runCardAction(k, a); },
+  confirmOk() { const f = S.pendingConfirm; S.pendingConfirm = null; S.modal = null; renderLayer(); if (f) f(); },
+  openObj(d) { S.sel.obj = d.ref; S.modal = null; renderLayer(); go("obj"); },
+  sysFilter(d) { S.sel.sysF = d.v || null; render(); }
+});
+const _tasksLayer = VIEWS.tasks;
+VIEWS.tasks = () => {
+  if (S.layer !== "layer") return _tasksLayer();
+  const t = T(), u = U(); const all = layerTasks(); const f = S.sel.sysF; const list = f ? all.filter(k => k.sys === f) : all;
+  const counts = {}; for (const k of all) counts[k.sys] = (counts[k.sys] || 0) + 1;
+  const orig = _tasksLayer(); const qrPart = orig.slice(orig.indexOf('<section class="card card-pad row" style="gap:16px;align-items:center"><div id="qrBox"'));
+  return head("Experience Layer · " + esc(T_NAMES[t.id]), "Meine Aufgaben aus allen Systemen", `<div class="row"><a class="btn" href="#remote">Fernbedienung</a><button class="btn" data-act="userMenu">${esc(u.name)} · ${esc((R() || {}).name || "")}</button></div>`)
+   + `<div class="note acc small sn"><div>Eine Inbox über NEXORA-Engine, SAP S/4HANA, Microsoft 365, ServiceNow und Workday. Alle Systeme außer der NEXORA-Engine sind <b>Demo-Konnektoren (simuliert)</b>: Daten aus dem Seed, keine echte Integration. Jede Aktion läuft über einen sichtbaren Zugriffsweg mit Beispielkosten.</div></div>`
+   + `<div class="seg" role="tablist" aria-label="Nach System filtern"><button class="${!f ? "on" : ""}" data-act="sysFilter" data-v="">Alle <b>${all.length}</b></button>${SYS_ORDER.map(s => `<button class="${f === s ? "on" : ""}" data-act="sysFilter" data-v="${s}">${esc(sysName(s).replace(" (simuliert)", ""))} <b>${counts[s] || 0}</b></button>`).join("")}</div>`
+   + (list.length ? `<div class="ly-grid">${list.map(k => cardHtml(k)).join("")}</div>` : `<section class="card card-pad"><p class="muted">Keine offenen Aufgaben für ${esc(u.name)}${f ? " in " + esc(sysName(f)) : ""}. Wechsle die Rolle (z. B. CFO oder HR), um Freigaben zu sehen.</p></section>`)
+   + qrPart;
+};
+VIEWS.systems = () => {
+  const t = T(); const own = C.owners(W, t.id);
+  return head("Experience Layer", "Angebundene Systeme") + `<div class="note acc small sn">Alle Systeme außer der NEXORA-Engine sind simuliert. Kosten sind ${C.COST_NOTE}.</div>`
+   + `<div class="ly-grid">${SYS_ORDER.map(id => { const c = C.CONNECTORS[id]; const procs = Object.entries(own).filter(([p, o]) => o === id).map(([p]) => C.PROCESSES[p].label);
+     return `<section class="card card-pad" style="display:flex;flex-direction:column;gap:10px"><div class="row between"><h3>${esc(c.name)}</h3>${simBadge(id)}</div><div class="small muted">Führt: ${procs.length ? esc(procs.join(", ")) : "keinen Prozess"}${c.originalUi ? " · Original-Oberfläche: " + esc(c.originalUi) : ""}</div>
+     <table class="small"><thead><tr><th>Zugriffsweg</th><th>Agent</th><th class="r">je Aufruf</th></tr></thead><tbody>${c.routes.map(r => `<tr><td>${esc(r.label)}<div class="faint">${esc(r.note)}</div></td><td>${esc(r.viaAgent)}</td><td class="r num">${eur4(r.costPerCall)}</td></tr>`).join("")}</tbody></table>${id === "sap" ? `<p class="small faint">${esc(C.SAP_POLICY_NOTE)}</p>` : ""}</section>`; }).join("")}</div>`;
+};
+const NEXORA_MASK = { so: "sales", po: "supply", req: "supply", doc: "finance", cust: "sales", mat: "supply", inbox: "inbox", task: "tasks" };
+VIEWS.obj = () => {
+  const ref = S.sel.obj; const o = ref && C.getObject(W, S.tenant, ref); const back = `<button class="btn" data-act="goBack">← Zurück</button>`;
+  if (!o) return head("Objekt", "Nicht gefunden", back) + `<section class="card card-pad"><p class="muted">${esc(ref || "")} ist in diesem Unternehmen nicht (mehr) vorhanden.</p></section>`;
+  const mask = o.sys === "nexora" ? NEXORA_MASK[o.kind] : null; const k = Object.values(CARD_CACHE).find(x => x.ref === ref);
+  return head(esc(o.source) + " · " + esc(o.kind), esc(o.title), back)
+   + (o.simulated ? `<div class="note warn small">Im Original würde hier ${esc(o.originalUi || o.source)} öffnen. Diese Detailansicht zeigt die Daten des Demo-Konnektors im NEXORA-Design – simuliert, keine echte Integration.</div>` : `<div class="note good small sn">Objekt der NEXORA-Engine.${mask ? ` <a href="#${mask}" data-act="goMask" data-r="${mask}">Volle Maske öffnen</a>` : ""}</div>`)
+   + `<section class="card card-pad"><dl class="ly-fields wide">${o.fields.map(([a, b]) => `<dt>${esc(a)}</dt><dd>${esc(String(fmtVal(b)))}</dd>`).join("")}</dl></section>`
+   + (k ? `<section class="card card-pad"><h3 style="margin-bottom:10px">Aktionen</h3>${cardHtml(k)}</section>` : "")
+   + (o.history && o.history.length ? `<section class="card card-pad"><h3>Verlauf</h3><div class="list">${o.history.map(h => `<div class="li" style="padding:6px 0"><span class="num small" style="width:90px">${esc(dDe(h[1]))}</span><span class="grow small">${esc(h[0])}</span></div>`).join("")}</div></section>` : "");
+};
+ACT.goBack = () => history.back(); ACT.goMask = d => { if (d.r === "supply") S.tab.sup = "req"; go(d.r); };
+// Suche (⌘K) im Layer-Modus: alle Konnektoren, Treffer als Kartenvorschau, gruppiert nach System
+const _openPalette = openPalette;
+openPalette = function () {
+  if (S.layer !== "layer") return _openPalette();
+  S.pal = ""; S.modal = () => { const q = (S.pal || "").trim(); const hits = q.length >= 2 ? C.search(W, S.tenant, q, { user: S.users[S.tenant] }) : []; const by = {}; for (const h of hits) (by[h.sys] = by[h.sys] || []).push(h);
+    return `<form data-form="pal" style="padding:10px;border-bottom:1px solid var(--line)"><input class="input" id="palIn" autofocus placeholder="Suche über alle Systeme – z. B. Monitor, Rechnung, Kabine, Urlaub" value="${esc(S.pal)}" data-on="pal" aria-label="Suche über alle Systeme"></form>
+      <div style="padding:8px 10px;display:flex;flex-direction:column;gap:10px;max-height:62vh;overflow:auto">${q.length < 2 ? `<p class="small muted" style="padding:6px">Mindestens zwei Zeichen. Gesucht wird in NEXORA-Engine und den simulierten Systemen; Enter fragt den Assistenten.</p>` : !hits.length ? `<p class="small muted" style="padding:6px">Keine Treffer.</p>`
+        : SYS_ORDER.filter(s => by[s]).map(s => `<div><div class="row between" style="padding:2px 4px"><span class="eyebrow">${esc(sysName(s))}</span>${simBadge(s)}</div>${by[s].slice(0, 6).map(h => `<button class="pal-item" data-act="openObj" data-ref="${esc(h.ref)}"><span style="flex:1;min-width:0"><b style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(h.title)}</b><span class="small muted">${esc(h.kind)} · ${esc(h.sub || "")}</span></span>${ic("chev", 14)}</button>`).join("")}</div>`).join("")}</div>`; };
+  renderLayer();
+};
+// Fehlerbehebung: Schaltflächen in Dialogen (Suche, Bestätigung, Demo vorbereiten) erreichten den Klick-Handler nicht,
+// weil der Dialog Klicks per stopPropagation abfängt. Daher hier in der Capture-Phase behandeln.
+document.addEventListener("click", e => { const a = e.target.closest("#layer .dlg [data-act]"); if (!a || a.disabled || a.tagName === "A") return; e.preventDefault(); e.stopPropagation(); const f = ACT[a.dataset.act]; if (f) f(a.dataset, a); }, true);
+
+// Layer-Modus: Zähler in der Navigation zeigt alle Systeme, Kopfzeile kompakter
+const _taskCount8 = taskCount; taskCount = () => S.layer === "layer" ? C.listTasks(W, S.tenant, { user: S.users[S.tenant] }).length : _taskCount8();
+const _render8 = render; render = function () { document.body.classList.toggle("layer", S.layer === "layer"); _render8(); };
+
+/* ---------- Phase 3: Aktionskarten im Assistenten ----------
+   Claude und der Regel-Rückfall liefern dieselben Karten. Beide schlagen nur vor: Ausgeführt wird erst nach Klick
+   und Bestätigungsdialog, über act() → connector.dispatch() mit Rechteprüfung. */
+const AI_CARD_MAX = 8;
+const cardDesc = k => ({ ref: k.ref, system: k.source, simuliert: !!(C.CONNECTORS[k.sys] && C.CONNECTORS[k.sys].simulated), zugriffsweg: k.route, prozess: (C.PROCESSES[k.process] || {}).label || null, titel: k.title, status: k.status || null, faellig: k.due || null, felder: Object.fromEntries((k.fields || []).map(([a, b]) => [a, b])), aktionen: (k.actions || []).map(a => a.label + (a.fourEyes ? " (Vier-Augen)" : "")) });
+const aiNote = refs => { S.aiRefs = S.aiRefs || []; for (const r of refs) if (!S.aiRefs.includes(r)) S.aiRefs.push(r); };
+function aiTasks(sys) { const l = layerTasks().filter(k => !sys || k.sys === sys || (C.CONNECTORS[k.sys] || {}).name.toLowerCase().includes(String(sys).toLowerCase())); return l; }
+function aiSearch(q) { const hits = C.search(W, S.tenant, q, { user: S.users[S.tenant] }); const open = new Map(layerTasks().map(k => [k.ref, k])); return hits.map(h => ({ hit: h, task: open.get(h.ref) || null })); }
+function aiCosts() { const d = T().date; const today = C.costs(W, S.tenant, { date: d }), month = C.costs(W, S.tenant, { period: d.slice(0, 7) }); return { heute: today, monat: month, datum: d }; }
+const _aiTools8 = AI_TOOLS;
+AI_TOOLS = () => S.layer !== "layer" ? _aiTools8() : _aiTools8().concat([
+  { name: "aufgaben_alle", description: "Offene Aufgaben der angemeldeten Person aus allen Systemen (NEXORA-Engine live; SAP S/4HANA, Microsoft 365, ServiceNow, Workday als simulierte Demo-Konnektoren). Liefert je Aufgabe eine Kartenbeschreibung mit ref, System, Zugriffsweg, Feldern und möglichen Aktionen. Optional nach System filtern (nexora, sap, m365, servicenow, workday).", inputSchema: { type: "object", properties: { system: { type: "string" } } },
+    execute: i => { const l = aiTasks(i && i.system); aiNote(l.slice(0, AI_CARD_MAX).map(k => k.ref)); return { datum: T().date, person: U().name, anzahl: l.length, karten: l.slice(0, 20).map(cardDesc) }; } },
+  { name: "suche_alle", description: "Volltextsuche über alle Systeme (Bestellanforderungen, Rechnungen, Mails, Tickets, Abwesenheiten, Belege, Aufträge, Kunden, Material). Liefert Treffer mit ref; offene Aufgaben zusätzlich als Kartenbeschreibung.", inputSchema: { type: "object", properties: { q: { type: "string" } }, required: ["q"] },
+    execute: i => { const r = aiSearch(String(i.q || "")); aiNote(r.filter(x => x.task).slice(0, AI_CARD_MAX).map(x => x.task.ref)); return r.slice(0, 25).map(x => x.task ? cardDesc(x.task) : { ref: x.hit.ref, system: x.hit.source, simuliert: x.hit.simulated, art: x.hit.kind, titel: x.hit.title, info: x.hit.sub }); } },
+  { name: "objekt", description: "Details eines Objekts per ref (z. B. sap:pr:10004711, servicenow:ritm:RITM0014021): Felder, Verlauf und – falls offen – die Kartenbeschreibung mit Aktionen.", inputSchema: { type: "object", properties: { ref: { type: "string" } }, required: ["ref"] },
+    execute: i => { const o = C.getObject(W, S.tenant, String(i.ref)); if (!o) throw new Error("Objekt nicht gefunden"); const k = layerTasks().find(x => x.ref === o.ref || x.ref === String(i.ref)); if (k) aiNote([k.ref]); return { ref: String(i.ref), system: o.source, simuliert: o.simulated, titel: o.title, felder: Object.fromEntries(o.fields), verlauf: o.history || [], karte: k ? cardDesc(k) : null }; } },
+  { name: "kosten", description: "Kosten der protokollierten Zugriffe (Aktionen und Agentenabfragen) je System und Zugriffsweg, für heute und den laufenden Monat. Beispielwerte, keine Herstellerpreise.", execute: () => aiCosts() }
+]);
+const AI_RULES_LAYER = () => `
+Experience Layer: Du siehst Aufgaben aus allen Systemen über die Werkzeuge aufgaben_alle, suche_alle, objekt und kosten. Alle Systeme außer der NEXORA-Engine sind simulierte Demo-Konnektoren ohne echte Integration – sage das, wenn du sie nennst. Du führst nichts aus: Unter deiner Antwort zeigt die Oberfläche automatisch Aktionskarten zu den Aufgaben, die deine Werkzeuge geliefert haben; die Person bestätigt jede Aktion selbst. Nenne bei jeder Aufgabe System, Referenz und deine Empfehlung (freigeben, ablehnen, klären) mit kurzer Begründung. Kosten sind Beispielwerte, keine Herstellerpreise.`;
+const _askClaude8 = askClaude;
+askClaude = async function (q) {
+  if (S.layer !== "layer") return _askClaude8(q);
+  // Router zuerst: ohne zulässigen Weg keine Anfrage an Claude, keine Kosten
+  const rq = routeAsk(q);
+  if (!rq.d.ok) { S.chat[S.tenant].push({ u: q }, { a: rejectHtml(rq.d), via: viaOf(rq) }); if (route() !== "ai") go("ai"); else render(); return; }
+  // AI_RULES ist eine Konstante: Layer-Regeln (und das Ergebnis des gerouteten Agenten) werden an die erste Nachricht angehängt
+  const smp = BK.sample; S.aiRefs = []; const extra = AI_RULES_LAYER() + (rq.r && rq.r.ok ? `\nDer Router hat diese Frage an ${rq.d.agent.name} über ${rq.d.route.label} geleitet (simulierter Demo-Konnektor). Ergebnis dieser Abfrage: ${JSON.stringify(rq.r.result).slice(0, 6000)}` : "");
+  if (smp) BK.sample = (turns, o) => smp([Object.assign({}, turns[0], { content: turns[0].content + extra })].concat(turns.slice(1)), o);
+  try { await _askClaude8(q); } finally { if (smp) BK.sample = smp; } const ch = S.chat[S.tenant]; const slot = ch[ch.length - 1];
+  if (slot) { slot.via = viaOf(rq); if (S.aiRefs.length) slot.cards = S.aiRefs.slice(0, AI_CARD_MAX); render(); } S.aiRefs = [];
+};
+// Regel-Rückfall: dieselben Karten, ohne Sprachmodell
+const AI_CARD_MARK = /<!--cards:([^>]*)-->/;
+const cardsMark = refs => refs.length ? `<!--cards:${refs.slice(0, AI_CARD_MAX).join(",")}-->` : "";
+const _answer8 = answer;
+answer = function (q) {
+  if (S.layer !== "layer") return _answer8(q);
+  const rq = routeAsk(q); const mk = viaMark(viaOf(rq));
+  if (!rq.d.ok) return rejectHtml(rq.d) + mk;
+  if (rq.d.system !== "nexora") return agentAnswer(rq) + mk;
+  return answerLayer(q) + mk;
+};
+function answerLayer(q) {
+  const ql = q.toLowerCase(); const t = T(), d = t.date;
+  if (/(freigeben|freigabe|genehmig|aufgaben|zu tun|inbox|erledigen)/.test(ql) && !/(marge|budget|nachbestell|projekt)/.test(ql)) {
+    const l = layerTasks(); const due = l.filter(k => !k.due || k.due <= d); const by = {}; for (const k of l) by[k.source] = (by[k.source] || 0) + 1;
+    if (!l.length) return `<p>Für <b>${esc(U().name)}</b> liegen in keinem System offene Aufgaben vor.</p>` + basis("Alle angebundenen Systeme (NEXORA live, übrige simuliert)", "Stand " + dDe(d), "Offene Aufgaben mit Aktion für die Rolle " + esc((R() || {}).name || ""));
+    return `<p><b>${l.length} offene Aufgaben</b> für ${esc(U().name)}, davon <b>${due.length}</b> heute fällig oder überfällig. ${Object.entries(by).map(([s, n]) => `${esc(s)}: ${n}`).join(" · ")}.</p><p class="small muted">Ich schlage nur vor – jede Aktion bestätigst du selbst im Dialog. Systeme außer der NEXORA-Engine sind simulierte Demo-Konnektoren.</p>`
+      + cardsMark(l.map(k => k.ref)) + basis("Inbox des Experience Layers über alle Konnektoren", "Stand " + dDe(d), "Aufgaben mit offener Aktion für die Rolle " + esc((R() || {}).name || "") + ", sortiert nach Fälligkeit und Betrag");
+  }
+  if (/(zugriffskosten|ki-kosten|agentenkosten|kosten (heute|diesen monat|im monat|des layers)|was (hat|haben) .*gekostet|kosten der (zugriffe|agenten|aufrufe))/.test(ql)) {
+    const c = aiCosts(); const rows = c.monat.rows;
+    return `<p>Protokollierte Zugriffe kosten heute <b>${eur4(c.heute.total)}</b>, im laufenden Monat <b>${eur4(c.monat.total)}</b>.</p>` + (rows.length ? `<table><thead><tr><th>System · Zugriffsweg</th><th class="r">Aufrufe</th><th class="r">Kosten</th></tr></thead><tbody>${rows.map(r => `<tr><td>${esc(r.system)} · ${esc(r.route)}</td><td class="r num">${r.calls}</td><td class="r num">${eur4(r.cost)}</td></tr>`).join("")}</tbody></table>` : `<p class="small muted">Noch keine protokollierten Zugriffe in diesem Monat.</p>`)
+      + basis("Protokoll der Konnektor-Aufrufe", "Heute (" + dDe(c.datum) + ") und " + perDe(c.datum.slice(0, 7)), "Summe der Beispielkosten je Aufruf; Lesen der Inbox ist kostenfrei. " + C.COST_NOTE);
+  }
+  const sm = ql.match(/^(?:suche|finde|such|zeig(?:e)? mir)\s+(?:nach\s+)?(.{2,})$/);
+  if (sm) { const r = aiSearch(sm[1].replace(/[?.!]+$/, "").trim());
+    if (!r.length) return `<p>Keine Treffer für „${esc(sm[1])}“ in den angebundenen Systemen.</p>`;
+    return `<p>${r.length} Treffer für „${esc(sm[1])}“.</p><div class="list">${r.filter(x => !x.task).slice(0, 8).map(x => `<div class="li" style="padding:6px 0"><span class="grow small"><b>${esc(x.hit.title)}</b> <span class="faint">${esc(x.hit.source)} · ${esc(x.hit.kind)}</span></span><button class="btn sm ghost" data-act="openObj" data-ref="${esc(x.hit.ref)}">Öffnen →</button></div>`).join("")}</div>`
+      + cardsMark(r.filter(x => x.task).map(x => x.task.ref)) + basis("Suche über alle Konnektoren", "Stand " + dDe(d), "Textsuche in Nummer, Bezeichnung und Person");
+  }
+  return _answer8(q);
+}
+function aiCardsHtml(refs) {
+  const open = new Map(layerTasks().map(k => [k.ref, k]));
+  return `<div class="ly-grid ai-cards">${refs.map(r => { const k = open.get(r); if (k) return cardHtml(k, { ai: true }); const o = C.getObject(W, S.tenant, r);
+    return `<article class="ly-card card done"><div class="ly-src"><span class="ly-chip s-${esc(C.parseRef(r).sys)}">${esc(o ? o.source : r)}</span></div><h3>${esc(o ? o.title : r)}</h3><span class="small muted">Nicht mehr offen – bereits bearbeitet.</span><div class="row ly-acts"><button class="btn sm ghost" data-act="openObj" data-ref="${esc(r)}">Öffnen →</button></div></article>`; }).join("")}</div>`;
+}
+const _aiView8 = VIEWS.ai;
+VIEWS.ai = () => {
+  if (S.layer !== "layer") return _aiView8();
+  const ch = S.chat[S.tenant]; const saved = ch.map(m => m.a);
+  for (const m of ch) { if (m.u) continue; let refs = m.cards || null; const mk = !refs && m.a && m.a.match(AI_CARD_MARK); if (mk) refs = mk[1].split(",").filter(Boolean);
+    if (refs && refs.length) m.a = mk ? m.a.replace(AI_CARD_MARK, aiCardsHtml(refs)) : m.a + aiCardsHtml(refs);
+    let via = m.via || null; const vm = !via && m.a && m.a.match(VIA_MARK); if (vm) { try { via = JSON.parse(decodeURIComponent(vm[1])); } catch (e) {} }
+    if (via) m.a += viaChip(via); }
+  const sugg = AI_SUGG.slice(); AI_SUGG.unshift("Was muss ich heute freigeben?", "Suche Monitor", "Was haben die Zugriffe diesen Monat gekostet?");
+  try { return _aiView8(); } finally { ch.forEach((m, i) => { m.a = saved[i]; }); AI_SUGG.splice(0, AI_SUGG.length, ...sugg); }
+};
+
+/* ---------- Phase 4: Orchestrierung – Agenten-Register, Router, Chip unter jeder Antwort ---------- */
+const AGENT_BY = Object.fromEntries(C.AGENTS.map(a => [a.id, a]));
+S.agentErr = S.agentErr || {};
+// Router entscheidet; ein simulierter Agent wird als protokollierte Abfrage über seinen A2A-Weg aufgerufen (kostet den Beispielsatz)
+function routeAsk(q) {
+  const d = C.routeQuery(q); let r = null;
+  if (!d.ok) { const k = d.agent ? d.agent.id : "kein Agent"; S.agentErr[k] = (S.agentErr[k] || 0) + 1; return { d, r }; }
+  if (d.cmd) { r = act(d.cmd, { what: d.what, route: d.route.id, via: "Assistent" }); if (!r || !r.ok) { S.agentErr[d.agent.id] = (S.agentErr[d.agent.id] || 0) + 1; } }
+  return { d, r };
+}
+const viaOf = rq => rq.d.ok ? { agent: rq.d.agent.name, route: rq.d.route.label, cost: rq.r && rq.r.ok ? rq.r.cost : 0, sim: rq.d.agent.simulated, err: rq.r && !rq.r.ok ? rq.r.text : null } : { agent: rq.d.agent ? rq.d.agent.name : "Router", route: null, cost: 0, rejected: true };
+const VIA_MARK = /<!--via:([^>]*)-->/;
+const viaMark = v => `<!--via:${encodeURIComponent(JSON.stringify(v))}-->`;
+const viaChip = v => `<div class="ai-via${v.rejected ? " rej" : ""}">${v.rejected ? `${ic("shield", 13)} Abgelehnt · kein zulässiger Weg · keine Kosten` : `${ic("ai", 13)} beantwortet über ${esc(v.route && v.route.includes("A2A") ? v.route : v.agent + (v.route ? " · " + v.route : ""))} · ${eur4(v.cost)} (Beispielwert)${v.sim ? ` <span class="ly-sim">simuliert</span>` : ""}`}</div>`;
+const rejectHtml = d => `<p><b>Nicht ausgeführt.</b> ${esc(d.text)}</p>` + basis("Router des Experience Layers", "–", "Regelprüfung der zulässigen Zugriffswege je System; abgelehnte Anfragen kosten nichts und erreichen kein System");
+function agentAnswer(rq) {
+  const { d, r } = rq; if (!r || !r.ok) return `<p>${esc(d.agent.name)} konnte die Anfrage nicht beantworten: ${esc(r ? r.text : "unbekannter Fehler")}</p>`;
+  const res = r.result; const rows = Array.isArray(res) ? res : res && (res.mails || res.abwesenheiten) ? (res.mails || res.abwesenheiten) : [];
+  const cols = rows.length ? Object.keys(rows[0]).filter(k => typeof rows[0][k] !== "object").slice(0, 5) : [];
+  return `<p>${esc(d.agent.name)} liefert ${rows.length} Einträge aus ${esc(sysName(d.system))}.</p>` + (rows.length ? `<table><thead><tr>${cols.map(c => `<th>${esc(c)}</th>`).join("")}</tr></thead><tbody>${rows.slice(0, 10).map(x => `<tr>${cols.map(c => `<td>${esc(typeof x[c] === "number" && c.match(/betrag|wert|kosten|preis/) ? eur(x[c]) : String(fmtVal(x[c]) ?? ""))}</td>`).join("")}</tr>`).join("")}</tbody></table>` : "")
+    + basis(`${esc(sysName(d.system))} – simulierter Demo-Konnektor, Daten aus dem Seed`, "Stand " + dDe(T().date), `Abfrage über ${esc(d.route.label)}, protokolliert mit ${eur4(r.cost)} (${C.COST_NOTE})`);
+}
+// Claude-Werkzeug „route“: zeigt die Entscheidung des Routers ohne Ausführung
+const _aiTools8b = AI_TOOLS;
+AI_TOOLS = () => S.layer !== "layer" ? _aiTools8b() : _aiTools8b().concat([{ name: "route", description: "Zeigt, über welchen Agenten und Zugriffsweg eine Anfrage laufen würde (Router des Experience Layers), inklusive Beispielkosten oder Ablehnungsgrund. Führt nichts aus.", inputSchema: { type: "object", properties: { frage: { type: "string" } }, required: ["frage"] }, execute: i => { const d = C.routeQuery(String(i.frage || "")); return d.ok ? { agent: d.agent.name, system: sysName(d.system), weg: d.route.label, kosten_je_aufruf: d.cost, hinweis: C.COST_NOTE } : { abgelehnt: true, grund: d.text }; } }]);
+VIEWS.agents = () => {
+  const L = C.ledger(W, S.tenant); const by = {}; for (const x of L) { const b = by[x.agent] = by[x.agent] || { calls: 0, cost: 0, queries: 0 }; b.calls++; b.cost = Math.round((b.cost + x.cost) * 1000) / 1000; if (/\.query$/.test("." + x.cmd)) b.queries++; }
+  const examples = ["Welche Kreditorenrechnungen sind in SAP offen?", "Welche Mails warten im Postfach auf Antwort?", "Zeig mir offene Tickets in ServiceNow", "Wer hat nächste Woche Urlaub?", "Wie hoch ist der Umsatz im Oktober?", "Lies die SAP-Tabelle ACDOCA direkt über die API", "Hole die Opportunities aus Salesforce"];
+  return head("Experience Layer · " + esc(T_NAMES[S.tenant]), "Agenten-Register") + `<div class="note acc small sn"><div>Agentenkarten im A2A-Stil. Alle Agenten außer der NEXORA-Engine sind <b>simuliert</b> – keine echte Integration. Der Router wählt je Frage oder Aktion den Agenten; ohne zulässigen Weg wird abgelehnt. Kosten sind ${C.COST_NOTE}.</div></div>`
+   + `<div class="ly-grid">${C.AGENTS.map(a => { const r = C.ROUTES[a.system].find(x => x.id === a.route); const b = by[a.id] || { calls: 0, cost: 0, queries: 0 };
+     return `<section class="card card-pad ag-card" data-agent="${a.id}" style="display:flex;flex-direction:column;gap:10px"><div class="row between"><h3>${esc(a.name)}</h3>${simBadge(a.system)}</div>
+       <div class="kv small"><span>System</span><span>${esc(sysName(a.system))}</span><span>Zugriffsweg</span><span>${esc(r.label)}</span><span>je Aufruf</span><span class="num">${eur4(r.costPerCall)}</span><span>Fähigkeiten</span><span>${esc(a.skills.join(", "))}</span></div>
+       <div class="row" style="gap:16px"><div><div class="eyebrow">Aufrufe</div><b class="num">${b.calls}</b><span class="small faint"> davon ${b.queries} Abfragen</span></div><div><div class="eyebrow">Fehler</div><b class="num">${S.agentErr[a.id] || 0}</b></div><div><div class="eyebrow">Kosten</div><b class="num">${eur4(b.cost)}</b></div></div>${a.id === "nexora" ? `<p class="small faint">Gezählt werden Aufrufe über freigegebene Schnittstellen. Befehle in der eigenen Engine stehen im Ereignisprotokoll und kosten nichts.</p>` : ""}</section>`; }).join("")}</div>`
+   + `<section class="card card-pad"><h3>Router</h3><p class="small muted" style="margin:4px 0 10px">So würde der Router diese Fragen leiten. Die Vorschau kostet nichts; erst eine gestellte Frage ruft den Agenten auf.</p><table class="small"><thead><tr><th>Frage</th><th>Agent</th><th>Weg</th><th class="r">je Aufruf</th></tr></thead><tbody>${examples.map(q => { const d = C.routeQuery(q);
+       return `<tr><td><button class="link-btn" data-act="ask" data-q="${esc(q)}">${esc(q)}</button></td>${d.ok ? `<td>${esc(d.agent.name)}</td><td>${esc(d.route.label)}</td><td class="r num">${eur4(d.cost)}</td>` : `<td colspan="3"><span class="pill p-crit">abgelehnt</span> <span class="faint">${esc(d.code === "NO_ROUTE" ? "System nicht angebunden" : "kein zulässiger Weg")}</span></td>`}</tr>`; }).join("")}</tbody></table>
+       <p class="small faint" style="margin-top:8px">Fehler werden in dieser Sitzung gezählt (abgelehnte Anfragen und fehlgeschlagene Aufrufe); sie erreichen kein System und erzeugen keine Kosten.</p></section>`;
+};
+
+/* ---------- Phase 5: Kosten, Protokoll, Vier-Augen, Mitbestimmung & Datenschutz ---------- */
+S.auditRej = S.auditRej || []; // abgelehnte Aktionen dieser Sitzung (erreichen kein System, nicht im gemeinsamen Protokoll)
+S.auditF = S.auditF || { sys: "", user: "", res: "", q: "" };
+const _act8b = act;
+act = function (cmd, payload, opt) { const r = _act8b(cmd, payload, opt); if (r && !r.ok && S.layer === "layer") { const t = T(); const u = U(); const sys = String(cmd).startsWith("conn.") ? cmd.split(".")[1] : "nexora"; const rc = routeCost(cmd);
+  S.auditRej.push({ session: true, date: t.date, userName: u.name, role: (R() || {}).name || "", system: sysName(sys), route: rc.label, agent: "–", cmd, ref: (payload && payload.ref) || null, cost: 0, ok: false, text: r.text, code: r.code, via: (payload && payload.via) || "Mensch", tenant: t.id }); }
+  return r; };
+// Routerablehnungen ebenfalls in die Sitzungsliste
+const _routeAsk5 = routeAsk;
+routeAsk = function (q) { const rq = _routeAsk5(q); if (!rq.d.ok) { const t = T(); S.auditRej.push({ session: true, date: t.date, userName: U().name, role: (R() || {}).name || "", system: rq.d.system ? sysName(rq.d.system) : "–", route: "kein zulässiger Weg", agent: rq.d.agent ? rq.d.agent.id : "Router", cmd: "frage", ref: null, cost: 0, ok: false, text: rq.d.text, code: rq.d.code, via: "Assistent", tenant: t.id }); } return rq; };
+function auditRows(tid) {
+  tid = tid || S.tenant; const t = W.tenants[tid]; const L = C.ledger(W, tid); const byC = new Map(L.map(x => [x.seq, x])); const order = AUDIT_ORDER.get(t) || []; const rows = []; const seen = new Set();
+  const uOf = name => t.users.find(u => u.name === name); const roleOf = u => u ? ((t.roles.find(r => r.id === u.role) || {}).name || "") : "";
+  const eRow = a => { const u = uOf(a.user); return { date: a.date, userName: a.user || "Demo-Automatik", role: roleOf(u), system: "NEXORA-Engine", route: C.ROUTES.nexora[0].label, agent: "nexora", cmd: a.cmd, ref: (a.docs || []).join(" ") || null, cost: 0, ok: true, text: a.text, via: a.user ? "Mensch" : "Demo-Automatik" }; };
+  for (const [k, n] of order) { if (k === "c" && byC.has(n)) { rows.push(byC.get(n)); seen.add("c" + n); } if (k === "e" && t.audit[n - 1]) { rows.push(eRow(t.audit[n - 1])); seen.add("e" + n); } }
+  for (const x of L) if (!seen.has("c" + x.seq)) rows.push(x); // Sicherheitsnetz: nichts geht verloren (z. B. Einträge aus Querverbindungen)
+  t.audit.forEach((a, i) => { if (a.cmd !== "seed" && !seen.has("e" + (i + 1))) rows.push(eRow(a)); });
+  for (const x of S.auditRej.filter(r => r.tenant === tid)) rows.push(x);
+  return rows.map((r, i) => Object.assign({ n: i + 1 }, r));
+}
+const AUDIT_COLS = [["n", "Lfd. Nr."], ["date", "Datum"], ["userName", "Nutzer"], ["role", "Rolle"], ["system", "System"], ["route", "Zugriffsweg"], ["agent", "Agent"], ["cmd", "Befehl"], ["ref", "Referenz"], ["cost", "Kosten (EUR, Beispielwert)"], ["ok", "Ergebnis"], ["via", "Ausgelöst über"], ["text", "Text"]];
+const resTxt = r => r.ok ? "ausgeführt" : "abgelehnt" + (r.code ? " (" + r.code + ")" : "") + (r.session ? " · nur diese Sitzung" : "");
+function auditFiltered() { const f = S.auditF; const q = (f.q || "").toLowerCase(); return auditRows().filter(r => (!f.sys || r.system === f.sys) && (!f.user || r.userName === f.user) && (!f.res || (f.res === "ok") === !!r.ok) && (!q || [r.cmd, r.ref, r.text, r.route, r.agent].some(x => String(x || "").toLowerCase().includes(q)))); }
+function auditCsv(rows) {
+  const cell = v => { const s = String(v == null ? "" : v); return /[;"\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+  const val = (r, k) => k === "cost" ? Number(r.cost || 0).toFixed(3).replace(".", ",") : k === "ok" ? resTxt(r) : k === "date" ? dDe(r.date) : r[k];
+  return "﻿" + [AUDIT_COLS.map(c => c[1]).join(";")].concat(rows.map(r => AUDIT_COLS.map(([k]) => cell(val(r, k))).join(";"))).join("\r\n") + "\r\n";
+}
+ACT.auditCsv = () => { const rows = auditFiltered(); saveBlob(`protokoll_${S.tenant}_${T().date}.csv`, new Blob([auditCsv(rows)], { type: "text/csv;charset=utf-8" }), { noTab: true }); toast(`${rows.length} Zeilen als CSV exportiert`); };
+ACT.auditReset = () => { S.auditF = { sys: "", user: "", res: "", q: "" }; render(); };
+Object.assign(ON, { auSys(v) { S.auditF.sys = v; render(); }, auUser(v) { S.auditF.user = v; render(); }, auRes(v) { S.auditF.res = v; render(); }, auQ(v) { S.auditF.q = v; render(); } });
+const costNow = () => { const d = T().date; return { day: C.costs(W, S.tenant, { date: d }).total, month: C.costs(W, S.tenant, { period: d.slice(0, 7) }).total }; };
+VIEWS.audit = () => {
+  const all = auditRows(); const rows = auditFiltered(); const f = S.auditF; const c = costNow(); const sum = Math.round(rows.reduce((a, r) => a + (r.cost || 0), 0) * 1000) / 1000;
+  const opts = (vals, cur) => `<option value="">Alle</option>` + [...new Set(vals)].filter(Boolean).sort().map(v => `<option ${v === cur ? "selected" : ""}>${esc(v)}</option>`).join("");
+  return head("Experience Layer · " + esc(T_NAMES[S.tenant]), "Protokoll", `<button class="btn pri" data-act="auditCsv">CSV exportieren</button>`)
+   + `<div class="note acc small sn"><div>Jede Aktion und jede Agentenabfrage mit Datum, Person, Rolle, System, Zugriffsweg, Agent, Kosten und Ergebnis. Die Einträge entstehen aus dem gemeinsamen Ereignisprotokoll und sind reproduzierbar; abgelehnte Aktionen erreichen kein System und erscheinen nur in dieser Sitzung. Kosten sind ${C.COST_NOTE}.</div></div>`
+   + `<div class="grid g3"><section class="card card-pad"><div class="eyebrow">Kosten heute</div><b class="num big" id="auDay">${eur4(c.day)}</b></section><section class="card card-pad"><div class="eyebrow">Kosten ${esc(perDe(T().date.slice(0, 7)))}</div><b class="num big" id="auMonth">${eur4(c.month)}</b></section><section class="card card-pad"><div class="eyebrow">Summe der Auswahl</div><b class="num big" id="auSum">${eur4(sum)}</b><span class="small faint"> ${rows.length} von ${all.length} Einträgen</span></section></div>`
+   + `<section class="card card-pad"><div class="row" style="gap:10px;flex-wrap:wrap;align-items:flex-end">
+      <label class="f">System<select class="input" data-on="auSys">${opts(all.map(r => r.system), f.sys)}</select></label>
+      <label class="f">Nutzer<select class="input" data-on="auUser">${opts(all.map(r => r.userName), f.user)}</select></label>
+      <label class="f">Ergebnis<select class="input" data-on="auRes"><option value="">Alle</option><option value="ok" ${f.res === "ok" ? "selected" : ""}>ausgeführt</option><option value="rej" ${f.res === "rej" ? "selected" : ""}>abgelehnt</option></select></label>
+      <label class="f" style="flex:1;min-width:180px">Suche<input class="input" data-on="auQ" value="${esc(f.q)}" placeholder="Befehl, Referenz, Text …"></label>
+      ${f.sys || f.user || f.res || f.q ? `<button class="btn sm" data-act="auditReset">Filter zurücksetzen</button>` : ""}</div></section>`
+   + `<section class="card" style="overflow:auto"><table class="small au-tbl"><thead><tr>${AUDIT_COLS.filter(c => c[0] !== "text").map(([k, l]) => `<th class="${k === "cost" ? "r" : ""}">${esc(l.replace(" (EUR, Beispielwert)", ""))}</th>`).join("")}</tr></thead><tbody>${rows.length ? rows.slice().reverse().slice(0, 300).map(r => `<tr class="${r.ok ? "" : "rej"}" title="${esc(r.text || "")}"><td class="num">${r.n}</td><td class="num">${esc(dDe(r.date))}</td><td>${esc(r.userName)}</td><td>${esc(r.role)}</td><td>${esc(r.system)}</td><td>${esc(r.route)}</td><td>${esc(r.agent)}</td><td class="mono">${esc(r.cmd)}</td><td class="mono">${esc(r.ref || "")}</td><td class="r num">${eur4(r.cost)}</td><td>${r.ok ? pill("p-good", "ausgeführt") : pill("p-crit", "abgelehnt")}${r.session ? `<span class="faint"> Sitzung</span>` : ""}</td><td>${esc(r.via)}</td></tr>`).join("") : `<tr><td colspan="12" class="muted">Keine Einträge${f.sys || f.user || f.res || f.q ? " für diesen Filter" : ""}.</td></tr>`}</tbody></table>${rows.length > 300 ? `<p class="small faint" style="padding:8px 12px">Angezeigt die letzten 300; der Export enthält alle ${rows.length}.</p>` : ""}</section>`;
+};
+// Kostenzähler in der Kopfzeile (nur im Layer-Modus; Suite-Ansicht unverändert)
+const _topExtras5 = topExtras;
+topExtras = function () { if (S.layer !== "layer") return _topExtras5(); const c = costNow(); return `<a class="cost-ctr" href="#audit" title="Kosten der protokollierten Zugriffe – ${esc(C.COST_NOTE)}" data-day="${c.day}" data-month="${c.month}"><span><i>heute</i> <b class="num">${eur4(c.day)}</b></span><span><i>Monat</i> <b class="num">${eur4(c.month)}</b></span></a>` + _topExtras5(); };
+// Kosten je Aufgabe auf der Karte (Satz der Hauptaktion)
+const _cardHtml5 = cardHtml;
+cardHtml = function (k, o) { const a = (k.actions || [])[0]; const h = _cardHtml5(k, o); if (!a) return h; const rc = routeCost(a.cmd); return h.replace(`<span class="ly-route" title="Zugriffsweg">${esc(k.route)}</span>`, `<span class="ly-route" title="Zugriffsweg und Beispielkosten je Aktion">${esc(k.route)} · ${eur4(rc.cost)}</span>`); };
+// Seite „Mitbestimmung & Datenschutz“ im Demo Control Center
+VIEWS.privacy = () => {
+  const t = T(); const sysIds = SYS_ORDER; const matrix = t.users.filter(u => !u.account).map(u => { const ks = C.listTasks(W, t.id, { user: u.id }); const set = new Set(ks.map(k => k.sys)); return { u, role: (t.roles.find(r => r.id === u.role) || {}).name || "", set, n: ks.length }; });
+  const flows = [
+    ["Simulierte Systeme (SAP, Microsoft 365, ServiceNow, Workday)", "Experience Layer im Browser", "Aufgaben, Belegdaten, Namen von Anfordernden und Mitarbeitenden – alles synthetisch aus dem Seed", "Inbox, Suche, Karten"],
+    ["Experience Layer", "Gemeinsames Ereignisprotokoll (Datenbank dieser Seite) oder lokaler Browserspeicher", "Befehl, Parameter, ausführende Person (Demo-Rolle), Geschäftsdatum", "Reproduzierbarkeit, Live-Demo auf mehreren Geräten, Protokoll"],
+    ["Experience Layer", "Claude (nur im Modus „Claude“)", "Die gestellte Frage, Ergebnisse der lesenden Werkzeuge und des gerouteten Agenten", "Antworten in natürlicher Sprache; Claude bucht nichts"],
+    ["Experience Layer", "Google Drive (nur auf Klick, eigenes Konto)", "Sicherung des Ereignisprotokolls, Belegjournal, PDFs", "Sicherung und Export"],
+    ["Router", "–", "Abgelehnte Anfragen", "Werden nicht weitergegeben, nur in dieser Sitzung gezählt"]
+  ];
+  return head("Demo Control Center", "Mitbestimmung & Datenschutz", `<a class="btn" href="#admin">← Demo Control Center</a>`)
+   + `<div class="note warn small">Diese Seite beschreibt ausschließlich, wie die Demo funktioniert. Sie enthält keine Rechtsaussagen und ersetzt keine Prüfung durch Datenschutz, Betriebsrat oder Rechtsberatung.</div>`
+   + `<section class="card card-pad"><h3>Welche Daten fließen wohin</h3><table class="small" style="margin-top:8px"><thead><tr><th>Von</th><th>Nach</th><th>Daten</th><th>Zweck</th></tr></thead><tbody>${flows.map(f => `<tr>${f.map(x => `<td>${esc(x)}</td>`).join("")}</tr>`).join("")}</tbody></table>
+      <p class="small faint" style="margin-top:8px">Alle Daten der Demo sind synthetisch. Es bestehen keine Verbindungen zu echten Fremdsystemen; die Konnektoren arbeiten ohne Netzwerkzugriff.</p></section>`
+   + `<section class="card card-pad" style="overflow-x:auto"><h3>Welche Rolle sieht was</h3><p class="small muted" style="margin:4px 0 8px">Aufgaben in der Inbox je Person und System, berechnet aus den Berechtigungen der Rolle (${esc(T_NAMES[t.id])}).</p><table class="small priv-mx"><thead><tr><th>Person</th><th>Rolle</th>${sysIds.map(s => `<th class="c">${esc(sysName(s).replace(" (simuliert)", ""))}</th>`).join("")}<th class="r">Aufgaben</th></tr></thead><tbody>${matrix.map(m => `<tr><td>${esc(m.u.name)}</td><td>${esc(m.role)}</td>${sysIds.map(s => `<td class="c">${m.set.has(s) ? "●" : "<span class='faint'>–</span>"}</td>`).join("")}<td class="r num">${m.n}</td></tr>`).join("")}</tbody></table></section>`
+   + `<div class="grid g2"><section class="card card-pad"><h3>Protokoll und Auswertung</h3><ul class="small" style="padding-left:18px;margin-top:6px;display:flex;flex-direction:column;gap:4px"><li>Das Protokoll enthält je Aktion die ausführende Person und Rolle. Einsicht haben alle Betrachter der Demo.</li><li>Kosten werden je Zugriff, nicht je Person ausgewertet; die Ansicht „Agenten“ zeigt Summen je Agent.</li><li>Freigaben über ${esc(eur(C.FOUR_EYES_LIMIT))} (Beispielwert) brauchen zwei verschiedene Personen.</li><li>„Alle zurücksetzen“ entfernt Protokoll, Konnektorzustand und angelegte Accounts.</li></ul></section>
+      <section class="card card-pad"><h3>Grenzen der KI</h3><ul class="small" style="padding-left:18px;margin-top:6px;display:flex;flex-direction:column;gap:4px"><li>Claude und der Regel-Rückfall schlagen Aktionen nur vor.</li><li>Ausgeführt wird erst nach Klick und Bestätigung einer Person, mit Rechteprüfung der Rolle.</li><li>${esc(C.SAP_POLICY_NOTE)}</li></ul></section></div>`;
+};
+const _adminV8 = VIEWS.admin;
+VIEWS.admin = () => { const h = _adminV8(); if (S.layer !== "layer") return h; return h + `<section class="card card-pad row between" style="gap:12px"><div><h3>Mitbestimmung & Datenschutz</h3><p class="small muted">Welche Daten fließen wohin, welche Rolle sieht was – Beschreibung der Demo, keine Rechtsaussage.</p></div><a class="btn" href="#privacy">Öffnen →</a></section>`; };
+
+/* ---------- Phase 6: Einbettungsmodus (#embed bzw. ?embed=1) ----------
+   Kompakte Ansicht ohne Seitennavigation, nur Inbox und Assistent, für ca. 400 px Breite.
+   Zeigt, wie NEXORA in Teams oder Copilot laufen würde – als Vorschau, keine echte Einbettung. */
+S.embed = false;
+function enterEmbed() { S.embed = true; S.layer = "layer"; S.live = false; if (!["tasks", "ai", "obj"].includes(route())) location.hash = "tasks"; render(); }
+ACT.leaveEmbed = () => { S.embed = false; try { const u = new URL(location.href); u.searchParams.delete("embed"); history.replaceState(null, "", u.pathname + u.search + location.hash); } catch (e) {} render(); };
+const embedBar = () => { const rt = route(); return `<div class="emb-bar"><div class="row between" style="gap:8px"><span class="emb-brand">${LOGO(20)}<b>NEXORA</b></span><button class="btn sm" data-act="userMenu">${esc(U().name)} · ${esc((R() || {}).name || "")}</button></div>
+  <div class="seg emb-tabs" role="tablist"><a role="tab" class="${rt !== "ai" ? "on" : ""}" href="#tasks" aria-selected="${rt !== "ai"}">Inbox <b>${C.listTasks(W, S.tenant, { user: S.users[S.tenant] }).length}</b></a><a role="tab" class="${rt === "ai" ? "on" : ""}" href="#ai" aria-selected="${rt === "ai"}">Assistent</a></div>
+  <div class="emb-note">Vorschau einer Einbettung (z. B. in Teams oder Copilot) · Fremdsysteme simuliert · <button class="link-btn" data-act="leaveEmbed">Vollansicht</button></div></div>`; };
+const _render6 = render;
+render = function () { document.body.classList.toggle("embed", !!S.embed); if (S.embed) S.live = false; _render6(); if (S.embed) { const m = document.querySelector("#root .main"); if (m) m.insertAdjacentHTML("afterbegin", embedBar()); } };
+try { if (/^#embed\b/.test(location.hash) || new URLSearchParams(location.search).get("embed") === "1") { S.embed = true; S.layer = "layer"; if (/^#embed\b/.test(location.hash)) { try { history.replaceState(null, "", "#tasks"); } catch (e) { location.hash = "tasks"; } } } } catch (e) {}
+
+/* ---------- Phase 7: Individuelles Dashboard, System of Record je Prozess, Ablöse-Cockpit ---------- */
+const TR_PROJECT = C.SUPPORTED_TRANSITION.bestellanforderung; // "sap-pr"
+const trState = (proc, tid) => (C.state(W, tid || S.tenant).transition[proc] || { phase: "überlagert", log: [] });
+const PHASE_LABEL = { "überlagert": "überlagert", parallel: "im Parallelbetrieb", "abgelöst": "abgelöst", "zurückgestellt": "zurückgestellt" };
+const phaseOf = p => { const own = C.owners(W, S.tenant)[p]; const st = trState(p); if (C.PROCESSES[p].owner === "nexora") return "nativ"; return st.phase === "überlagert" && own === "nexora" ? "abgelöst" : st.phase; };
+const phasePill = ph => ph === "nativ" ? pill("p-good", "NEXORA nativ") : ph === "abgelöst" ? pill("p-good", "abgelöst") : ph === "parallel" ? pill("p-warn", "im Parallelbetrieb") : ph === "zurückgestellt" ? pill("p-neu", "zurückgestellt") : pill("p-acc", "überlagert");
+// Parallelbetrieb: neue Bestellanforderungen der Engine ins Altsystem spiegeln (eigenes protokolliertes Ereignis)
+function mirrorFor(cmd, p, res) {
+  if (cmd !== "createRequisition" || !res || !res.ok || !res.objects || !res.objects.length) return [];
+  if (trState("bestellanforderung").phase !== "parallel") return [];
+  const q = T().reqs.find(x => x.no === res.objects[0]); if (!q || q.type !== "indirekt") return [];
+  return [{ cmd: "conn.sap.mirrorPR", p: { reqNo: q.no, text: q.text, qty: q.qty, price: q.price, requester: q.requesterName, costCenter: q.costCenter, via: "Parallelbetrieb" } }];
+}
+/* Dashboard-Kacheln: systemneutral, lesen über das System of Record */
+function kpiDefs() { return KPI_DEF.common.concat(KPI_DEF[S.tenant] || []); }
+const DASH_TEMPLATES = { ceo: ["kpi:cash", "kpi:revenueCur", "trend", "approvals", "process", "costs"], cfo: ["kpi:cash", "kpi:arOpen", "kpi:apOpen", "approvals", "costs", "trend"], buy: ["approvals", "tasks", "kpi:apOpen", "kpi:inventory", "process"], sales: ["tasks", "kpi:revenueCur", "kpi:backlog", "trend"], prod: ["tasks", "kpi:openProd", "kpi:wip", "process"], hr: ["tasks", "approvals", "process"] };
+const TEMPLATE_LABEL = { ceo: "CEO", cfo: "CFO", buy: "Einkauf", sales: "Vertrieb", prod: "Fertigung", hr: "HR" };
+function tileCatalog() { const k = E.kpis(T()); return [["approvals", "Offene Freigaben (alle Systeme)"], ["tasks", "Meine Aufgaben"], ["trend", "Umsatz und EBIT (12 Monate)"], ["process", "Prozessstatus und System of Record"], ["costs", "Zugriffskosten"]].concat(kpiDefs().filter(d => k[d[0]] != null).map(d => ["kpi:" + d[0], "Kennzahl: " + d[1]])); }
+function dashTemplate(roleId) { const valid = new Set(tileCatalog().map(x => x[0])); return (DASH_TEMPLATES[roleId] || ["tasks", "approvals", "kpi:cash", "trend"]).filter(x => valid.has(x)); }
+function dashTiles() { const s = C.state(W, S.tenant); const u = U(); return { tiles: s.dash["user:" + u.id] || s.dash["role:" + u.role] || dashTemplate(u.role), own: !!s.dash["user:" + u.id] }; }
+const tileLabel = id => (tileCatalog().find(x => x[0] === id) || [id, id])[1];
+function tileBody(id) {
+  const t = T();
+  if (id.startsWith("kpi:")) { const key = id.slice(4); const d = kpiDefs().find(x => x[0] === key); const v = E.kpis(t)[key]; return `<div class="dt-kpi num">${d && d[2] === "n" ? num(v || 0) : eur(v || 0)}</div><span class="small faint">aus Belegen und Nebenbüchern der NEXORA-Engine</span>`; }
+  if (id === "approvals" || id === "tasks") { const all = layerTasks(); const l = id === "approvals" ? all.filter(k => (k.actions || []).some(a => /Freigabe|Freigeben|Zustimmen|Genehmig/i.test(a.label))) : all; const by = {}; for (const k of l) by[k.source] = (by[k.source] || 0) + 1;
+    return `<div class="row between"><b class="dt-kpi num">${l.length}</b><span class="small faint">${Object.entries(by).map(([a, n]) => `${esc(a.replace(" (simuliert)", ""))} ${n}`).join(" · ")}</span></div><div class="list">${l.slice(0, 4).map(k => `<button class="dt-row" data-act="openObj" data-ref="${esc(k.ref)}"><span class="ly-chip s-${k.sys}">${esc(sysName(k.sys).replace(" (simuliert)", ""))}</span><span class="grow">${esc(k.title)}</span>${k.amount ? `<span class="num small">${eur(k.amount)}</span>` : ""}</button>`).join("")}</div>${l.length > 4 ? `<a class="small" href="#tasks">alle ${l.length} anzeigen →</a>` : ""}`; }
+  if (id === "trend") { const tr = (E.kpis(t).trend || []).slice(-12); const mx = Math.max(1, ...tr.map(x => x.revenue)); const W2 = 300, H = 90, bw = W2 / Math.max(1, tr.length);
+    return `<svg viewBox="0 0 ${W2} ${H + 14}" class="dt-trend" role="img" aria-label="Umsatz und EBIT der letzten 12 Monate">${tr.map((x, i) => `<rect x="${i * bw + 2}" y="${H - x.revenue / mx * H}" width="${bw - 4}" height="${x.revenue / mx * H}" rx="2" class="b"><title>${perDe(x.period)}: Umsatz ${eur(x.revenue)}, EBIT ${eur(x.ebit)}</title></rect>`).join("")}<polyline class="l" points="${tr.map((x, i) => `${i * bw + bw / 2},${H - Math.max(0, x.ebit) / mx * H}`).join(" ")}"/>${tr.length ? `<text x="0" y="${H + 12}" class="tx">${esc(perDe(tr[0].period))}</text><text x="${W2}" y="${H + 12}" text-anchor="end" class="tx">${esc(perDe(tr[tr.length - 1].period))}</text>` : ""}</svg><span class="small faint">Balken Umsatz, Linie EBIT · abgeschlossene Perioden</span>`; }
+  if (id === "process") { const own = C.owners(W, t.id); return `<div class="list">${Object.keys(C.PROCESSES).map(p => `<div class="dt-row static"><span class="grow small">${esc(C.PROCESSES[p].label)}</span><span class="ly-chip s-${own[p]}">${esc(sysName(own[p]).replace(" (simuliert)", ""))}</span>${phasePill(phaseOf(p))}</div>`).join("")}</div><a class="small" href="#transition">Ablöse-Cockpit →</a>`; }
+  if (id === "costs") { const c = costNow(); return `<div class="row" style="gap:18px"><div><div class="eyebrow">heute</div><b class="dt-kpi num">${eur4(c.day)}</b></div><div><div class="eyebrow">Monat</div><b class="dt-kpi num">${eur4(c.month)}</b></div></div><span class="small faint">${esc(C.COST_NOTE)} · <a href="#audit">Protokoll</a></span>`; }
+  return `<p class="small muted">Unbekannte Kachel.</p>`;
+}
+const DASH_SRC = { approvals: "alle Systeme", tasks: "alle Systeme", process: "Experience Layer", costs: "Protokoll", trend: "NEXORA-Engine" };
+function saveDash(tiles) { act("conn.layer.setDash", { tiles }); }
+Object.assign(ACT, {
+  dashEdit() { S.dashEdit = !S.dashEdit; render(); },
+  dashMove(d) { const l = dashTiles().tiles.slice(); const i = +d.i, j = i + (+d.dir); if (j < 0 || j >= l.length) return; [l[i], l[j]] = [l[j], l[i]]; saveDash(l); },
+  dashDel(d) { const l = dashTiles().tiles.slice(); l.splice(+d.i, 1); saveDash(l); },
+  dashTpl(d) { saveDash(dashTemplate(d.r || U().role)); }
+});
+ON.dashAdd = v => { if (!v) return; const l = dashTiles().tiles.slice(); if (!l.includes(v)) l.push(v); saveDash(l); };
+VIEWS.dashboard = () => {
+  const u = U(); const { tiles, own } = dashTiles(); const ed = !!S.dashEdit; const rest = tileCatalog().filter(x => !tiles.includes(x[0]));
+  return head("Experience Layer · " + esc(T_NAMES[S.tenant]), "Mein Dashboard", `<div class="row"><button class="btn ${ed ? "pri" : ""}" data-act="dashEdit">${ed ? "Fertig" : "Anpassen"}</button><button class="btn" data-act="userMenu">${esc(u.name)} · ${esc((R() || {}).name || "")}</button></div>`)
+   + `<div class="note acc small sn"><div>Kacheln im Aktionskarten-Format, systemneutral: „Offene Freigaben“ zeigt Vorgänge aus SAP, ServiceNow oder der NEXORA-Engine – je nachdem, welches System den Prozess gerade führt. ${own ? "Eigene Zusammenstellung" : `Vorlage ${esc(TEMPLATE_LABEL[u.role] || "Standard")}`}; Änderungen stehen im Ereignisprotokoll (Typ dash) und sind damit reproduzierbar, teilbar und per Reset rücksetzbar.</div></div>`
+   + (ed ? `<section class="card card-pad row" style="gap:10px;flex-wrap:wrap;align-items:flex-end"><label class="f">Kachel hinzufügen<select class="input" data-on="dashAdd"><option value="">Kachel wählen …</option>${rest.map(x => `<option value="${esc(x[0])}">${esc(x[1])}</option>`).join("")}</select></label><span class="small muted">Vorlage laden:</span>${Object.keys(DASH_TEMPLATES).map(r => `<button class="btn sm" data-act="dashTpl" data-r="${r}">${TEMPLATE_LABEL[r]}</button>`).join("")}</section>` : "")
+   + `<div class="dash-grid">${tiles.map((id, i) => `<article class="ly-card card dash-tile" data-tile="${esc(id)}"><div class="ly-src"><span class="ly-chip">${esc(id.startsWith("kpi:") ? "NEXORA-Engine" : DASH_SRC[id] || "")}</span>${ed ? `<span class="grow"></span><button class="icon-btn sm" data-act="dashMove" data-i="${i}" data-dir="-1" aria-label="nach vorn" ${i === 0 ? "disabled" : ""}>↑</button><button class="icon-btn sm" data-act="dashMove" data-i="${i}" data-dir="1" aria-label="nach hinten" ${i === tiles.length - 1 ? "disabled" : ""}>↓</button><button class="icon-btn sm" data-act="dashDel" data-i="${i}" aria-label="entfernen">${ic("x", 13)}</button>` : ""}</div><h3>${esc(tileLabel(id).replace("Kennzahl: ", ""))}</h3>${tileBody(id)}</article>`).join("") || `<section class="card card-pad"><p class="muted">Keine Kacheln. Über „Anpassen“ hinzufügen.</p></section>`}</div>`;
+};
+VIEWS.home = () => S.layer === "layer" ? VIEWS.dashboard() : _home8();
+// Navigation: „Home“ heißt im Layer-Modus „Dashboard“
+const _render8d = render; render = function () { const h = MODS.home[0]; if (S.layer === "layer") MODS.home[0] = "Dashboard"; try { _render8d(); } finally { MODS.home[0] = h; } };
+
+/* Ablöse-Cockpit (Route transition). Im Layer-Modus ersetzt es den Prototyp „Transformation“; in der Suite bleibt der Prototyp. */
+const PROC_CMDS = { bestellanforderung: ["approvePR", "rejectPR", "createPR", "mirrorPR", "markMigrated"], rechnungsfreigabe: ["approveInvoice", "rejectInvoice"], ticket_einkauf: ["approveRITM", "rejectRITM", "createRITM"], abwesenheit: ["approveAbsence", "rejectAbsence"], freigabebitte: ["replyApproval"], onboarding: ["completeOnboardingTask"], auftrag: [] };
+const LICENSE_EX = { bestellanforderung: [12, 95, "Lizenzen für Anfordernde im Altsystem"], rechnungsfreigabe: [4, 140, "Lizenzen für Freigebende"], ticket_einkauf: [20, 30, "Lizenzen im Service-Portal"], abwesenheit: [60, 6, "Lizenzen Self-Service"], onboarding: [3, 45, "Lizenzen HR-Fachbereich"] };
+function procCosts(p) { const own0 = C.PROCESSES[p].owner; const per = T().date.slice(0, 7); const L = C.ledger(W, S.tenant).filter(x => x.sys === own0 && x.period === per && PROC_CMDS[p].includes(x.cmd)); return { calls: L.length, cost: Math.round(L.reduce((a, x) => a + x.cost, 0) * 1000) / 1000 }; }
+S.trRules = S.trRules || { fillCostCenter: false, excludeUnmapped: false }; S.trDays = S.trDays || 14;
+Object.assign(ACT, {
+  trTest() { act("migrationTest", { project: TR_PROJECT, source: C.prExtract(W, S.tenant), rules: Object.assign({}, S.trRules) }); },
+  trReq() { act("migrationRequestApproval", { project: TR_PROJECT }); },
+  trAppr() { act("migrationApprove", { project: TR_PROJECT }); },
+  trRun() { act("migrationRun", { project: TR_PROJECT, object: "requisitions" }); },
+  trParallel() { const r = act("conn.layer.transition", { process: "bestellanforderung", step: "parallel", days: S.trDays }); if (r && r.ok) { const M = T().migProjects[TR_PROJECT]; act("conn.sap.markMigrated", { map: M.map }); } },
+  trSample() { const c = T().catalog[0]; act("createRequisition", { catalogId: c.id, qty: 1, costCenter: T().master.costCenters[0].id }); },
+  trCutover() { act("conn.layer.transition", { process: "bestellanforderung", step: "cutover" }); },
+  trRollback() { confirmCard({ title: "Ablösung Bestellanforderung", source: "Experience Layer", sys: "nexora", process: "bestellanforderung" }, { label: "Rückweg ausführen", cmd: "conn.layer.transition" }, () => act("conn.layer.transition", { process: "bestellanforderung", step: "rollback" })); }
+});
+Object.assign(ON, { trRule(v, el) { S.trRules[el.dataset.k] = el.checked; render(); }, trDays(v) { S.trDays = +v || 14; } });
+VIEWS.transition = () => {
+  const t = T(); const own = C.owners(W, t.id); const st = trState("bestellanforderung"); const M = (t.migProjects || {})[TR_PROJECT]; const x = M && M.tests.requisitions; const done = M && M.done.requisitions; const ph = st.phase; const rc = ph === "parallel" ? C.reconcile(W, t.id, "bestellanforderung") : null;
+  const truescale = ON_PAGES ? "truescale.html#roi" : "https://marcelwagner-afk.github.io/nexora-suite/truescale.html#roi";
+  const rows = Object.keys(C.PROCESSES).map(p => { const P = C.PROCESSES[p]; const phx = phaseOf(p); const sh = C.share(W, t.id, p); const pc = procCosts(p); const lic = LICENSE_EX[p];
+    return `<tr data-proc="${p}"><td><b>${esc(P.label)}</b></td><td><span class="ly-chip s-${own[p]}">${esc(sysName(own[p]).replace(" (simuliert)", ""))}</span></td><td>${phasePill(phx)}</td><td><div class="tr-bar" title="${Math.round(sh * 100)} %"><i style="width:${Math.round(sh * 100)}%"></i></div><span class="small num">${Math.round(sh * 100)} %</span></td><td class="r num small">${P.owner === "nexora" ? "–" : `${eur4(pc.cost)}<div class="faint">${pc.calls} Aufrufe im Monat</div>`}</td><td class="r num small">${lic ? `${eur(lic[0] * lic[1])}/Monat<div class="faint">${lic[0]} × ${eur(lic[1])} ${esc(lic[2])}</div>` : "–"}</td><td class="small">${C.SUPPORTED_TRANSITION[p] ? `<a href="#tr-bestell">Ablösung steuern ↓</a>` : P.owner === "nexora" ? "läuft in NEXORA" : `<span class="faint">in dieser Demo nicht umstellbar</span>`}</td></tr>`; }).join("");
+  const step = (n, title, state, body) => `<section class="card card-pad tr-step ${state}"><div class="row between"><h3><span class="tr-n">${n}</span> ${esc(title)}</h3>${state === "done" ? pill("p-good", "erledigt") : state === "active" ? pill("p-acc", "jetzt") : pill("p-neu", "später")}</div>${body}</section>`;
+  const s1 = !done ? "active" : "done", s2 = ph === "parallel" ? "active" : ph === "abgelöst" ? "done" : done ? "active" : "", s3 = ph === "abgelöst" ? "done" : ph === "parallel" ? "active" : "";
+  const extract = C.prExtract(W, t.id).requisitions;
+  return head("Experience Layer · " + esc(T_NAMES[t.id]), "Ablöse-Cockpit", `<button class="btn" data-act="userMenu">${esc(U().name)} · ${esc((R() || {}).name || "")}</button>`)
+   + `<div class="note acc small sn"><div>Prozess für Prozess vom Altsystem in die NEXORA-Engine – ohne dass Mitarbeitende die Oberfläche wechseln. Inbox, Karten, Suche und Dashboard lesen über das System of Record je Prozess. Altsysteme sind simuliert; alle Geldwerte sind <b>Beispielwerte</b>, keine Herstellerpreise. Der Prototyp „Transformation“ bleibt in der Suite-Ansicht erreichbar.</div></div>`
+   + `<section class="card" style="overflow:auto"><table class="small tr-tbl"><thead><tr><th>Prozess</th><th>System of Record</th><th>Status</th><th>Anteil NEXORA</th><th class="r">entfallende Zugriffskosten</th><th class="r">Lizenzwirkung (illustrativ)</th><th></th></tr></thead><tbody>${rows}</tbody></table><p class="small faint" style="padding:8px 14px">Zugriffskosten aus dem Protokoll (laufender Monat, Beispielwerte). Lizenzwirkung illustrativ mit Beispielwerten – eigene Annahmen im <a href="${truescale}" target="${ON_PAGES ? "_self" : "_blank"}" rel="noopener">Kostenrechner auf der TRUESCALE-Seite</a>.</p></section>`
+   + `<h2 id="tr-bestell" style="margin-top:6px">Bestellanforderung: SAP S/4HANA (simuliert) → NEXORA-Engine</h2>`
+   + step(1, "Datenübernahme über das Migrationsmodul", s1, done ? `<p class="small">Übernommen am ${dDe(done.date)} durch ${esc(done.by)}: <b>${done.loaded} von ${done.source}</b> Bestellanforderungen, Summe ${eur(done.loadedSum)} = Quelle ${eur(done.sourceSum - (done.excludedSum || 0))}${done.excluded ? `, ${done.excluded} auf der Klärungsliste` : ""}. Neue Nummern: ${esc((done.reqs || []).join(", "))}.</p>`
+      : `<p class="small muted">Extrakt der offenen Bestellanforderungen aus dem Altsystem: <b>${extract.length}</b> Vorgänge, ${eur(extract.reduce((a, r) => a + r.MENGE * r.PREIS, 0))}. Testlauf auf einer Kopie, Fehlerliste, Freigabe durch eine zweite Person mit Freigaberecht, dann Produktivübernahme – dasselbe Modul wie bei der Übernahme Liftservice Nord.</p>
+        <div class="row" style="gap:14px;flex-wrap:wrap"><label class="small"><input type="checkbox" data-on="trRule" data-k="fillCostCenter" ${S.trRules.fillCostCenter ? "checked" : ""}> Fehlende Kostenstelle durch Einkauf ersetzen</label><label class="small"><input type="checkbox" data-on="trRule" data-k="excludeUnmapped" ${S.trRules.excludeUnmapped ? "checked" : ""}> Nicht zuordenbare auf Klärungsliste</label></div>
+        ${x ? `<table class="small"><thead><tr><th class="r">Quelle</th><th class="r">übernehmbar</th><th class="r">ausgeschlossen</th><th class="r">Fehler</th><th class="r">Summe Quelle</th><th class="r">Summe Ziel</th></tr></thead><tbody><tr><td class="r num">${x.source}</td><td class="r num">${x.loaded}</td><td class="r num">${x.excluded}</td><td class="r num">${x.errors ? `<b style="color:var(--crit)">${x.errors}</b>` : 0}</td><td class="r num">${eur(x.sourceSum)}</td><td class="r num">${eur(x.loadedSum)}</td></tr></tbody></table>${x.issues.length ? `<div class="list">${x.issues.map(i => `<div class="li small" style="padding:4px 0"><span class="mono" style="width:90px">${esc(i[0])}</span><span class="grow">${esc(i[1])}</span></div>`).join("")}</div>` : ""}` : ""}
+        <div class="row" style="gap:8px;flex-wrap:wrap"><button class="btn ${!x ? "pri" : ""}" data-act="trTest">Testlauf${x ? " wiederholen" : ""}</button><button class="btn ${x && !x.errors && !M.approval ? "pri" : ""}" data-act="trReq" ${x && !x.errors && !(M.approval && M.approval.status) ? "" : "disabled"}>Freigabe anfordern</button><button class="btn ${M && M.approval && M.approval.status === "offen" ? "pri" : ""}" data-act="trAppr" ${M && M.approval && M.approval.status === "offen" ? "" : "disabled"}>Freigeben (Vier-Augen)</button><button class="btn ${M && M.approval && M.approval.status === "freigegeben" ? "pri" : ""}" data-act="trRun" ${M && M.approval && M.approval.status === "freigegeben" ? "" : "disabled"}>Produktivübernahme</button></div>
+        ${M && M.approval ? `<p class="small faint">Freigabe ${esc(M.approval.status)} · angefordert von ${esc(M.approval.requesterName)}${M.approval.by ? " · freigegeben von " + esc(M.approval.by) : " · freigeben muss eine andere Person mit Freigaberecht"}</p>` : ""}`)
+   + step(2, "Parallelbetrieb mit Abstimmung", s2, ph === "parallel" ? `<p class="small">Bis ${dDe(st.until)}: Neue Bestellanforderungen entstehen in der NEXORA-Engine und werden ins Altsystem gespiegelt. Die übernommenen Originale sind in SAP als „übernommen“ gekennzeichnet.</p>
+        <table class="small"><thead><tr><th>Abstimmung</th><th class="r">NEXORA-Engine</th><th class="r">Altsystem (Spiegel)</th><th class="r">Differenz</th></tr></thead><tbody><tr><td>Vorgänge</td><td class="r num">${rc.nexora.count}</td><td class="r num">${rc.legacy.count}</td><td class="r num">${rc.diffCount}</td></tr><tr><td>Stückzahl</td><td class="r num">${rc.qty.nexora}</td><td class="r num">${rc.qty.legacy}</td><td class="r num">${rc.qty.nexora - rc.qty.legacy}</td></tr><tr><td>Summe</td><td class="r num">${eur(rc.nexora.sum)}</td><td class="r num">${eur(rc.legacy.sum)}</td><td class="r num">${eur(rc.diffSum)}</td></tr></tbody></table>
+        <p class="small">${rc.diffCount === 0 && rc.diffSum === 0 ? pill("p-good", "Differenz 0 – Umschalten möglich") : pill("p-crit", "Differenzen: " + rc.missing.join(", "))}</p><div class="row" style="gap:8px"><button class="btn sm" data-act="trSample">Test-Bedarf in NEXORA anlegen</button><a class="btn sm" href="#supply">Einkauf öffnen</a></div>`
+      : ph === "abgelöst" ? `<p class="small">Abgeschlossen. Abstimmung beim Umschalten: ${st.recon ? `${st.recon.nexora.count} Vorgänge, ${eur(st.recon.nexora.sum)}, Differenz 0` : "Differenz 0"}.</p>`
+      : `<div class="row" style="gap:10px;align-items:flex-end"><label class="f">Zeitraum<select class="input" data-on="trDays">${[7, 14, 30].map(d => `<option value="${d}" ${S.trDays === d ? "selected" : ""}>${d} Tage</option>`).join("")}</select></label><button class="btn ${done ? "pri" : ""}" data-act="trParallel" ${done ? "" : "disabled"}>Parallelbetrieb starten</button></div><p class="small faint">${done ? "System of Record wechselt auf die NEXORA-Engine; das Altsystem erhält jede neue Bestellanforderung als Spiegel." : "Erst nach der Datenübernahme möglich."}</p>`)
+   + step(3, "Umschalten oder Rückweg", s3, ph === "abgelöst" ? `<p class="small">System of Record ist die <b>NEXORA-Engine</b>. SAP S/4HANA (simuliert) ist für Bestellanforderungen nur noch lesend (Historie). Neue Vorgänge entstehen ausschließlich in der Engine.</p>`
+      : `<div class="row" style="gap:8px"><button class="btn ${ph === "parallel" && rc && rc.diffCount === 0 && rc.diffSum === 0 ? "pri" : ""}" data-act="trCutover" ${ph === "parallel" && rc && rc.diffCount === 0 && rc.diffSum === 0 ? "" : "disabled"}>Umschalten auf NEXORA</button><button class="btn" data-act="trRollback" ${ph === "parallel" ? "" : "disabled"}>Rückweg</button></div><p class="small faint">Der Rückweg ist bis zum Abschluss des Parallelbetriebs möglich: Das Altsystem führt wieder, offene Vorgänge in NEXORA werden zurückgezogen, Spiegelungen werden führende Vorgänge. Jeder Schritt steht im Protokoll.</p>`)
+   + `<section class="card card-pad"><h3>Ablaufprotokoll</h3><div class="list">${[].concat((M ? M.log : []).map(l => [l.date, l.by, "Migration: " + l.text]), (st.log || []).map(l => [l.date, l.by, l.text])).map(l => `<div class="li small" style="padding:5px 0"><span class="num" style="width:90px">${esc(dDe(l[0]))}</span><span style="width:140px">${esc(l[1])}</span><span class="grow">${esc(l[2])}</span></div>`).join("") || `<p class="small muted">Noch keine Schritte.</p>`}</div><a class="small" href="#audit">Alle Ereignisse im Protokoll →</a></section>`;
+};
+const _transformation7 = VIEWS.transformation;
+VIEWS.transformation = () => S.layer === "layer" ? VIEWS.transition() : _transformation7();
+
+/* ---------- Phase 8: geführte Storys im Experience Layer ---------- */
+const snTicketFrom = src => C.state(W, "elevon").servicenow.tickets.find(o => o.source === src && (o.status === "zur Freigabe" || o.status === "1. Freigabe erteilt"));
+const sapPrFrom = re => C.state(W, "elevon").sap.prs.find(o => re.test(o.source || "") && o.status === "zur Freigabe");
+STORIES.push(
+  { id: "crosssys", tenant: "elevon", cross: [], short: "Freigabe über Systemgrenzen", title: "Freigabe über Systemgrenzen: Vom Onboarding zum Wareneingang", situation: "Eine neue Mitarbeiterin startet bei Elevon. Ihr Onboarding läuft in Workday, IT-Anfragen in ServiceNow, Bestellanforderungen in SAP – Bestellung und Wareneingang in der NEXORA-Engine. Alle Fremdsysteme sind simuliert.", layer: true, problem: "Heute springt jede Freigabe zwischen vier Oberflächen, und niemand sieht die Kosten der Zugriffe.", value: "Eine Inbox für alle Systeme: Jeder Schritt ist eine Karte mit Quelle, Zugriffsweg und Beispielkosten. Folgeschritte entstehen über Ereignisse, jeder ist im Protokoll einer Person und Rolle zugeordnet.", steps: [
+    { t: "HR stößt im Onboarding den Laptop an", d: "Workday-Aufgabe erledigt – als Folgeschritt entsteht automatisch ein ServiceNow-Ticket.", user: "u8", cmd: "conn.workday.completeOnboardingTask", p: () => ({ ref: "workday:onb:ONB-77:laptop" }), go: "tasks" },
+    { t: "CFO gibt das ServiceNow-Ticket in NEXORA frei", d: "Karte „ServiceNow (simuliert)“ über Now Assist (A2A) – Folgeschritt: SAP-Bestellanforderung über Joule.", user: "u2", multi: () => { const o = snTicketFrom("Workday ONB-77"); return o ? [["conn.servicenow.approveRITM", { ref: "servicenow:ritm:" + o.no }]] : []; }, go: "tasks" },
+    { t: "CFO gibt die SAP-Bestellanforderung frei", d: "Joule-Weg (A2A, 0,04 € Beispielwert). Da der Laptop ein Katalogartikel ist, laufen Bestellung und Wareneingang in der NEXORA-Engine.", user: "u2", multi: () => { const o = sapPrFrom(/ServiceNow RITM/); return o ? [["conn.sap.approvePR", { ref: "sap:pr:" + o.no }]] : []; } },
+    { t: "Einkauf bestellt in der NEXORA-Engine", d: "Bestellung beim IT-Lieferanten aus der freigegebenen Bedarfsanforderung.", user: "u5", cmd: "convertRequisitions", p: () => ({}), go: "supply" },
+    { t: "Wareneingang in der NEXORA-Engine", d: "GWG-Notebook auf Konto 6830, Kostenstelle belastet.", user: "u6", multi: () => W.tenants.elevon.purchaseOrders.filter(p => p.kind === "indirekt" && !p.grDoc).map(p => ["postGoodsReceipt", { poNo: p.no }]) },
+    { t: "Kosten und Protokoll prüfen", d: "Jeder Schritt mit Person, Rolle, System, Weg, Agent und Beispielkosten; Summe = Kostenzähler.", user: "u2", multi: () => [], then: () => {}, go: "audit" }
+  ], outro: "Vier Systeme, eine Oberfläche: Die Kosten der Zugriffe stehen im Protokoll, jede Ausführung ist einem Menschen zugeordnet." },
+  { id: "oneday", tenant: "elevon", cross: [], short: "Ein Tag im Experience Layer", title: "Ein Tag im Experience Layer: Die CFO arbeitet ihre Inbox ab", situation: "Martin Seidel, CFO bei Elevon, hat Freigaben in SAP, Microsoft 365, ServiceNow und Workday – alle simuliert – und Aufgaben in der NEXORA-Engine.", layer: true, problem: "Vier Logins, vier Oberflächen, kein gemeinsamer Überblick.", value: "Ein persönliches Dashboard und eine Inbox über alle Systeme; der Assistent schlägt vor, ausgeführt wird erst nach Klick und Bestätigung.", steps: [
+    { t: "Dashboard anpassen", d: "Kacheln Offene Freigaben, Bank, Zugriffskosten und Prozessstatus – gespeichert als Ereignis im Protokoll.", user: "u2", cmd: "conn.layer.setDash", p: () => ({ tiles: ["approvals", "kpi:cash", "costs", "process", "trend"] }), go: "home" },
+    { t: "SAP: Kreditorenrechnung freigeben", d: "Über Joule (A2A); Rechnungen über 10.000 € bräuchten eine zweite Person.", user: "u2", multi: () => { const o = C.state(W, "elevon").sap.invoices.find(i => i.status === "zur Freigabe" && i.amount <= C.FOUR_EYES_LIMIT); return o ? [["conn.sap.approveInvoice", { ref: "sap:inv:" + o.no }]] : []; }, go: "tasks" },
+    { t: "Microsoft 365: Freigabebitte beantworten", d: "Antwort per Copilot (A2A) statt Outlook.", user: "u2", multi: () => { const o = C.state(W, "elevon").m365.mails.find(m => m.needsApproval && m.status === "Antwort erwartet"); return o ? [["conn.m365.replyApproval", { ref: "m365:mail:" + o.no, decision: "zugestimmt" }]] : []; } },
+    { t: "ServiceNow: Lizenzanfrage freigeben", d: "Folgeschritt: Bestellanforderung im System of Record SAP.", user: "u2", multi: () => { const o = C.state(W, "elevon").servicenow.tickets.find(x => x.no === "RITM0014022" && x.status === "zur Freigabe"); return o ? [["conn.servicenow.approveRITM", { ref: "servicenow:ritm:" + o.no }]] : []; } },
+    { t: "Workday: Urlaub genehmigen", d: "Abwesenheit über den Workday-Agenten (A2A).", user: "u2", multi: () => { const o = C.state(W, "elevon").workday.absences.find(a => a.status === "beantragt"); return o ? [["conn.workday.approveAbsence", { ref: "workday:abs:" + o.no }]] : []; } },
+    { t: "Assistent fragen, was noch offen ist", d: "Antwort mit Aktionskarten – ausgeführt wird nur nach Bestätigung.", user: "u2", ask: "Was muss ich heute freigeben?" }
+  ], outro: "Die CFO hat vier Systeme bedient, ohne die Oberfläche zu wechseln. Kosten und Schritte stehen im Protokoll." },
+  { id: "replace", tenant: "elevon", cross: [], short: "Prozess für Prozess ablösen", title: "Prozess für Prozess ablösen: Bestellanforderungen von SAP zur NEXORA-Engine", situation: "Bestellanforderungen laufen bei Elevon heute im (simulierten) SAP. Der Einkauf arbeitet bereits im Experience Layer.", layer: true, problem: "Eine Ablösung bedeutet sonst Big Bang, neue Oberfläche und Schulung.", value: "Datenübernahme über das bestehende Migrationsmodul, Parallelbetrieb mit Abstimmung, Umschalten bei Differenz 0 – die Karten in der Inbox sehen vorher und nachher gleich aus. Das Ablöse-Cockpit zeigt Fortschritt und entfallende Zugriffskosten (Beispielwerte).", steps: [
+    { t: "Testlauf der Datenübernahme", d: "Extrakt der offenen SAP-Bestellanforderungen, Prüfung auf einer Kopie; fehlende Kostenstellen werden per Regel durch den Einkauf ersetzt.", user: "u10", cmd: "migrationTest", p: () => ({ project: TR_PROJECT, source: C.prExtract(W, "elevon"), rules: { fillCostCenter: true } }), go: "transition" },
+    { t: "Freigabe anfordern", d: "Vier-Augen-Prinzip wie bei jeder Migration.", user: "u10", cmd: "migrationRequestApproval", p: () => ({ project: TR_PROJECT }) },
+    { t: "CFO gibt die Übernahme frei", d: "Eine zweite Person mit Freigaberecht.", user: "u2", cmd: "migrationApprove", p: () => ({ project: TR_PROJECT }) },
+    { t: "Produktivübernahme", d: "Bestellanforderungen entstehen in der NEXORA-Engine; Summe Ziel = Quelle.", user: "u10", cmd: "migrationRun", p: () => ({ project: TR_PROJECT, object: "requisitions" }) },
+    { t: "Parallelbetrieb starten", d: "System of Record wechselt auf NEXORA; die Originale in SAP werden als übernommen gekennzeichnet.", user: "u2", multi: () => [["conn.layer.transition", { process: "bestellanforderung", step: "parallel", days: 14 }], ["conn.sap.markMigrated", { map: (W.tenants.elevon.migProjects || {})[TR_PROJECT] ? W.tenants.elevon.migProjects[TR_PROJECT].map : {} }]] },
+    { t: "Einkauf legt einen neuen Bedarf an", d: "Entsteht in der Engine und wird ins Altsystem gespiegelt – die Abstimmung bleibt bei Differenz 0.", user: "u5", cmd: "createRequisition", p: () => ({ catalogId: "K-03", qty: 2, costCenter: "KS4130" }), go: "tasks" },
+    { t: "CFO gibt in derselben Inbox frei", d: "Gleiche Karte wie vorher in SAP – nur Quelle und Zugriffsweg sind anders.", user: "u2", multi: () => { const q = W.tenants.elevon.reqs.find(x => x.legacy && x.status === "zur Freigabe"); return q ? [["approveRequisition", { reqNo: q.no }]] : []; } },
+    { t: "Umschalten auf die NEXORA-Engine", d: "Nur bei Differenz 0 möglich. SAP bleibt für Bestellanforderungen lesend (Historie).", user: "u2", cmd: "conn.layer.transition", p: () => ({ process: "bestellanforderung", step: "cutover" }), go: "transition" }
+  ], outro: "Der Einkauf hat die ganze Zeit in derselben Oberfläche gearbeitet. Das Ablöse-Cockpit zeigt den Prozess als abgelöst und die entfallenden Zugriffskosten." }
+);
+// Layer-Storys öffnen den Experience Layer (ohne die gespeicherte Einstellung zu ändern)
+const _startStory8 = ACT.startStory;
+ACT.startStory = function (d) { const st = STORIES.find(s => s.id === d.id); if (st && st.layer) S.layer = "layer"; return _startStory8(d); };
 
 /* ---------- Start ---------- */
 boot(); adoptAccounts(); if (window.innerWidth < 700 && route() === "home" && !location.search.includes("story=")) location.hash = "tasks"; render(); startBackend(); startRoom();

@@ -23,7 +23,7 @@ function roleTasks(tid, uid) {
   if (t.id === "aventra" && can("approve")) for (const pr of t.projects) { const n = t.timeEntries.filter(e => e.project === pr.id && e.status === "erfasst").length; if (n) add("approve", "t-" + pr.id, `${n} Zeiteinträge ${pr.id} freigeben`, pr.name, "approveTime", { projectId: pr.id }, "Freigeben", { kind: "Freigabe" }); }
   return out;
 }
-const taskCount = () => roleTasks(S.tenant, S.users[S.tenant]).length;
+let taskCount = () => roleTasks(S.tenant, S.users[S.tenant]).length;
 function checkNewTasks() { const all = {}; for (const id of E.TENANT_IDS) for (const k of roleTasks(id, S.users[id])) all[id + ":" + k.id] = k; if (S.taskSeen) { const fresh = Object.keys(all).filter(k => !S.taskSeen[k]); if (fresh.length) { const k = all[fresh[0]]; toast(`Neue Aufgabe${fresh.length > 1 ? "n (" + fresh.length + ")" : ""}: ${k.title}`); try { navigator.vibrate && navigator.vibrate(120); } catch (e) {} } } S.taskSeen = all; }
 
 /* ---------- Anwesenheit und Fernbedienung über den Raum ---------- */
@@ -177,8 +177,12 @@ async function pdfAction(kind, no, target) {
   const name = `${kind}_${no}.pdf`.replace(/[^\w.\-äöüÄÖÜß]/g, "_"); const blob = pdf.output("blob");
   if (target === "drive") { if (!BK.mcp) return toast("Google Drive ist nicht verfügbar.", true); S.gd = { busy: "PDF wird in Google Drive abgelegt …" }; render();
     try { const b64 = pdf.output("datauristring").split(",")[1]; const r = await BK.mcp.callTool("Google Drive", "create_file", { title: name, base64Content: b64, contentMimeType: "application/pdf", disableConversionToGoogleType: true }); const f = r.payload || {}; S.gd = { ok: `${kind} ${no} als PDF in Google Drive abgelegt.`, link: f.alternateLink || f.webViewLink || null }; } catch (e) { S.gd = { err: gdErr(e) }; } render(); return; }
+  return saveBlob(name, blob);
+}
+// Download über die Seite (claude.ai: Download-Freigabe; sonst neuer Tab bzw. Link). Auch für CSV-Exporte genutzt.
+async function saveBlob(name, blob, opt) {
   if (window.claude && window.claude.use) { const dl = await claude.use("downloads").catch(() => null); if (dl) { try { await dl.save({ filename: name, data: blob }); } catch (e) { if (e && e.code !== "declined" && e.code !== "cancelled") toast("Download nicht möglich (" + (e.code || e.message) + ").", true); } return; } }
-  const url = URL.createObjectURL(blob); const w = window.open(url, "_blank"); if (!w) { const a = document.createElement("a"); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove(); } setTimeout(() => URL.revokeObjectURL(url), 60000);
+  const url = URL.createObjectURL(blob); const w = opt && opt.noTab ? null : window.open(url, "_blank"); if (!w) { const a = document.createElement("a"); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove(); } setTimeout(() => URL.revokeObjectURL(url), 60000);
 }
 // PDF-Schaltflächen in Bestellungen und Fertigungsaufträgen
 const _poTable = poTable; poTable = function (t) { return _poTable(t).replace(/<td class="mono small">(PO-\d+)<\/td>/g, (m, no) => `<td class="mono small">${no} <button class="btn sm" data-act="pdf" data-k="Bestellung" data-no="${no}" title="Bestellung als PDF">PDF</button></td>`); };

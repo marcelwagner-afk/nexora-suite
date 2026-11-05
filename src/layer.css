@@ -1,0 +1,65 @@
+/* Experience Layer (v0.8) – ergänzt das NEXORA-Design, ohne die Suite-Ansicht zu verändern */
+.top2 .layer-sw{flex:none;flex-wrap:nowrap;gap:4px}
+.top2 .layer-sw button{padding:4px 10px;font-size:12px;white-space:nowrap;line-height:1.4}
+.ly-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px}
+.ly-card{padding:16px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.ly-card h3{font-size:15.5px;line-height:1.3}
+.ly-src{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:11.5px}
+.ly-chip{font-weight:700;border-radius:7px;padding:2px 8px;background:var(--sunk);color:var(--fg)}
+.ly-chip.s-nexora{background:var(--accent-soft);color:var(--accent)}
+.ly-route{color:var(--fg-2);border:1px solid var(--line-strong);border-radius:7px;padding:1px 7px}
+.ly-sim{color:var(--warn);background:var(--warn-soft);border-radius:7px;padding:2px 7px;font-weight:600}
+.ly-sim.live{color:var(--good);background:var(--good-soft)}
+.ly-fields{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:3px 12px;margin:2px 0;font-size:13px}
+.ly-fields dt{color:var(--fg-3)} .ly-fields dd{margin:0;overflow-wrap:anywhere}
+.ly-fields.wide{font-size:14px;gap:6px 18px}
+.ly-acts{margin-top:auto;gap:6px}
+body.layer .top2 [data-act=toggleMode]{display:none}
+body.layer .top2 .search{flex:0 0 auto;width:auto} body.layer .top2 .search span,body.layer .top2 .search kbd{display:none}
+.msg.a .ai-cards{margin-top:10px;grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}
+.ly-card.done{opacity:.7}
+.ai-via{display:inline-flex;align-items:center;gap:6px;margin-top:10px;padding:4px 10px;border-radius:999px;border:1px solid var(--line);background:var(--surface);font-size:12px;color:var(--fg-2)}
+.ai-via.rej{border-color:color-mix(in srgb,var(--crit) 40%,transparent);color:var(--crit)}
+.ai-via .ly-sim{font-size:11px;padding:1px 6px}
+.link-btn{background:none;border:0;padding:0;color:var(--accent);cursor:pointer;text-align:left;font:inherit}
+.link-btn:hover{text-decoration:underline}
+.cost-ctr{display:inline-flex;flex-direction:column;gap:0;align-items:stretch;padding:3px 10px;border:1px solid var(--line);border-radius:10px;font-size:11px;line-height:1.25;color:var(--fg-2);text-decoration:none;white-space:nowrap;flex:none}
+.cost-ctr b{color:var(--fg);font-weight:600}
+.cost-ctr:hover{border-color:var(--accent-line)}
+.au-tbl td,.au-tbl th{white-space:nowrap}
+.au-tbl tr.rej td{background:var(--crit-soft)}
+.num.big{font-size:22px;display:block;margin-top:4px}
+.priv-mx td.c,.priv-mx th.c{text-align:center}
+.cost-ctr span{display:flex;justify-content:space-between;gap:8px}.cost-ctr i{font-style:normal}
+.priv-mx td,.priv-mx th{padding-left:8px;padding-right:8px}
+/* Einbettungsmodus */
+body.embed .app{grid-template-columns:minmax(0,1fr)!important}
+body.embed .side,body.embed .top2,body.embed .livecol{display:none!important}
+body.embed .main{padding-top:0}
+body.embed section:has(#qrBox){display:none}
+body.embed .ly-grid{grid-template-columns:minmax(0,1fr)!important}
+.emb-bar{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line);padding:10px 14px;display:flex;flex-direction:column;gap:8px}
+.emb-brand{display:inline-flex;align-items:center;gap:6px;font-size:14px}
+.emb-tabs{display:flex}.emb-tabs a{flex:1;text-align:center;text-decoration:none}
+.emb-note{font-size:11.5px;color:var(--fg-3)}
+.emb-tabs a{border:1px solid var(--line);background:var(--surface);border-radius:20px;padding:5px 12px;font-weight:600;color:var(--fg-2);display:inline-flex;gap:8px;align-items:center;justify-content:center}
+.emb-tabs a b{font-size:11.5px;background:var(--sunk);border-radius:10px;padding:0 7px}
+.emb-tabs a.on{background:var(--accent-soft);border-color:var(--accent-line);color:var(--accent)}
+body.embed .inline-live,body.embed .page-head,body.embed .page>.note.sn,body.embed .page>.sn{display:none!important}
+body.embed .page{padding-top:12px}
+/* Dashboard */
+.dash-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.dash-tile{display:flex;flex-direction:column;gap:10px}
+.dt-kpi{font-size:24px;font-weight:700;color:var(--fg)}
+.dt-row{display:flex;gap:8px;align-items:center;width:100%;background:none;border:0;border-top:1px solid var(--line);padding:7px 0;text-align:left;font:inherit;color:var(--fg);cursor:pointer}
+.dt-row.static{cursor:default}.dt-row .grow{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dt-trend{width:100%;height:auto}.dt-trend .b{fill:var(--accent-soft);stroke:var(--accent-line)}.dt-trend .l{fill:none;stroke:var(--accent);stroke-width:2}.dt-trend .tx{font-size:9px;fill:var(--fg-3)}
+.icon-btn.sm{width:26px;height:26px;font-size:13px}
+/* Ablöse-Cockpit */
+.tr-tbl td{vertical-align:middle}
+.tr-bar{display:inline-block;width:70px;height:6px;border-radius:3px;background:var(--sunk);margin-right:6px;vertical-align:middle;overflow:hidden}.tr-bar i{display:block;height:100%;background:var(--good)}
+.tr-step{display:flex;flex-direction:column;gap:10px}.tr-step:not(.active):not(.done){opacity:.75}
+.tr-step.active{border-color:var(--accent-line)}
+.tr-n{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--accent-soft);color:var(--accent);font-size:12px;margin-right:4px}
+.tr-tbl td:nth-child(4){white-space:nowrap}
+body.layer .app.live .cost-ctr{display:none}

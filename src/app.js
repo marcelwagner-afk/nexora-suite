@@ -1,6 +1,6 @@
 /* NEXORA AI Suite – Oberfläche. Alle Zahlen kommen aus der Engine (Belege, Nebenbücher), nichts ist fest eingetragen. */
 const E = window.NexoraEngine;
-const LS_KEY = "nexora-suite-v03";
+const LS_KEY = "nexora-suite-v08", LS_KEY_OLD = "nexora-suite-v03";
 const T_NAMES = { elevon: "Elevon Industries", novamart: "NovaMart Retail", aventra: "Aventra Consulting" };
 const ON_PAGES = /github\.io$/.test(location.hostname); const PROTO_URL = ON_PAGES ? "prototyp.html" : "https://claude.ai/artifact/6p7imWPiPw1T5V3ABFq2Di";
 
@@ -9,7 +9,7 @@ let W, LOG = [], BASE = {};
 const S = { tenant: "elevon", users: { elevon: "u1", novamart: "u1", aventra: "u1" }, mode: "free", live: true, last: null, story: null, admin: false, chat: { elevon: [], novamart: [], aventra: [] }, sel: {}, tab: {}, modal: null, toast: null, pending: null, size: "S" };
 function saveLog() { try { localStorage.setItem(LS_KEY, JSON.stringify({ size: S.size, log: LOG, tenant: S.tenant, users: S.users, mode: S.mode })); } catch (e) {} }
 function boot() {
-  let saved = null; try { saved = JSON.parse(localStorage.getItem(LS_KEY) || "null"); } catch (e) {}
+  let saved = null; try { if (!localStorage.getItem(LS_KEY) && localStorage.getItem(LS_KEY_OLD)) localStorage.setItem(LS_KEY, localStorage.getItem(LS_KEY_OLD)); saved = JSON.parse(localStorage.getItem(LS_KEY) || "null"); } catch (e) {}
   if (saved) { S.size = saved.size || "S"; S.tenant = saved.tenant || "elevon"; S.users = saved.users || S.users; S.mode = saved.mode || "free"; }
   W = E.createWorld({ size: S.size }); captureBase();
   if (saved && saved.log) { for (const x of saved.log) { try { applyLog(x); LOG.push(x); } catch (e) { LOG = []; W = E.createWorld({ size: S.size }); break; } } }

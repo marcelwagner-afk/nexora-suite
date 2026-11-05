@@ -11,6 +11,8 @@ jobs:
         with: { python-version: "3.12" }
       - name: Akzeptanztests Business-Engine
         run: node test/engine.test.js
+      - name: Konnektor-Tests (Experience Layer)
+        run: node test/connectors.test.js
       - name: Build
         run: python build.py
       - name: Browser-E2E (alle Demo-Storys)

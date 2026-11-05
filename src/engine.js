@@ -803,8 +803,8 @@ function migApply(t, obj, valid, src, rules, user) {
 }
 function migReconcile(obj, src, res) {
   const srcCount = src[obj].length; const tgt = res.ok.length; const sum = a => r2(a.reduce((x, r) => x + (r.BETRAG || r.WERT || 0), 0));
-  const excl = res.warns.filter(w => /ausgeschlossen/.test(w[1])).map(w => w[0]); const exRows = src[obj].filter(r => excl.includes(r.ANLNR || r.BELNR || r.MATNR || r.KUNNR));
-  const money = ["openItems", "stock"].includes(obj);
+  const excl = res.warns.filter(w => /ausgeschlossen/.test(w[1])).map(w => w[0]); const exRows = src[obj].filter(r => excl.includes(r.ANLNR || r.BELNR || r.MATNR || r.BANFN || r.KUNNR));
+  const money = ["openItems", "stock", "requisitions"].includes(obj);
   return { object: obj, source: srcCount, loaded: tgt, merged: res.warns.filter(w => /Dublette/.test(w[1])).length, excluded: excl.length, errors: res.errs.length, sourceSum: money ? sum(src[obj]) : null, loadedSum: money ? sum(res.ok) : null, excludedSum: money ? sum(exRows) : null };
 }
 
@@ -1275,5 +1275,77 @@ Object.assign(CMD, {
   }
 });
 
-return { WORK_CENTERS, CATALOG, CATEGORY_DEFAULT, deriveDrawing, ROLE_DESC, dueMaintenance, returnRate, personnelCost, cutoverStatus, legacyData, MIG_OBJECTS, MIG_LABEL, isAbsent, absHoursInPeriod, SERVICE_RATE, VERSION, START_DATE, TENANT_IDS, COA, SIZES, E5, createWorld, resetTenant, resetAll, dispatch, kpis, plOf, trialBalance, balance, projectMetrics, replenishmentProposals, processInstances, tenantHash, costing, avail, periodOf, customerName, supplierName, articleName, materialOf, QUERY_ONLY, _internal: { HIST, crossHistory } };
+/* ===== v0.8: Migrationsprojekte – Ablösung eines Prozesses aus einem (simulierten) Altsystem =====
+   Nutzt das bestehende Migrationsmodul (Testlauf auf Kopie, Fehlerliste, Vier-Augen-Freigabe, Abstimmung).
+   Die Übernahme Liftservice Nord bleibt unverändert; Projekte werden über p.project angesprochen.
+   Das Extrakt aus dem Altsystem kommt als Parameter (Teil des Ereignisprotokolls, damit reproduzierbar). */
+const MIG_PROJECTS = { "sap-pr": { label: "Bestellanforderungen aus SAP S/4HANA (simuliert)", objects: ["requisitions"], process: "bestellanforderung", system: "SAP S/4HANA (simuliert)" } };
+MIG_LABEL.requisitions = "Bestellanforderungen";
+function migProject(t, id, create) {
+  if (!MIG_PROJECTS[id]) fail("PROJECT", "Unbekanntes Migrationsprojekt."); t.migProjects = t.migProjects || {};
+  if (!t.migProjects[id] && create) t.migProjects[id] = { id, label: MIG_PROJECTS[id].label, source: null, tests: {}, done: {}, rules: { fillCostCenter: false, excludeUnmapped: false }, approval: null, tested: false, map: {}, log: [] };
+  const M = t.migProjects[id]; if (!M) fail("ORDER", "Migrationsprojekt noch nicht begonnen."); return M;
+}
+const ccFallback = t => (t.master.costCenters.find(c => /Einkauf/.test(c.name)) || t.master.costCenters[0] || {}).id;
+function prValidate(t, src, rules) {
+  const ok = [], errs = [], warns = [];
+  for (const r0 of src.requisitions) { const r = Object.assign({}, r0);
+    if (t.reqs.some(q => q.legacy === r.BANFN && q.status !== "zurückgezogen")) { errs.push([r.BANFN, "bereits übernommen"]); continue; }
+    if (!(r.MENGE > 0) || !(r.PREIS > 0)) { errs.push([r.BANFN, "Menge oder Preis fehlt"]); continue; }
+    if (!t.master.costCenters.some(c => c.id === r.KOSTL)) {
+      if (rules.fillCostCenter) { warns.push([r.BANFN, `Kostenstelle „${r.KOSTL || "–"}“ unbekannt, ${ccFallback(t)} (Einkauf) gesetzt`]); r.KOSTL = ccFallback(t); }
+      else if (rules.excludeUnmapped) { warns.push([r.BANFN, `ausgeschlossen, Klärungsliste: Kostenstelle „${r.KOSTL || "–"}“ unbekannt`]); continue; }
+      else { errs.push([r.BANFN, `Kostenstelle „${r.KOSTL || "–"}“ im Ziel unbekannt`]); continue; } }
+    ok.push(r); }
+  return { ok, errs, warns };
+}
+function prApply(t, M, valid, user) {
+  const made = [];
+  for (const r of valid) { const cat = r.KATALOG ? t.catalog.find(c => c.id === r.KATALOG) : null; const def = CATEGORY_DEFAULT[r.WARENGRUPPE] || CATEGORY_DEFAULT.IT; const net = r2(r.MENGE * r.PREIS);
+    const q = { no: nextNo(t, "BANF"), date: t.date, due: r.FAELLIG || t.date, requester: "legacy:" + r.BANFN, requesterName: r.AFNAM, net, status: "zur Freigabe", level: reqApprovalLevel(net) || "übernommen", approvedBy: null, po: null,
+      type: "indirekt", text: r.TXZ01, qty: r.MENGE, unit: r.MEINS || "Stk", price: r.PREIS, supplier: cat ? cat.supplier : def[0], acct: cat ? cat.acct : def[1], category: cat ? cat.category : (r.WARENGRUPPE || "IT"), catalog: cat ? cat.id : undefined, costCenter: r.KOSTL, legacy: r.BANFN, legacySys: MIG_PROJECTS[M.id].system, migProject: M.id, migratedBy: user };
+    t.reqs.push(q); M.map[r.BANFN] = q.no; made.push(q.no); }
+  return made;
+}
+function prSource(p) { if (!p || !Array.isArray(p.requisitions)) fail("SOURCE", "Extrakt aus dem Altsystem fehlt."); return { requisitions: p.requisitions.map(r => ({ BANFN: String(r.BANFN), TXZ01: String(r.TXZ01 || ""), MENGE: +r.MENGE, MEINS: r.MEINS || "Stk", PREIS: +r.PREIS, WERT: r2(+r.MENGE * +r.PREIS), KOSTL: r.KOSTL || "", AFNAM: String(r.AFNAM || ""), FAELLIG: r.FAELLIG || null, KATALOG: r.KATALOG || null, WARENGRUPPE: r.WARENGRUPPE || null })) }; }
+(function () {
+  const base = { test: CMD.migrationTest, req: CMD.migrationRequestApproval, appr: CMD.migrationApprove, run: CMD.migrationRun };
+  CMD.migrationTest = function (w, t, p, ctx) {
+    if (!p.project) return base.test(w, t, p, ctx);
+    need(t, ctx, "view"); const M = migProject(t, p.project, true); if (M.done.requisitions) fail("DONE", "Bestellanforderungen bereits übernommen.");
+    if (p.source) M.source = prSource(p.source); if (!M.source) fail("SOURCE", "Extrakt aus dem Altsystem fehlt."); Object.assign(M.rules, p.rules || {});
+    const res = prValidate(t, M.source, M.rules); M.tests.requisitions = migReconcile("requisitions", M.source, res); M.tests.requisitions.issues = res.errs.slice(0, 12).concat(res.warns.slice(0, 6).map(x => [x[0], "Hinweis: " + x[1]]));
+    M.tested = true; M.approval = null; M.log.push({ date: t.date, by: ctx.userName, text: `Testlauf: ${res.errs.length} Fehler` });
+    const x = M.tests.requisitions; return { text: `Testmigration ${M.label}: ${x.errors} Fehler, ${x.loaded}/${x.source} übernehmbar, Summe ${x.loadedSum} € von ${x.sourceSum} € – Produktivdaten unverändert` };
+  };
+  CMD.migrationRequestApproval = function (w, t, p, ctx) {
+    if (!p.project) return base.req(w, t, p, ctx);
+    need(t, ctx, "view"); const M = migProject(t, p.project); if (!M.tested) fail("ORDER", "Zuerst Testmigration durchführen."); if (M.tests.requisitions.errors) fail("ERRORS", `Freigabe erst bei fehlerfreiem Testlauf (${M.tests.requisitions.errors} Fehler offen).`);
+    M.approval = { status: "offen", requester: ctx.user, requesterName: ctx.userName, date: t.date }; M.log.push({ date: t.date, by: ctx.userName, text: "Freigabe angefordert" }); return { text: `Freigabe der Übernahme ${M.label} angefordert (Vier-Augen-Prinzip)` };
+  };
+  CMD.migrationApprove = function (w, t, p, ctx) {
+    if (!p.project) return base.appr(w, t, p, ctx);
+    need(t, ctx, "approve"); const M = migProject(t, p.project); if (!M.approval || M.approval.status !== "offen") fail("ORDER", "Keine offene Freigabe."); if (M.approval.requester === ctx.user) fail("FOUR_EYES", "Vier-Augen-Prinzip: Die anfordernde Person darf nicht freigeben.");
+    M.approval.status = "freigegeben"; M.approval.by = ctx.userName; M.log.push({ date: t.date, by: ctx.userName, text: "Übernahme freigegeben" }); return { text: `Übernahme ${M.label} freigegeben durch ${ctx.userName}` };
+  };
+  CMD.migrationRun = function (w, t, p, ctx) {
+    if (!p.project) return base.run(w, t, p, ctx);
+    need(t, ctx, "post"); const M = migProject(t, p.project); if (!M.approval || M.approval.status !== "freigegeben") fail("APPROVAL", "Produktivübernahme nur mit erteilter Freigabe."); if (M.done.requisitions) fail("DONE", "Bestellanforderungen bereits übernommen.");
+    const res = prValidate(t, M.source, M.rules); if (res.errs.length) fail("ERRORS", `${res.errs.length} Fehler: ${res.errs[0][1]} …`);
+    const made = prApply(t, M, res.ok, ctx.userName); const rec = migReconcile("requisitions", M.source, res); M.done.requisitions = Object.assign(rec, { date: t.date, by: ctx.userName, reqs: made });
+    M.log.push({ date: t.date, by: ctx.userName, text: `Produktivübernahme: ${made.length} Bestellanforderungen` });
+    return { text: `${MIG_LABEL.requisitions} produktiv übernommen: ${rec.loaded} von ${rec.source}, Summe ${rec.loadedSum} € = Quelle ${r2(rec.sourceSum - (rec.excludedSum || 0))} €${rec.excluded ? ` (${rec.excluded} auf Klärungsliste)` : ""}`, objects: made };
+  };
+})();
+Object.assign(CMD, {
+  /* Rückweg einer Ablösung: offene Bestellanforderungen aus Übernahme und Parallelbetrieb zurückziehen; Projekt kann neu beginnen */
+  withdrawRequisitions(w, t, p, ctx) {
+    need(t, ctx, "approve"); const nos = Array.isArray(p.reqNos) ? p.reqNos : []; let n = 0;
+    for (const no of nos) { const q = t.reqs.find(x => x.no === no); if (q && q.status === "zur Freigabe" && !q.po) { q.status = "zurückgezogen"; q.approvedBy = ctx.userName; q.note = p.reason || "Rückweg"; n++; } }
+    if (p.project && t.migProjects && t.migProjects[p.project]) { const M = t.migProjects[p.project]; M.done = {}; M.approval = null; M.tested = false; M.source = null; M.map = {}; M.log.push({ date: t.date, by: ctx.userName, text: "Rückweg: Projekt zurückgesetzt" }); }
+    return { text: `${n} offene Bestellanforderung(en) zurückgezogen (${p.reason || "Rückweg"})` };
+  }
+});
+
+return { MIG_PROJECTS, WORK_CENTERS, CATALOG, CATEGORY_DEFAULT, deriveDrawing, ROLE_DESC, dueMaintenance, returnRate, personnelCost, cutoverStatus, legacyData, MIG_OBJECTS, MIG_LABEL, isAbsent, absHoursInPeriod, SERVICE_RATE, VERSION, START_DATE, TENANT_IDS, COA, SIZES, E5, createWorld, resetTenant, resetAll, dispatch, kpis, plOf, trialBalance, balance, projectMetrics, replenishmentProposals, processInstances, tenantHash, costing, avail, periodOf, customerName, supplierName, articleName, materialOf, QUERY_ONLY, _internal: { HIST, crossHistory } };
 });
