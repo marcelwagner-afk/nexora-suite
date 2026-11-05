@@ -3,7 +3,7 @@
    B) Engine-Last: viele Buchungen in der Engine, danach Feed + PE-Welt neu aufbauen, Abgleich mit den Engine-Salden
    C) Zufallsfolgen (Fuzz): zufällige Befehle von zufälligen Rollen – nur fachliche Fehler, Invarianten bleiben erhalten
    Gemessen wird der Rechenkern in einem Node-Prozess dieser Maschine – kein Server, keine Datenbank. */
-const PE = require("../src/pe.js"); const EN = require("../src/engine.js");
+const PE = require("../src/pe.js"); const EN = require("../src/engine.js"); const IX = require("../src/infra.js");
 const MAXF = +(process.argv[2] || 100), STEPS = +(process.argv[3] || 3000);
 const ms = t => Number(process.hrtime.bigint() - t) / 1e6; const now = () => process.hrtime.bigint(); const mb = () => Math.round(process.memoryUsage().heapUsed / 1048576);
 const fmt = x => x < 10 ? x.toFixed(1) : Math.round(x).toLocaleString("de-DE"); let failures = 0; const bad = (msg) => { failures++; console.log("  ✗ " + msg); };
@@ -17,7 +17,8 @@ const FNS = [
   ["wcPotential", (W, p) => PE.wcPotential(W, p, {})], ["planVariance", (W, p) => PE.planVariance(W, p, {})], ["adjustments", (W, p) => PE.adjustments(W, p, {})],
   ["riskRegister", (W, p) => PE.riskRegister(W, p, {})], ["investments", (W, p) => PE.investments(W, p, {})], ["vcSummary", (W, p) => PE.vcSummary(W, p, {})],
   ["hubMonitor", (W, p) => PE.hubMonitor(W, p, {})], ["onboardingList", (W, p) => PE.onboardingList(W, p, {})], ["transformation", (W, p) => PE.transformation(W, p, {})],
-  ["consolidate HOLD-1", (W, p) => PE.consolidate(W, p, "HOLD-1")], ["company PC01", (W, p) => PE.company(W, p, "PC01")], ["advise (Frage)", (W, p) => PE.advise(W, p, "Welche Unternehmen haben ein Liquiditätsrisiko?")]
+  ["consolidate HOLD-1", (W, p) => PE.consolidate(W, p, "HOLD-1")], ["company PC01", (W, p) => PE.company(W, p, "PC01")], ["advise (Frage)", (W, p) => PE.advise(W, p, "Welche Unternehmen haben ein Liquiditätsrisiko?")],
+  ["Infrastruktur-Sizing (alle)", (W, p) => IX.summarize(PE.transformation(W, p, {}).rows.map(r => { const inp = IX.inputFromCompany({ revenue: r.revenue, industry: r.industry, users: r.users, interfaces: r.interfaces, entities: r.entities, growth: r.growth }); return { sizing: IX.sizing(r.erp, inp), target: IX.target(inp) }; }))]
 ];
 const factors = [1, 10, 40, 100].filter(f => f <= MAXF); const table = {}; const meta = [];
 for (const f of factors) {
