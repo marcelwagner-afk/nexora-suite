@@ -323,3 +323,16 @@ VIEWS.privacy = () => {
 };
 const _adminV8 = VIEWS.admin;
 VIEWS.admin = () => { const h = _adminV8(); if (S.layer !== "layer") return h; return h + `<section class="card card-pad row between" style="gap:12px"><div><h3>Mitbestimmung & Datenschutz</h3><p class="small muted">Welche Daten fließen wohin, welche Rolle sieht was – Beschreibung der Demo, keine Rechtsaussage.</p></div><a class="btn" href="#privacy">Öffnen →</a></section>`; };
+
+/* ---------- Phase 6: Einbettungsmodus (#embed bzw. ?embed=1) ----------
+   Kompakte Ansicht ohne Seitennavigation, nur Inbox und Assistent, für ca. 400 px Breite.
+   Zeigt, wie NEXORA in Teams oder Copilot laufen würde – als Vorschau, keine echte Einbettung. */
+S.embed = false;
+function enterEmbed() { S.embed = true; S.layer = "layer"; S.live = false; if (!["tasks", "ai", "obj"].includes(route())) location.hash = "tasks"; render(); }
+ACT.leaveEmbed = () => { S.embed = false; try { const u = new URL(location.href); u.searchParams.delete("embed"); history.replaceState(null, "", u.pathname + u.search + location.hash); } catch (e) {} render(); };
+const embedBar = () => { const rt = route(); return `<div class="emb-bar"><div class="row between" style="gap:8px"><span class="emb-brand">${LOGO(20)}<b>NEXORA</b></span><button class="btn sm" data-act="userMenu">${esc(U().name)} · ${esc((R() || {}).name || "")}</button></div>
+  <div class="seg emb-tabs" role="tablist"><a role="tab" class="${rt !== "ai" ? "on" : ""}" href="#tasks" aria-selected="${rt !== "ai"}">Inbox <b>${C.listTasks(W, S.tenant, { user: S.users[S.tenant] }).length}</b></a><a role="tab" class="${rt === "ai" ? "on" : ""}" href="#ai" aria-selected="${rt === "ai"}">Assistent</a></div>
+  <div class="emb-note">Vorschau einer Einbettung (z. B. in Teams oder Copilot) · Fremdsysteme simuliert · <button class="link-btn" data-act="leaveEmbed">Vollansicht</button></div></div>`; };
+const _render6 = render;
+render = function () { document.body.classList.toggle("embed", !!S.embed); if (S.embed) S.live = false; _render6(); if (S.embed) { const m = document.querySelector("#root .main"); if (m) m.insertAdjacentHTML("afterbegin", embedBar()); } };
+try { if (/^#embed\b/.test(location.hash) || new URLSearchParams(location.search).get("embed") === "1") { S.embed = true; S.layer = "layer"; if (/^#embed\b/.test(location.hash)) { try { history.replaceState(null, "", "#tasks"); } catch (e) { location.hash = "tasks"; } } } } catch (e) {}

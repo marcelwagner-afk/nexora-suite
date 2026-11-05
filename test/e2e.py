@@ -105,6 +105,14 @@ async def layer(p):
   await pg.screenshot(path=SP + "layer_audit.png"); await pg.evaluate("ACT.auditReset()")
   await pg.evaluate("location.hash='privacy'"); await pg.wait_for_timeout(120)
   assert await pg.evaluate("document.querySelectorAll('.priv-mx tbody tr').length") >= 5; await pg.screenshot(path=SP + "layer_privacy.png", full_page=True)
+  # Phase 6: Einbettungsmodus bei 400 px – nur Inbox und Assistent, ohne Seitennavigation
+  await pg.set_viewport_size({"width": 400, "height": 820}); await pg.evaluate("enterEmbed()"); await pg.wait_for_timeout(150)
+  emb = await pg.evaluate("""({ side: getComputedStyle(document.querySelector('.side')).display, bar: !!document.querySelector('.emb-bar'), note: document.querySelector('.emb-note').innerText, cards: document.querySelectorAll('.ly-card').length, sw: document.documentElement.scrollWidth })""")
+  print("Einbettung:", emb); assert emb["side"] == "none" and emb["bar"] and "Vorschau einer Einbettung" in emb["note"] and emb["cards"] > 0 and emb["sw"] <= 400
+  await pg.screenshot(path=SP + "layer_embed_inbox.png")
+  await pg.evaluate("S.chat.elevon=[]; ask('Was muss ich heute freigeben?')"); await pg.wait_for_timeout(150)
+  assert await pg.evaluate("S.embed && location.hash === '#ai' && !!document.querySelector('.emb-bar') && document.querySelectorAll('#aiBody .ly-card').length > 0"), "Assistent in der Einbettung"
+  await pg.screenshot(path=SP + "layer_embed_ai.png"); await pg.evaluate("ACT.leaveEmbed()"); await pg.set_viewport_size({"width": 1440, "height": 900})
   await pg.evaluate("ACT.setLayer({v:'suite'})"); await pg.wait_for_timeout(100); assert await pg.evaluate("S.layer") == "suite"
   await b.close(); assert not errs, errs
 

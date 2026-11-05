@@ -1,0 +1,263 @@
+{
+  "$comment": "Statische Vorführdatei der NEXORA AI Suite (Demo). Kein laufender MCP-Server. Alle Werkzeuge lesen nur; Aktionen führt ausschließlich ein Mensch nach Bestätigung aus.",
+  "name": "nexora-suite-demo",
+  "version": "0.8.0",
+  "tools": [
+    {
+      "name": "kpis",
+      "description": "Aktuelle Kennzahlen eines Unternehmens (elevon, novamart, aventra): Bank, Umsatz, Marge, offene Posten, Bestand, branchenspezifische Werte. Alle Werte aus Belegen berechnet.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "tenant": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "tenant"
+        ]
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "layer": false
+      }
+    },
+    {
+      "name": "guv",
+      "description": "Gewinn- und Verlustrechnung einer Periode (Format JJJJ-MM) aus dem Hauptbuch: Umsatz, Materialaufwand, Rohertrag, Personal, Sonstiges, EBIT.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "tenant": {
+            "type": "string"
+          },
+          "period": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "tenant",
+          "period"
+        ]
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "layer": false
+      }
+    },
+    {
+      "name": "projekte",
+      "description": "Aventra-Projekte mit Budget, Ist-Kosten, Prognose (EAC), Erlösen, nicht fakturierten Leistungen und Margenprognose.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "layer": false
+      }
+    },
+    {
+      "name": "nachschub",
+      "description": "NovaMart-Nachschubvorschläge mit verfügbarem Bestand, Meldebestand, Prognose je Woche, Menge und Berechnungsgrundlage.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "layer": false
+      }
+    },
+    {
+      "name": "offene_posten",
+      "description": "Offene Ausgangsrechnungen eines Unternehmens (Nummer, Kunde, Datum, offener Betrag).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "tenant": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "tenant"
+        ]
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "layer": false
+      }
+    },
+    {
+      "name": "prozesse",
+      "description": "Laufende Prozessinstanzen eines Unternehmens mit aktuellem Schritt und Hinweisen.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "tenant": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "tenant"
+        ]
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "layer": false
+      }
+    },
+    {
+      "name": "fertigung",
+      "description": "Elevon: Fertigungsaufträge mit Status und Komponentenverfügbarkeit, Wartungsfälligkeiten und offene Serviceaufträge.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "layer": false
+      }
+    },
+    {
+      "name": "lieferanten",
+      "description": "NovaMart-Lieferanten mit Liefertreue (Anteil termingerechter Lieferungen).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "layer": false
+      }
+    },
+    {
+      "name": "migration",
+      "description": "Elevon: Status der Datenmigration Liftservice Nord (Testläufe, Fehler, Abstimmung, Freigabe, Cutover).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "layer": false
+      }
+    },
+    {
+      "name": "konstruktion",
+      "description": "Elevon: importierte Zeichnungen mit Status, Stückliste, Arbeitsplan, Plan-Kalkulation und Baugruppen-Fertigungsaufträgen mit Plan/Ist-Kosten je Vorgang.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "layer": false
+      }
+    },
+    {
+      "name": "einkauf",
+      "description": "Bedarfsanforderungen (direkt, indirekt, Lohnbearbeitung) mit Status, Freigabestufe, Lieferant, Kostenstelle und Bestellung eines Unternehmens.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "tenant": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "tenant"
+        ]
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "layer": false
+      }
+    },
+    {
+      "name": "aufgaben_alle",
+      "description": "Offene Aufgaben der angemeldeten Person aus allen Systemen (NEXORA-Engine live; SAP S/4HANA, Microsoft 365, ServiceNow, Workday als simulierte Demo-Konnektoren). Liefert je Aufgabe eine Kartenbeschreibung mit ref, System, Zugriffsweg, Feldern und möglichen Aktionen. Optional nach System filtern (nexora, sap, m365, servicenow, workday).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "system": {
+            "type": "string"
+          }
+        }
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "layer": true
+      }
+    },
+    {
+      "name": "suche_alle",
+      "description": "Volltextsuche über alle Systeme (Bestellanforderungen, Rechnungen, Mails, Tickets, Abwesenheiten, Belege, Aufträge, Kunden, Material). Liefert Treffer mit ref; offene Aufgaben zusätzlich als Kartenbeschreibung.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "q": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "q"
+        ]
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "layer": true
+      }
+    },
+    {
+      "name": "objekt",
+      "description": "Details eines Objekts per ref (z. B. sap:pr:10004711, servicenow:ritm:RITM0014021): Felder, Verlauf und – falls offen – die Kartenbeschreibung mit Aktionen.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "ref": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "ref"
+        ]
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "layer": true
+      }
+    },
+    {
+      "name": "kosten",
+      "description": "Kosten der protokollierten Zugriffe (Aktionen und Agentenabfragen) je System und Zugriffsweg, für heute und den laufenden Monat. Beispielwerte, keine Herstellerpreise.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "layer": true
+      }
+    },
+    {
+      "name": "route",
+      "description": "Zeigt, über welchen Agenten und Zugriffsweg eine Anfrage laufen würde (Router des Experience Layers), inklusive Beispielkosten oder Ablehnungsgrund. Führt nichts aus.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "frage": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "frage"
+        ]
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "layer": true
+      }
+    }
+  ]
+}

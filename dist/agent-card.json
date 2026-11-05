@@ -1,0 +1,168 @@
+{
+  "$comment": "Statische Vorführdatei im Stil einer A2A-Agentenkarte. Kein laufender Agent; alle Fremdsysteme der Demo sind simuliert.",
+  "name": "NEXORA Experience Layer (Demo)",
+  "description": "Herstellerneutraler Assistent über NEXORA-Engine und simulierte Demo-Konnektoren (SAP S/4HANA, Microsoft 365, ServiceNow, Workday). Liest Aufgaben, sucht systemübergreifend, erklärt Kosten und schlägt Aktionen vor. Bucht nichts selbst.",
+  "url": "https://marcelwagner-afk.github.io/nexora-suite/",
+  "version": "0.8.0",
+  "provider": {
+    "organization": "NEXORA AI Suite (Demo)",
+    "url": "https://github.com/marcelwagner-afk/nexora-suite"
+  },
+  "capabilities": {
+    "streaming": false,
+    "pushNotifications": false,
+    "stateTransitionHistory": true
+  },
+  "defaultInputModes": [
+    "text/plain"
+  ],
+  "defaultOutputModes": [
+    "text/plain",
+    "application/json"
+  ],
+  "skills": [
+    {
+      "id": "aufgaben_alle",
+      "name": "aufgaben alle",
+      "description": "Offene Aufgaben der angemeldeten Person aus allen Systemen (NEXORA-Engine live; SAP S/4HANA, Microsoft 365, ServiceNow, Workday als simulierte Demo-Konnektoren). Liefert je Aufgabe eine Kartenbeschreibung mit ref, System, Zugriffsweg, Feldern und möglichen Aktionen. Optional nach System filtern (nexora, sap, m365, servicenow, workday).",
+      "tags": [
+        "experience-layer",
+        "read-only"
+      ],
+      "examples": [
+        "Was muss ich heute freigeben?"
+      ]
+    },
+    {
+      "id": "suche_alle",
+      "name": "suche alle",
+      "description": "Volltextsuche über alle Systeme (Bestellanforderungen, Rechnungen, Mails, Tickets, Abwesenheiten, Belege, Aufträge, Kunden, Material). Liefert Treffer mit ref; offene Aufgaben zusätzlich als Kartenbeschreibung.",
+      "tags": [
+        "experience-layer",
+        "read-only"
+      ],
+      "examples": [
+        "Suche Monitor"
+      ]
+    },
+    {
+      "id": "objekt",
+      "name": "objekt",
+      "description": "Details eines Objekts per ref (z. B. sap:pr:10004711, servicenow:ritm:RITM0014021): Felder, Verlauf und – falls offen – die Kartenbeschreibung mit Aktionen.",
+      "tags": [
+        "experience-layer",
+        "read-only"
+      ],
+      "examples": [
+        "Zeig mir sap:pr:10004711"
+      ]
+    },
+    {
+      "id": "kosten",
+      "name": "kosten",
+      "description": "Kosten der protokollierten Zugriffe (Aktionen und Agentenabfragen) je System und Zugriffsweg, für heute und den laufenden Monat. Beispielwerte, keine Herstellerpreise.",
+      "tags": [
+        "experience-layer",
+        "read-only"
+      ],
+      "examples": [
+        "Was haben die Zugriffe diesen Monat gekostet?"
+      ]
+    },
+    {
+      "id": "route",
+      "name": "route",
+      "description": "Zeigt, über welchen Agenten und Zugriffsweg eine Anfrage laufen würde (Router des Experience Layers), inklusive Beispielkosten oder Ablehnungsgrund. Führt nichts aus.",
+      "tags": [
+        "experience-layer",
+        "read-only"
+      ],
+      "examples": [
+        "Über welchen Weg läuft eine SAP-Frage?"
+      ]
+    },
+    {
+      "id": "engine-analysen",
+      "name": "Engine-Analysen",
+      "description": "Kennzahlen, GuV, Projekte, Nachschub, offene Posten, Prozesse, Fertigung, Migration, Einkauf und Konstruktion aus der NEXORA-Engine.",
+      "tags": [
+        "nexora-engine",
+        "read-only"
+      ],
+      "examples": [
+        "Warum ist unsere operative Marge gesunken?"
+      ]
+    }
+  ],
+  "x-nexora": {
+    "simulated": true,
+    "costNote": "Beispielwerte, keine Herstellerpreise",
+    "sapNote": "Direkter Zugriff eines Agenten auf SAP-Schnittstellen ist in dieser Demo nicht vorgesehen. Die Zugriffswege orientieren sich am Hinweis auf die SAP API Policy (v4/2026) – ausdrücklich ohne Rechtsbewertung.",
+    "actions": "nur nach Klick und Bestätigung eines Menschen, mit Rechteprüfung",
+    "delegates": [
+      {
+        "id": "nexora",
+        "name": "NEXORA-Engine",
+        "system": "NEXORA-Engine",
+        "route": "engine",
+        "simulated": false,
+        "skills": [
+          "Kennzahlen und GuV",
+          "Aufträge, Fertigung, Service",
+          "Einkauf und Lager",
+          "HR und Personalkosten",
+          "Datenmigration",
+          "Inbox über alle Systeme"
+        ]
+      },
+      {
+        "id": "joule",
+        "name": "Joule (simuliert)",
+        "system": "SAP S/4HANA (simuliert)",
+        "route": "joule-a2a",
+        "simulated": true,
+        "skills": [
+          "Bestellanforderungen",
+          "Kreditorenrechnungen",
+          "Materialbestand je Werk"
+        ]
+      },
+      {
+        "id": "copilot",
+        "name": "Copilot (simuliert)",
+        "system": "Microsoft 365 (simuliert)",
+        "route": "copilot-a2a",
+        "simulated": true,
+        "skills": [
+          "Mails und Freigabebitten",
+          "Termine",
+          "Dokumente"
+        ]
+      },
+      {
+        "id": "nowassist",
+        "name": "Now Assist (simuliert)",
+        "system": "ServiceNow (simuliert)",
+        "route": "nowassist-a2a",
+        "simulated": true,
+        "skills": [
+          "IT- und Einkaufsanfragen",
+          "Störungen",
+          "Katalog"
+        ]
+      },
+      {
+        "id": "workday-agent",
+        "name": "Workday-Agent (simuliert)",
+        "system": "Workday (simuliert)",
+        "route": "workday-agent-a2a",
+        "simulated": true,
+        "skills": [
+          "Abwesenheiten",
+          "Onboarding",
+          "Mitarbeitende"
+        ]
+      }
+    ]
+  }
+}

@@ -381,6 +381,21 @@ body.layer .top2 .search{flex:0 0 auto;width:auto} body.layer .top2 .search span
 .priv-mx td.c,.priv-mx th.c{text-align:center}
 .cost-ctr span{display:flex;justify-content:space-between;gap:8px}.cost-ctr i{font-style:normal}
 .priv-mx td,.priv-mx th{padding-left:8px;padding-right:8px}
+/* Einbettungsmodus */
+body.embed .app{grid-template-columns:minmax(0,1fr)!important}
+body.embed .side,body.embed .top2,body.embed .livecol{display:none!important}
+body.embed .main{padding-top:0}
+body.embed section:has(#qrBox){display:none}
+body.embed .ly-grid{grid-template-columns:minmax(0,1fr)!important}
+.emb-bar{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line);padding:10px 14px;display:flex;flex-direction:column;gap:8px}
+.emb-brand{display:inline-flex;align-items:center;gap:6px;font-size:14px}
+.emb-tabs{display:flex}.emb-tabs a{flex:1;text-align:center;text-decoration:none}
+.emb-note{font-size:11.5px;color:var(--fg-3)}
+.emb-tabs a{border:1px solid var(--line);background:var(--surface);border-radius:20px;padding:5px 12px;font-weight:600;color:var(--fg-2);display:inline-flex;gap:8px;align-items:center;justify-content:center}
+.emb-tabs a b{font-size:11.5px;background:var(--sunk);border-radius:10px;padding:0 7px}
+.emb-tabs a.on{background:var(--accent-soft);border-color:var(--accent-line);color:var(--accent)}
+body.embed .inline-live,body.embed .page-head,body.embed .page>.note.sn,body.embed .page>.sn{display:none!important}
+body.embed .page{padding-top:12px}
 
 </style>
 <div id="root"></div>
@@ -3651,6 +3666,19 @@ VIEWS.privacy = () => {
 };
 const _adminV8 = VIEWS.admin;
 VIEWS.admin = () => { const h = _adminV8(); if (S.layer !== "layer") return h; return h + `<section class="card card-pad row between" style="gap:12px"><div><h3>Mitbestimmung & Datenschutz</h3><p class="small muted">Welche Daten fließen wohin, welche Rolle sieht was – Beschreibung der Demo, keine Rechtsaussage.</p></div><a class="btn" href="#privacy">Öffnen →</a></section>`; };
+
+/* ---------- Phase 6: Einbettungsmodus (#embed bzw. ?embed=1) ----------
+   Kompakte Ansicht ohne Seitennavigation, nur Inbox und Assistent, für ca. 400 px Breite.
+   Zeigt, wie NEXORA in Teams oder Copilot laufen würde – als Vorschau, keine echte Einbettung. */
+S.embed = false;
+function enterEmbed() { S.embed = true; S.layer = "layer"; S.live = false; if (!["tasks", "ai", "obj"].includes(route())) location.hash = "tasks"; render(); }
+ACT.leaveEmbed = () => { S.embed = false; try { const u = new URL(location.href); u.searchParams.delete("embed"); history.replaceState(null, "", u.pathname + u.search + location.hash); } catch (e) {} render(); };
+const embedBar = () => { const rt = route(); return `<div class="emb-bar"><div class="row between" style="gap:8px"><span class="emb-brand">${LOGO(20)}<b>NEXORA</b></span><button class="btn sm" data-act="userMenu">${esc(U().name)} · ${esc((R() || {}).name || "")}</button></div>
+  <div class="seg emb-tabs" role="tablist"><a role="tab" class="${rt !== "ai" ? "on" : ""}" href="#tasks" aria-selected="${rt !== "ai"}">Inbox <b>${C.listTasks(W, S.tenant, { user: S.users[S.tenant] }).length}</b></a><a role="tab" class="${rt === "ai" ? "on" : ""}" href="#ai" aria-selected="${rt === "ai"}">Assistent</a></div>
+  <div class="emb-note">Vorschau einer Einbettung (z. B. in Teams oder Copilot) · Fremdsysteme simuliert · <button class="link-btn" data-act="leaveEmbed">Vollansicht</button></div></div>`; };
+const _render6 = render;
+render = function () { document.body.classList.toggle("embed", !!S.embed); if (S.embed) S.live = false; _render6(); if (S.embed) { const m = document.querySelector("#root .main"); if (m) m.insertAdjacentHTML("afterbegin", embedBar()); } };
+try { if (/^#embed\b/.test(location.hash) || new URLSearchParams(location.search).get("embed") === "1") { S.embed = true; S.layer = "layer"; if (/^#embed\b/.test(location.hash)) { try { history.replaceState(null, "", "#tasks"); } catch (e) { location.hash = "tasks"; } } } } catch (e) {}
 
 /* ---------- Start ---------- */
 boot(); adoptAccounts(); if (window.innerWidth < 700 && route() === "home" && !location.search.includes("story=")) location.hash = "tasks"; render(); startBackend(); startRoom();

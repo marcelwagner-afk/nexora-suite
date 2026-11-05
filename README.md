@@ -19,7 +19,9 @@ Alle Daten sind synthetisch und werden reproduzierbar erzeugt (Seed 20261102). E
 | `src/dxf.js` | DXF-Leser: Schriftfeld- und Positionsattribute, Geometrie, Schnittlängen aus Abwicklungen |
 | `samples/MR-1200.dxf` | Synthetische Werkstattzeichnung Maschinenrahmen, 2 Blätter A1, 15 Positionen (`samples/make_mr1200.py`) |
 | `samples/SK-200.dxf` | Einfache Beispielzeichnung Schachtkonsole (`samples/make_sk200.py`) |
-| `build.py` | Erzeugt die Einzeldatei `dist/nexora-suite.html` |
+| `src/connectors.js`, `src/app_v8.js`, `src/layer.css` | Experience Layer: Konnektoren (NEXORA live, übrige simuliert), Router, Agenten, Protokoll, Einbettung |
+| `test/connectors.test.js` | Tests der Konnektor-Schicht (Determinismus, Reset, Rechte, Wege, Kosten, Vier-Augen, Router) |
+| `build.py` | Erzeugt die Einzeldatei `dist/nexora-suite.html` sowie `dist/mcp-tools.json` und `dist/agent-card.json` |
 
 ## Prozesse
 
@@ -82,6 +84,63 @@ Jede Person, mit der die Seite geteilt ist, kann sich je Unternehmen einen eigen
 - **PNG/JPG:** Claude erkennt die Stückliste. Das Ergebnis ist ein Vorschlag, der vor der Übernahme geprüft wird.
 - **DWG/STEP:** werden nicht im Browser gelesen. Bitte im CAD-System als DXF exportieren.
 
+## Experience Layer
+
+Seit v0.8 hat die Suite zwei Ansichten. Der Umschalter oben wechselt zwischen „Suite“ (wie v0.7) und „Experience Layer“: eine herstellerneutrale Oberfläche über mehrere Systeme. Die NEXORA-Engine ist dort ein Konnektor unter mehreren.
+
+```mermaid
+flowchart LR
+  P[Person im Browser<br/>oder eingebettet] --> UI[Experience Layer<br/>Inbox · Suche · Karten · Assistent]
+  UI --> R{Router}
+  R -->|Engine| N[NEXORA-Engine<br/>live]
+  R -->|Joule A2A| S[SAP S/4HANA<br/>simuliert]
+  R -->|Copilot A2A| M[Microsoft 365<br/>simuliert]
+  R -->|Now Assist A2A| SN[ServiceNow<br/>simuliert]
+  R -->|Workday-Agent A2A| WD[Workday<br/>simuliert]
+  R -.->|kein zulässiger Weg| X[Ablehnung<br/>ohne Kosten]
+  UI --> L[(Ereignisprotokoll<br/>Wiedergabe, Reset)]
+  N & S & M & SN & WD --> K[Ledger: Person, Rolle,<br/>Weg, Agent, Kosten]
+  K --> A[Protokoll · CSV · Kostenzähler]
+```
+
+**Was echt ist und was simuliert**
+
+| Teil | Stand |
+|---|---|
+| NEXORA-Engine (Buchungen, Prozesse, Rechte) | Live-Engine |
+| SAP S/4HANA, Microsoft 365, ServiceNow, Workday | **Simuliert**: deterministisch aus dem Seed, ohne Netzwerkzugriff, keine echte Integration |
+| Agenten Joule, Copilot, Now Assist, Workday-Agent | **Simuliert** (Agentenkarten im A2A-Stil) |
+| Kosten je Zugriffsweg | Beispielwerte, keine Herstellerpreise |
+| Claude als Assistent | echt im claude.ai-Artefakt; schlägt nur vor, bucht nichts |
+
+**Konnektor-Schnittstelle** (`src/connectors.js`, UMD, in Node testbar):
+
+- `listTasks(w, tid, ctx)`: Aufgaben aller Systeme im einheitlichen Kartenformat. Jede Karte hat Quelle, Zugriffsweg, Referenz, Felder und Aktionen.
+- `search(w, tid, q, ctx)` und `getObject(w, tid, ref)`: Suche und Deep Links über alle Systeme (Referenz `system:art:id`).
+- `dispatchAny(E, w, tid, "conn.<system>.<befehl>", params, ctx)`: ein Befehlsweg für alles.
+  - Der Aufruf ist atomar und wird mit Rechteprüfung ausgeführt.
+  - Er schreibt einen Ledger-Eintrag mit Person, Rolle, Weg, Agent und Kosten.
+  - Unzulässige Wege lehnt er mit `ROUTE_NOT_ALLOWED` ab.
+- `AGENTS` und `routeQuery(text)`: Agenten-Register und Router.
+- `ROUTES` und `ALLOWED`: die Kostentabelle (Beispielwerte) und die erlaubten Wege je Befehl.
+- `costs(w, tid, {date|period})`: Summen für Kostenzähler und Protokoll.
+- Der Zustand hängt am Mandantenobjekt. Ein Reset eines Unternehmens setzt deshalb auch seine Konnektoren zurück. Ohne Konnektor-Ereignisse bleiben die Engine-Hashes unverändert.
+
+**Ansichten:** Meine Aufgaben (Inbox), AI Assistant mit Aktionskarten, Systeme, Agenten, Protokoll (CSV-Export) und „Mitbestimmung & Datenschutz“ im Demo Control Center.
+
+**Einbettung:** `index.html#embed` oder `index.html?embed=1` zeigt eine kompakte Vorschau für etwa 400 px Breite, nur mit Inbox und Assistent. So würde NEXORA z. B. in Teams oder Copilot laufen. Eine echte Einbettung ist das nicht.
+
+**Offene Standards (statische Vorführdateien, kein laufender Server):**
+
+- `dist/mcp-tools.json`: Werkzeugliste des Assistenten mit Name, Beschreibung und `inputSchema`. `build.py` erzeugt sie aus `AI_TOOLS`.
+- `dist/agent-card.json`: A2A-artige Agentenkarte des NEXORA-Agenten mit Fähigkeiten und delegierten (simulierten) Agenten.
+
+**Grenzen:**
+
+- KI bucht nichts. Ausgeführt wird nur nach Klick und Bestätigung eines Menschen.
+- Direkter Agentenzugriff auf SAP-Tabellen oder -Schnittstellen wird abgelehnt. Der Hinweis bezieht sich auf die SAP API Policy (v4/2026), ausdrücklich ohne Rechtsbewertung.
+- Keine Herstellerlogos; Herstellernamen stehen nur als Text.
+
 ## Marktposition pflegen
 
 Die Positionierungsmatrix „Wer liefert die eine Oberfläche für alle Anwendungen?“ steht auf der TRUESCALE-Seite unter `truescale.html#markt`. Die Suite verlinkt sie in der Navigation („Marktposition · TRUESCALE“). Die Referenzumsetzung liegt in `docs/positionierung-referenz.html`.
@@ -99,6 +158,7 @@ Die Positionierungsmatrix „Wer liefert die eine Oberfläche für alle Anwendun
 
 ```bash
 node test/engine.test.js
+node test/connectors.test.js
 python build.py
 pip install playwright && python -m playwright install chromium
 python test/e2e.py
