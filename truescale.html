@@ -294,6 +294,7 @@ html{scroll-behavior:smooth;height:auto}body{height:auto;min-height:100%}
 .ts-top .btn{background:rgba(255,255,255,.08);color:#fff;border-color:rgba(255,255,255,.25)}.ts-top .btn.pri{background:linear-gradient(135deg,var(--accent-2),var(--accent));border-color:transparent}
 .wrap{max-width:1240px;margin:auto;padding:0 max(24px,env(safe-area-inset-right,0px)) 0 max(24px,env(safe-area-inset-left,0px))}
 section.s{padding:44px 0;display:flex;flex-direction:column;gap:18px}
+.ts-video{width:100%;max-width:1100px}.ts-video video{width:100%;aspect-ratio:16/9;border-radius:14px;background:#000;display:block;box-shadow:var(--shadow)}.ts-vgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.ts-vcard{padding:14px;display:flex;flex-direction:column;gap:10px}.ts-vcard .btn{align-self:flex-start}@media (max-width:820px){.ts-vgrid{grid-template-columns:minmax(0,1fr)}}
 .s-title{font-size:30px;font-weight:800;letter-spacing:-.015em}.s-sub{color:var(--fg-2);font-size:15.5px;max-width:820px}
 .ts-hero{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:36px;align-items:center;padding:56px 0 30px;position:relative;isolation:isolate}
 .ts-hero h1{font-size:clamp(38px,5vw,64px);line-height:1.06;letter-spacing:-.03em;font-weight:800;margin:14px 0 16px}.ts-hero h1 span{background:linear-gradient(90deg,var(--accent-2),var(--accent));-webkit-background-clip:text;background-clip:text;color:transparent}
@@ -385,6 +386,7 @@ table.cost td,table.cost th{padding:10px 8px}table.cost td:not(:first-child),tab
   <nav class="ts-nav" aria-label="Seitennavigation"><a href="#value">Mehrwert</a><a href="#markt">Marktposition</a><a href="#layer">Layer</a><a href="#roi">Kostenrechner</a><a href="#demo">Live-Demo</a><a href="#journey">Transformation</a></nav>
   <a class="btn hide-s" id="suiteTop" href="index.html">Suite öffnen</a><a class="btn pri" href="#roi">Business Case</a>
 </div></header>
+<script type="application/ld+json">[{"@context": "https://schema.org", "@type": "VideoObject", "name": "NEXORA AI in 60 Sekunden", "description": "Eine Oberfläche für SAP, Microsoft, ServiceNow und Workday – und der Weg zum eigenen ERP. Demo mit synthetischen Daten.", "thumbnailUrl": "https://marcelwagner-afk.github.io/nexora-suite/media/nexora-imagespot.jpg", "contentUrl": "https://marcelwagner-afk.github.io/nexora-suite/media/nexora-imagespot.mp4", "uploadDate": "2026-11-05", "duration": "PT1M0S", "inLanguage": "en", "publisher": {"@type": "Organization", "name": "TRUESCALE"}}, {"@context": "https://schema.org", "@type": "VideoObject", "name": "NEXORA Experience Layer", "description": "Vier Systeme, eine Oberfläche: Inbox, Agenten-Router, Protokoll und Ablöse-Cockpit. Fremdsysteme simuliert.", "thumbnailUrl": "https://marcelwagner-afk.github.io/nexora-suite/media/nexora-experience-layer.jpg", "contentUrl": "https://marcelwagner-afk.github.io/nexora-suite/media/nexora-experience-layer.mp4", "uploadDate": "2026-11-05", "duration": "PT58S", "inLanguage": "en", "publisher": {"@type": "Organization", "name": "TRUESCALE"}}, {"@context": "https://schema.org", "@type": "VideoObject", "name": "NEXORA PE Command Center", "description": "Portfolio-Reporting, Liquidität, AI Financial Advisor, Integration Hub und ERP-Transformation für Private-Equity-Investoren. Synthetische Daten.", "thumbnailUrl": "https://marcelwagner-afk.github.io/nexora-suite/media/nexora-pe-command-center.jpg", "contentUrl": "https://marcelwagner-afk.github.io/nexora-suite/media/nexora-pe-command-center.mp4", "uploadDate": "2026-11-05", "duration": "PT53S", "inLanguage": "en", "publisher": {"@type": "Organization", "name": "TRUESCALE"}}, {"@context": "https://schema.org", "@type": "VideoObject", "name": "NEXORA IT-Infrastruktur und Sizing", "description": "Architektur live, Sizing aus offenen Annahmen und Was-wäre-wenn für das Portfolio. Beispielwerte, kein Hersteller-Sizing.", "thumbnailUrl": "https://marcelwagner-afk.github.io/nexora-suite/media/nexora-it-infrastruktur.jpg", "contentUrl": "https://marcelwagner-afk.github.io/nexora-suite/media/nexora-it-infrastruktur.mp4", "uploadDate": "2026-11-05", "duration": "PT36S", "inLanguage": "en", "publisher": {"@type": "Organization", "name": "TRUESCALE"}}]</script>
 <main id="top" class="wrap">
   <section class="ts-hero">
     <div>
@@ -401,6 +403,12 @@ table.cost td,table.cost th{padding:10px 8px}table.cost td:not(:first-child),tab
       <div class="statrow"><div><b id="heroPct">–</b><small>modellierte Reduktion</small></div><div><b>On-Prem</b><small>Bereitstellung</small></div><div><b>Hybrid</b><small>Bereitstellung</small></div></div>
       <p class="faint small" style="margin-top:4px">Modellrechnung mit den Annahmen aus dem Kostenrechner – kein Herstellerangebot und kein garantierter Preisvorteil.</p>
     </div>
+  </section>
+
+  <section class="s" id="film" aria-labelledby="filmTitle">
+    <p class="eyebrow">NEXORA AI in 60 Sekunden</p><h2 class="s-title" id="filmTitle">Eine Oberfläche für alle Systeme. Dann Ihr eigenes ERP.</h2>
+    <div class="ts-video"><video controls preload="none" playsinline poster="media/nexora-imagespot.jpg" aria-label="NEXORA AI in 60 Sekunden"><source src="media/nexora-imagespot.mp4" type="video/mp4"></video></div>
+    <p class="small faint">Demo mit synthetischen Daten · Film auf Englisch mit Untertiteln</p>
   </section>
 
   <section class="s" id="value">
@@ -473,6 +481,7 @@ table.cost td,table.cost th{padding:10px 8px}table.cost td:not(:first-child),tab
   <section class="s" id="layer" aria-labelledby="lyTitle">
     <p class="eyebrow">Experience Layer</p><h2 class="s-title" id="lyTitle">Eine Oberfläche für alle Systeme, dann Ihr eigenes ERP.</h2>
     <p class="s-sub">Mitarbeitende arbeiten über SAP, Microsoft 365, ServiceNow, Workday und die NEXORA-Engine hinweg in einer Oberfläche. Weil die Oberfläche vom System dahinter entkoppelt ist, wächst NEXORA danach Prozess für Prozess zum eigenen ERP.</p>
+    <div class="ts-video"><video controls preload="none" playsinline poster="media/nexora-experience-layer.jpg" aria-label="NEXORA Experience Layer"><source src="media/nexora-experience-layer.mp4" type="video/mp4"></video></div>
     <div class="grid g3 ly-feat">
       <div class="card vcard"><span class="ico" data-ic="ai"></span><h3>Neutrale Orchestrierung</h3><p class="muted">Ein Router leitet jede Anfrage an den passenden Agenten oder das passende System. Das Ergebnis erscheint in derselben Oberfläche, mit sichtbarem Weg.</p></div>
       <div class="card vcard"><span class="ico" data-ic="shield"></span><h3>Lizenzbewusste SAP-Anbindung</h3><p class="muted">Für jeden SAP-Zugriff ist sichtbar, ob er über Joule (A2A), ein MCP Gateway oder eine freigegebene Schnittstelle läuft und was er kostet. Direkter Agentenzugriff ist nicht vorgesehen.</p></div>
@@ -489,6 +498,15 @@ table.cost td,table.cost th{padding:10px 8px}table.cost td:not(:first-child),tab
     </div>
     <div class="row" style="margin-top:18px;gap:10px;flex-wrap:wrap"><a class="btn pri" id="layerDemo" href="index.html?layer=1#home">Live-Demo im Experience Layer</a><a class="btn" id="layerStory" href="index.html?story=replace">Story: Prozess für Prozess ablösen</a></div>
     <p class="small faint" style="margin-top:10px">In der Demo sind alle Fremdsysteme simuliert und so gekennzeichnet: synthetische Daten, keine echte Integration. Kosten je Zugriff sind Beispielwerte, keine Herstellerpreise.</p>
+  </section>
+
+  <section class="s" id="filme" aria-labelledby="filmeTitle">
+    <p class="eyebrow">Für Investoren und IT</p><h2 class="s-title" id="filmeTitle">Portfolio im Blick. Infrastruktur im Griff.</h2>
+    <div class="ts-vgrid">
+      <div class="card ts-vcard"><div class="ts-video"><video controls preload="none" playsinline poster="media/nexora-pe-command-center.jpg" aria-label="NEXORA PE Command Center"><source src="media/nexora-pe-command-center.mp4" type="video/mp4"></video></div><h3>PE Command Center</h3><p class="muted">Umsatz, EBITDA und Liquidität aller Portfoliounternehmen in einer Sicht – mit Integration Hub, Konsolidierung und ERP-Transformation.</p><a class="btn" href="index.html#pe">PE Command Center öffnen</a></div>
+      <div class="card ts-vcard"><div class="ts-video"><video controls preload="none" playsinline poster="media/nexora-it-infrastruktur.jpg" aria-label="NEXORA IT-Infrastruktur und Sizing"><source src="media/nexora-it-infrastruktur.mp4" type="video/mp4"></video></div><h3>IT-Infrastruktur und Sizing</h3><p class="muted">Architektur je System, live ausgelastet, Sizing mit offenen Annahmen und Was-wäre-wenn für jeden Zukauf. Beispielwerte, kein Hersteller-Sizing.</p><a class="btn" href="index.html#infra">IT-Infrastruktur öffnen</a></div>
+    </div>
+    <p class="small faint">Demo mit synthetischen Daten · Film auf Englisch mit Untertiteln</p>
   </section>
 
   <section class="s" id="roi">

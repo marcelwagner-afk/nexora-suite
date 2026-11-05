@@ -501,6 +501,19 @@ body.layer .app.live .cost-ctr{display:none}
 .ix-size td:first-child{white-space:nowrap}
 @media (max-width:620px){.ix-tier{grid-template-columns:minmax(0,1fr)}.ix-tier+.ix-tier::before{left:20px}}
 
+/* Filme (v0.9.10) */
+.vid-chip{display:inline-flex;align-items:center;gap:10px;margin-top:10px;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:5px 12px 5px 5px;cursor:pointer;color:var(--fg);text-align:left;box-shadow:var(--shadow);max-width:100%}
+.vid-chip:hover{border-color:var(--accent-line)}
+.vid-chip small{display:block;font-size:11.5px;color:var(--fg-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vid-chip b{font-size:13px}
+.vid-thumb{width:64px;aspect-ratio:16/9;border-radius:7px;background:var(--nav-bg) center/cover no-repeat;display:grid;place-items:center;flex:none}
+.vid-thumb i{font-style:normal;color:#fff;font-size:12px;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,.45);display:grid;place-items:center}
+.vid-overlay{position:fixed;inset:0;z-index:60;background:rgba(10,8,30,.78);display:flex;align-items:center;justify-content:center;padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.vid-box{width:min(1100px,100%);background:var(--surface);border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:8px;box-shadow:0 24px 60px rgba(0,0,0,.4)}
+.vid-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.vid-box video{width:100%;aspect-ratio:16/9;border-radius:10px;background:#000;display:block}
+.page-head .vid-chip{display:flex;width:fit-content}
+
 </style>
 <div id="root"></div>
 <div id="layer"></div>
@@ -5558,6 +5571,29 @@ VIEWS.peco = () => { const html = _pecoIx(); if (S.pe.tab !== "infra") return ht
       <p class="small muted">${esc(IX.NOTE)}${x.sizing.note ? " " + esc(x.sizing.note) : ""} Eingaben: ${esc(x.source)}. Integration live aus dem ERP Integration Hub${x.row.engine ? "; Last live aus der Suite (Mandant " + esc(x.row.engine) + ")" : ""}.</p>${ixDiagram(topo)}</section>
     <section class="card" style="overflow:auto"><div class="card-pad" style="padding-bottom:0"><h3>Sizing</h3></div>${ixSizeTable([["Ist (" + esc(x.row.erp) + ")", x.sizing], ...(tgt ? [["Ziel NEXORA (Szenario D)", tgt]] : []), ["Was-wäre-wenn", wi]])}<div class="card-pad">${ixWhatIfForm("co", true)}${ixFormulas(x.sizing)}${tgt ? `<p class="small faint">Ziel NEXORA: Annahmen der Zielarchitektur (u. a. ${IX.PROFILES["NEXORA AI Suite"].usersPerVcpu} gleichzeitige Nutzer je vCPU), nicht gemessen. Kosten und Szenarien: <a href="#pe-trans">ERP Transformation</a>.</p>` : ""}</div></section>`;
   return html.replace(/<p class="small faint">Quelle:/, m0 => body + m0); };
+
+/* ===== v0.9.10 Filme (16:9) – Spieler als eigene Ebene außerhalb von #root, damit Neuzeichnen die Wiedergabe nicht abbricht ===== */
+const VIDEOS = {
+  imagespot: { title: "NEXORA AI in 60 Sekunden", file: "nexora-imagespot", dur: "1:00" },
+  "experience-layer": { title: "Experience Layer: eine Oberfläche für alle Systeme", file: "nexora-experience-layer", dur: "0:58" },
+  "pe-command-center": { title: "PE Command Center: jedes Unternehmen, eine Sicht", file: "nexora-pe-command-center", dur: "0:53" },
+  "it-infrastruktur": { title: "IT-Infrastruktur und Sizing", file: "nexora-it-infrastruktur", dur: "0:36" }
+};
+const VID_NOTE = "Demo mit synthetischen Daten · Film auf Englisch mit Untertiteln";
+// Pfad: GitHub Pages und Artifact liefern media/ neben der Seite, die gebaute Datei unter dist/ liegt eine Ebene tiefer
+const VID_BASE = /\/dist\/[^/]*$/.test(location.pathname) ? "../media/" : "media/";
+const vidChip = id => { const v = VIDEOS[id]; return v ? `<button class="vid-chip" data-act="vidPlay" data-v="${id}" aria-label="Film abspielen: ${esc(v.title)}"><span class="vid-thumb" style="background-image:url('${VID_BASE}${v.file}.jpg')"><i>▶</i></span><span><b>Film ansehen</b><small>${esc(v.title)} · ${v.dur}</small></span></button>` : ""; };
+function vidClose() { const o = document.getElementById("vidOverlay"); if (!o) return; const vd = o.querySelector("video"); if (vd) { try { vd.pause(); } catch (e) {} } o.remove(); document.removeEventListener("keydown", vidKey); if (vidClose.back && vidClose.back.focus) vidClose.back.focus(); }
+function vidKey(e) { if (e.key === "Escape") vidClose(); }
+ACT.vidPlay = (d, el) => { vidClose(); const v = VIDEOS[d.v]; if (!v) return; vidClose.back = el || null;
+  const o = document.createElement("div"); o.id = "vidOverlay"; o.className = "vid-overlay"; o.setAttribute("role", "dialog"); o.setAttribute("aria-modal", "true"); o.setAttribute("aria-label", v.title);
+  o.innerHTML = `<div class="vid-box"><div class="vid-head"><b>${esc(v.title)}</b><button class="icon-btn" data-vid-close aria-label="Film schließen">✕</button></div><video controls autoplay playsinline preload="metadata" poster="${VID_BASE}${v.file}.jpg"><source src="${VID_BASE}${v.file}.mp4" type="video/mp4"></video><p class="small faint">${esc(VID_NOTE)}</p></div>`;
+  o.addEventListener("click", e => { if (e.target === o || e.target.closest("[data-vid-close]")) vidClose(); }); document.body.appendChild(o); document.addEventListener("keydown", vidKey); o.querySelector("[data-vid-close]").focus(); };
+/* Einbau: Film-Knopf direkt unter der Seitenüberschrift */
+const vidAfterH1 = (html, id) => { const i = html.indexOf("</h1>"); return i < 0 ? vidChip(id) + html : html.slice(0, i + 5) + vidChip(id) + html.slice(i + 5); };
+for (const [route, pick] of [["home", () => S.layer === "layer" ? "experience-layer" : "imagespot"], ["systems", () => "experience-layer"], ["pe", () => "pe-command-center"], ["infra", () => "it-infrastruktur"], ["pe-infra", () => "it-infrastruktur"]]) {
+  const orig = VIEWS[route]; if (orig) VIEWS[route] = () => vidAfterH1(orig(), pick());
+}
 
 /* ---------- Start ---------- */
 boot(); adoptAccounts(); if (window.innerWidth < 700 && route() === "home" && !location.search.includes("story=")) location.hash = "tasks"; render(); startBackend(); startRoom();

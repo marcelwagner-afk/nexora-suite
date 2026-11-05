@@ -252,7 +252,16 @@ async def pe(p):
   await pg.screenshot(path=SP + "infra_suite.png", full_page=True); await pg.evaluate("E.resetTenant(W, 'elevon'); render()")
   await pg.evaluate("S.pe.principal='p1'; location.hash='pe-infra'; render()"); await pg.wait_for_timeout(200); n = await pg.evaluate("document.querySelectorAll('tr[data-act=peOpenInfra]').length"); assert n == 25, n
   await pg.click("tr[data-act=peOpenInfra][data-id=PC20]"); await pg.wait_for_selector("[data-ix-co=PC20]", timeout=3000); sf = await pg.evaluate("(() => { const n = document.querySelector('.ix-node[data-ix=sftp]'); return [n.className, n.innerText]; })()"); print("PE Aurelis SFTP:", sf[0], "|", sf[1].replace("\n", " ")[:90]); assert "ix-crit" in sf[0] and "Zugang abgelaufen" in sf[1]
-  await pg.screenshot(path=SP + "infra_pe.png", full_page=True); await pg.set_viewport_size({"width": 400, "height": 820})
+  await pg.screenshot(path=SP + "infra_pe.png", full_page=True)
+  # Filme: Knopf unter der Überschrift, Spieler als eigene Ebene – übersteht Neuzeichnen, Esc schließt
+  vids = {}
+  for r in ["pe", "infra", "pe-infra", "systems"]:
+    await pg.evaluate(f"location.hash='{r}'; render()"); await pg.wait_for_timeout(120); vids[r] = await pg.evaluate("(document.querySelector('.page-head .vid-chip') || {dataset: {}}).dataset.v")
+  print("Filme je Seite:", vids); assert vids == {"pe": "pe-command-center", "infra": "it-infrastruktur", "pe-infra": "it-infrastruktur", "systems": "experience-layer"}
+  await pg.evaluate("location.hash='pe'; render()"); await pg.wait_for_timeout(100); await pg.click(".vid-chip"); await pg.wait_for_selector("#vidOverlay video", timeout=3000)
+  await pg.evaluate("render()"); await pg.wait_for_timeout(100); assert await pg.evaluate("!!document.querySelector('#vidOverlay video') && document.querySelector('#vidOverlay source').getAttribute('src').endsWith('nexora-pe-command-center.mp4')")
+  await pg.keyboard.press("Escape"); assert await pg.evaluate("!document.querySelector('#vidOverlay')")
+  await pg.set_viewport_size({"width": 400, "height": 820})
   await pg.screenshot(path=SP + "pe_mobile.png"); await b.close(); assert not errs, errs; print("PE Command Center ok")
 
 async def main():
