@@ -3,6 +3,41 @@ from playwright.async_api import async_playwright
 import os, pathlib
 ROOT=pathlib.Path(__file__).resolve().parent.parent
 SP=str(ROOT/"test-results")+"/"; os.makedirs(SP, exist_ok=True)
+
+async def markt(p):
+  """Marktposition auf der truescale-Seite: öffentliche und interne Fassung, Interaktion, Mobil, Hell/Dunkel."""
+  import threading, http.server, functools, socketserver
+  H = functools.partial(http.server.SimpleHTTPRequestHandler, directory=str(ROOT / "dist"))
+  class Q(http.server.SimpleHTTPRequestHandler):
+    def log_message(self, *a): pass
+  srv = socketserver.TCPServer(("127.0.0.1", 0), functools.partial(Q, directory=str(ROOT / "dist"))); port = srv.server_address[1]
+  threading.Thread(target=srv.serve_forever, daemon=True).start(); base = f"http://127.0.0.1:{port}/truescale.html"
+  b = await p.chromium.launch(); errs = []
+  try:
+    pg = await b.new_page(viewport={"width": 1440, "height": 900}); pg.on("pageerror", lambda e: errs.append(str(e)))
+    await pg.goto(base + "#markt"); await pg.wait_for_timeout(400)
+    pts = await pg.evaluate("document.querySelectorAll('#mkChart .pt').length"); rows = await pg.evaluate("document.querySelectorAll('#mkMatBody tr').length")
+    txt = await pg.inner_text("#markt"); print("Markt öffentlich:", pts, "Punkte,", rows, "Zeilen")
+    assert pts == 14 and rows == 9, (pts, rows); assert "NEXORA heute" not in txt; assert "Roadmap" in txt; assert "Prompt" not in txt and "Umbau" not in txt and "Phase" not in txt
+    assert not await pg.evaluate("!!document.getElementById('mkArrow')")
+    await pg.click("#mkChart .pt[aria-label='Gemini Enterprise']"); await pg.wait_for_timeout(200)
+    assert await pg.evaluate("document.querySelector('#mkMatBody tr[data-id=google]').classList.contains('hl')"), "Google-Zeile markiert"
+    await pg.focus("#mkChart .pt[aria-label='Glean']"); await pg.keyboard.press("Enter"); assert await pg.evaluate("document.querySelector('#mkMatBody tr[data-id=glean]').classList.contains('hl')"), "Tastatur"
+    await pg.add_style_tag(content=".ts-top{position:static!important}"); el = await pg.query_selector("#markt"); await el.screenshot(path=SP + "ts_markt_hell.png")
+    await pg.goto(base + "#markt-intern"); await pg.wait_for_timeout(400)
+    pts = await pg.evaluate("document.querySelectorAll('#mkChart .pt').length"); rows = await pg.evaluate("document.querySelectorAll('#mkMatBody tr').length")
+    print("Markt intern:", pts, "Punkte,", rows, "Zeilen"); assert pts == 15 and rows == 10, (pts, rows); assert await pg.evaluate("!!document.getElementById('mkArrow')"), "Umbau-Pfeil"
+    d = await b.new_page(viewport={"width": 1440, "height": 900}, color_scheme="dark"); d.on("pageerror", lambda e: errs.append(str(e)))
+    await d.goto(base + "#markt"); await d.wait_for_timeout(400); await d.add_style_tag(content=".ts-top{position:static!important}"); el = await d.query_selector("#markt"); await el.screenshot(path=SP + "ts_markt_dunkel.png")
+    m = await b.new_page(viewport={"width": 400, "height": 860}); m.on("pageerror", lambda e: errs.append(str(e)))
+    await m.goto(base + "#markt"); await m.wait_for_timeout(400); sw = await m.evaluate("document.documentElement.scrollWidth"); print("Markt mobil scrollWidth", sw); assert sw == 400, sw
+    st = await m.evaluate("document.querySelectorAll('#stories .story').length"); assert st > 0, "Storys auf der truescale-Seite"
+    su = await b.new_page(viewport={"width": 1440, "height": 900}); su.on("pageerror", lambda e: errs.append(str(e))); await su.goto(f"http://127.0.0.1:{port}/index.html"); await su.wait_for_timeout(400)
+    href = await su.evaluate("[...document.querySelectorAll('nav.side a')].filter(a=>a.textContent.includes('Marktposition · TRUESCALE')).map(a=>a.getAttribute('href'))[0]"); print("Suite-Link Marktposition:", href); assert href and href.endswith("truescale.html#markt"), href
+  finally:
+    await b.close(); srv.shutdown()
+  assert not errs, errs
+
 async def main():
   async with async_playwright() as p:
     b=await p.chromium.launch()
@@ -62,3 +97,8 @@ async def main():
     assert all(st), "Reset nicht reproduzierbar"
     await b.close()
 asyncio.run(main())
+async def _markt():
+  async with async_playwright() as p:
+    await markt(p)
+asyncio.run(_markt())
+print('Marktposition ok')
