@@ -956,7 +956,9 @@ function dispatch(w, tenantId, cmd, payload, ctx) {
   const t = w.tenants[tenantId]; if (!t) fail("TENANT", "Unbekannter Mandant."); const fn = Object.prototype.hasOwnProperty.call(CMD, cmd) && !String(cmd).startsWith("_") ? CMD[cmd] : null; if (!fn) fail("CMD", "Unbekannter Befehl " + cmd);
   ctx = Object.assign({}, ctx || {}); const u = (t.users.find(x => x.id === ctx.user) || t.users[0]); ctx.user = u.id; ctx.userName = u.name;
   if (ctx.idem && t.idem[ctx.idem]) return Object.assign({ replay: true }, t.idem[ctx.idem]);
-  const snap = JSON.stringify(w.tenants); // Atomarität: bei Fehler alles zurück (auch Nachrichten an andere Mandanten)
+  // Atomarität: bei Fehler alles zurück. Andere Mandanten ändert ein Befehl nur über send() (Eingangskorb und Nummernkreis),
+  // daher genügt dort dieser Ausschnitt – das hält die Sicherung klein (Stresstest: vorher ganze Welt je Befehl).
+  const snap = JSON.stringify(t); const snapOther = {}; for (const k of Object.keys(w.tenants)) if (k !== tenantId) snapOther[k] = JSON.stringify({ inbox: w.tenants[k].inbox, seq: w.tenants[k].seq });
   const docsBefore = t.docs.length;
   try {
     const res = fn(w, t, payload || {}, ctx) || {};
@@ -967,7 +969,8 @@ function dispatch(w, tenantId, cmd, payload, ctx) {
     if (ctx.idem) t.idem[ctx.idem] = out;
     return out;
   } catch (e) {
-    const restored = JSON.parse(snap); for (const k of Object.keys(restored)) { const cur = w.tenants[k]; for (const key of Object.keys(cur)) delete cur[key]; Object.assign(cur, restored[k]); }
+    const restored = JSON.parse(snap); for (const key of Object.keys(t)) delete t[key]; Object.assign(t, restored);
+    for (const [k, v] of Object.entries(snapOther)) Object.assign(w.tenants[k], JSON.parse(v));
     if (e instanceof BizError) return { ok: false, cmd, code: e.code, text: e.message };
     throw e;
   }
