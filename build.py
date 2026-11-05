@@ -14,6 +14,7 @@ html=f'''<title>NEXORA AI Suite</title>
 <script>
 {(d/'engine.js').read_text()}
 {(d/'dxf.js').read_text()}
+{(d/'connectors.js').read_text()}
 </script>
 <script>
 {(d/'icons.js').read_text()}

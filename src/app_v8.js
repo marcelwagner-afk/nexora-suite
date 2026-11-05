@@ -20,3 +20,18 @@ const _home8 = VIEWS.home;
 VIEWS.home = () => S.layer === "layer" ? VIEWS.tasks() : _home8();
 const _tasks8 = VIEWS.tasks;
 VIEWS.tasks = () => S.layer === "layer" && !(typeof LAYER_READY !== "undefined" && LAYER_READY) ? statusNote("proto", "Experience Layer " + APP_VERSION + " im Aufbau: Hier entsteht die gemeinsame Inbox über NEXORA und die simulierten Fremdsysteme. Die Suite-Ansicht bleibt über den Umschalter oben erreichbar.") + _tasks8() : _tasks8();
+
+/* ---------- Phase 1: Konnektor-Schicht anbinden ---------- */
+const C = window.NexoraConnectors;
+C.setProvider("nexoraTasks", (tid, uid) => roleTasks(tid, uid));
+// Ein Befehlsweg für alles: "conn.<system>.<befehl>" geht an die Konnektoren, der Rest unverändert an die Engine.
+// Damit laufen Konnektor-Ereignisse durch dasselbe Protokoll (act → logEntry/persist, Wiedergabe, Reset).
+const _engineDispatch = E.dispatch;
+E.dispatch = function (w, tid, cmd, p, ctx) { return String(cmd).startsWith("conn.") ? C.dispatchAny({ dispatch: _engineDispatch }, w, tid, cmd, p, ctx) : _engineDispatch(w, tid, cmd, p, ctx); };
+// Systemübergreifende Folgen: jede Folge ist ein eigenes protokolliertes Ereignis desselben Menschen.
+const _act8 = act;
+act = function (cmd, payload, opt) {
+  const r = _act8(cmd, payload, opt);
+  if (r && r.ok && r.follow && r.follow.length) for (const f of r.follow) { const fr = _act8(f.cmd, f.p, Object.assign({}, opt || {}, { auto: false })); if (fr && fr.ok) toast("Folgeschritt: " + fr.text); }
+  return r;
+};
