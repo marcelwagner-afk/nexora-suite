@@ -1,3 +1,18 @@
 /* Experience Layer (v0.8) – ergänzt das NEXORA-Design, ohne die Suite-Ansicht zu verändern */
 .top2 .layer-sw{flex:none;flex-wrap:nowrap;gap:4px}
 .top2 .layer-sw button{padding:4px 10px;font-size:12px;white-space:nowrap;line-height:1.4}
+.ly-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px}
+.ly-card{padding:16px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.ly-card h3{font-size:15.5px;line-height:1.3}
+.ly-src{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:11.5px}
+.ly-chip{font-weight:700;border-radius:7px;padding:2px 8px;background:var(--sunk);color:var(--fg)}
+.ly-chip.s-nexora{background:var(--accent-soft);color:var(--accent)}
+.ly-route{color:var(--fg-2);border:1px solid var(--line-strong);border-radius:7px;padding:1px 7px}
+.ly-sim{color:var(--warn);background:var(--warn-soft);border-radius:7px;padding:2px 7px;font-weight:600}
+.ly-sim.live{color:var(--good);background:var(--good-soft)}
+.ly-fields{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:3px 12px;margin:2px 0;font-size:13px}
+.ly-fields dt{color:var(--fg-3)} .ly-fields dd{margin:0;overflow-wrap:anywhere}
+.ly-fields.wide{font-size:14px;gap:6px 18px}
+.ly-acts{margin-top:auto;gap:6px}
+body.layer .top2 [data-act=toggleMode]{display:none}
+body.layer .top2 .search{flex:0 0 auto;width:auto} body.layer .top2 .search span,body.layer .top2 .search kbd{display:none}

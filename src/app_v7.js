@@ -23,7 +23,7 @@ function roleTasks(tid, uid) {
   if (t.id === "aventra" && can("approve")) for (const pr of t.projects) { const n = t.timeEntries.filter(e => e.project === pr.id && e.status === "erfasst").length; if (n) add("approve", "t-" + pr.id, `${n} Zeiteinträge ${pr.id} freigeben`, pr.name, "approveTime", { projectId: pr.id }, "Freigeben", { kind: "Freigabe" }); }
   return out;
 }
-const taskCount = () => roleTasks(S.tenant, S.users[S.tenant]).length;
+let taskCount = () => roleTasks(S.tenant, S.users[S.tenant]).length;
 function checkNewTasks() { const all = {}; for (const id of E.TENANT_IDS) for (const k of roleTasks(id, S.users[id])) all[id + ":" + k.id] = k; if (S.taskSeen) { const fresh = Object.keys(all).filter(k => !S.taskSeen[k]); if (fresh.length) { const k = all[fresh[0]]; toast(`Neue Aufgabe${fresh.length > 1 ? "n (" + fresh.length + ")" : ""}: ${k.title}`); try { navigator.vibrate && navigator.vibrate(120); } catch (e) {} } } S.taskSeen = all; }
 
 /* ---------- Anwesenheit und Fernbedienung über den Raum ---------- */

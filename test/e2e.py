@@ -38,6 +38,33 @@ async def markt(p):
     await b.close(); srv.shutdown()
   assert not errs, errs
 
+
+async def layer(p):
+  """Experience Layer: Inbox in drei Rollen, Aufgaben aus mindestens vier Systemen, je System eine Freigabe."""
+  b = await p.chromium.launch(); pg = await b.new_page(viewport={"width": 1440, "height": 900}); errs = []; pg.on("pageerror", lambda e: errs.append(str(e)))
+  html = "<!doctype html><html><head><meta charset='utf-8'></head><body>" + open(ROOT / "dist" / "nexora-suite.html").read() + "</body></html>"
+  await pg.set_content(html); await pg.wait_for_timeout(400)
+  await pg.evaluate("ACT.resetAllBtn(); S.mode='free'; ACT.tenant({id:'elevon'}); S.users.elevon='u3'; act('createQuote',{customerId:'C-RHEIN',qty:4,discountPct:7}); ACT.setLayer({v:'layer'})"); await pg.wait_for_timeout(200)
+  seen = set()
+  for uid in ("u2", "u8", "u1"):
+    await pg.evaluate(f"ACT.setUser({{id:'{uid}'}}); location.hash='tasks'"); await pg.wait_for_timeout(150)
+    sy = await pg.evaluate("[...document.querySelectorAll('.ly-card')].map(c=>c.dataset.sys)"); seen |= set(sy); print("Inbox", uid, sorted(set(sy)), len(sy), "Karten")
+  assert len(seen) >= 4, seen
+  await pg.screenshot(path=SP + "layer_inbox.png")
+  async def approve(uid, sys):
+    await pg.evaluate(f"ACT.setUser({{id:'{uid}'}}); S.sel.sysF='{sys}'; location.hash='tasks'; render()"); await pg.wait_for_timeout(120)
+    n0 = await pg.evaluate("document.querySelectorAll('.ly-card').length")
+    await pg.click(f".ly-card[data-sys='{sys}'] button.btn.pri"); await pg.wait_for_timeout(120)
+    if await pg.evaluate("!!document.querySelector('[data-act=confirmOk]')"): await pg.click("[data-act=confirmOk]"); await pg.wait_for_timeout(120)
+    ok = await pg.evaluate("S.last && S.last.ok"); n1 = await pg.evaluate("document.querySelectorAll('.ly-card').length"); print("Freigabe", sys, "als", uid, ok, n0, "→", n1); assert ok, (sys, await pg.evaluate("S.last && S.last.text"))
+  for uid, sys in (("u2", "sap"), ("u2", "servicenow"), ("u2", "m365"), ("u8", "workday"), ("u2", "nexora")): await approve(uid, sys)
+  led = await pg.evaluate("C.ledger(W,'elevon').map(x=>x.sys+':'+x.route)"); print("Protokoll:", led); assert len(led) >= 4
+  await pg.evaluate("S.sel.sysF=null; ACT.setUser({id:'u2'}); openPalette(); S.pal='Monitor'; renderLayer()"); await pg.wait_for_timeout(100)
+  assert await pg.evaluate("document.querySelectorAll('#layer .pal-item').length") > 0, "Suche"; await pg.screenshot(path=SP + "layer_search.png")
+  await pg.click("#layer .pal-item"); await pg.wait_for_timeout(150); assert await pg.evaluate("location.hash") == "#obj"; await pg.screenshot(path=SP + "layer_obj.png")
+  await pg.evaluate("ACT.setLayer({v:'suite'})"); await pg.wait_for_timeout(100); assert await pg.evaluate("S.layer") == "suite"
+  await b.close(); assert not errs, errs
+
 async def main():
   async with async_playwright() as p:
     b=await p.chromium.launch()
@@ -101,4 +128,9 @@ async def _markt():
   async with async_playwright() as p:
     await markt(p)
 asyncio.run(_markt())
+async def _layer():
+  async with async_playwright() as p:
+    await layer(p)
+asyncio.run(_layer())
+print('Experience Layer ok')
 print('Marktposition ok')
