@@ -1,5 +1,7 @@
 # NEXORA AI Suite
 
+*NEXORA AI – A brand of TRUESCALE*
+
 KI-native Enterprise-Plattform als vollständig klickbare Demo mit drei verbundenen Digital Twins:
 
 - **Elevon Industries** (Aufzugshersteller)

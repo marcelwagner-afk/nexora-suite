@@ -111,7 +111,7 @@ function render() {
   const live = S.live && rt !== "admin";
   document.getElementById("root").innerHTML = `<div class="app ${live ? "live" : ""}">
    <nav class="side nav" aria-label="Hauptnavigation">
-    <a class="brand" href="#home" aria-label="NEXORA AI">${LOGO(32)}<span><b>NEXORA AI</b><small>Enterprise Suite · Demo</small></span></a>
+    <a class="brand" href="#home" aria-label="NEXORA AI">${LOGO(32)}<span><b>NEXORA AI</b><small>A brand of TRUESCALE · Demo</small></span></a>
     ${mods.filter(m => modSt(m) === "live" && m !== "admin").map(navA).join("")}
     <div class="nav-sep"></div><div class="nav-label">Weitere Module</div>
     ${mods.filter(m => modSt(m) !== "live" && m !== "admin").map(navA).join("")}
