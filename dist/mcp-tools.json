@@ -258,6 +258,171 @@
         "readOnlyHint": true,
         "layer": true
       }
+    },
+    {
+      "name": "pe_analyse",
+      "description": "Deterministische Analyse des Rechenkerns zu einer Frage (Performance, Margen, Liquidität, Working Capital, Risiko, Vergleich, Plan, Prognose). Liefert Titel, Ergebnis, Tabelle, Zeitraum, Quelle, Methode, Sicherheit, Empfehlung und Datenlücken.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "frage": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "frage"
+        ]
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "layer": false
+      }
+    },
+    {
+      "name": "pe_portfolio_kennzahlen",
+      "description": "Management-Aggregation (100 %, nicht konsolidiert) der freigegebenen aktiven Unternehmen. Zeitraum LTM, FY2026YTD, FY2025 oder FY2024; optional fund (F1/F2/F3), basis ifrs.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "period": {
+            "type": "string"
+          },
+          "fund": {
+            "type": "string"
+          },
+          "basis": {
+            "type": "string"
+          }
+        }
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "layer": false
+      }
+    },
+    {
+      "name": "pe_unternehmen",
+      "description": "Liste der für den Nutzer sichtbaren Portfoliounternehmen mit Kennzahlen (LTM) und Risiken.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "layer": false
+      }
+    },
+    {
+      "name": "pe_unternehmen_detail",
+      "description": "Kennzahlen, Plan/Ist und (falls freigegeben) Abschlüsse eines Unternehmens per id (z. B. PC01).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "layer": false
+      }
+    },
+    {
+      "name": "pe_liquiditaet",
+      "description": "6-Monats-Liquiditätsprognose eines Unternehmens (id).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "layer": false
+      }
+    },
+    {
+      "name": "pe_ebitda_bruecke",
+      "description": "EBITDA-Brücke LTM gegen Vorjahres-LTM eines Unternehmens (id) mit Volumen- und Kostenquoteneffekten.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "layer": false
+      }
+    },
+    {
+      "name": "pe_prognose",
+      "description": "Portfolio-Prognose 6 Monate und erwartetes GJ-2026-Ergebnis mit Bandbreite aus der Rückrechnung.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "layer": false
+      }
+    },
+    {
+      "name": "pe_working_capital",
+      "description": "Working-Capital-Kennzahlen (DSO, DIO, DPO) und Potenzial je Unternehmen gegen Branchen-Richtwerte (Annahmen).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "layer": false
+      }
+    },
+    {
+      "name": "pe_fonds",
+      "description": "Fondskennzahlen (Paid-in, NAV, DPI, RVPI, TVPI, MOIC, Gross/Net IRR) eines Fonds (F1, F2, F3) – nur mit Fondsberechtigung.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "fund": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "fund"
+        ]
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "layer": false
+      }
+    },
+    {
+      "name": "pe_kennzahl_definitionen",
+      "description": "Formeln und Ebenen aller Kennzahlen.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "layer": false
+      }
     }
   ]
 }

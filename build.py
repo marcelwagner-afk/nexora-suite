@@ -26,6 +26,10 @@ const SAMPLES = {json.dumps({k: (d.parent/'samples'/(k + '.dxf')).read_text() fo
 {(d/"app_v7.js").read_text()}
 {(d/"app_v8.js").read_text()}
 {(d/"app_pe.js").read_text()}
+{(d/"app_pe3.js").read_text()}
+{(d/"app_pe4.js").read_text()}
+{(d/"app_pe5.js").read_text()}
+{(d/"app_pe6.js").read_text()}
 {(d/"app_boot.js").read_text()}
 </script>
 '''
@@ -72,7 +76,7 @@ def balanced(s, i):
             if depth == 0: return s[i:j+1]
     raise ValueError("Klammer offen")
 tools = []
-for f in ("app_ext.js", "app_v6.js", "app_v8.js"):
+for f in ("app_ext.js", "app_v6.js", "app_v8.js", "app_pe3.js"):
     s = (d/f).read_text()
     for m in re.finditer(r'\{ name: "([a-z_]+)", description: "((?:[^"\\]|\\.)*)"', s):
         rest = s[m.end():m.end()+20]

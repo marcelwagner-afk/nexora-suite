@@ -179,7 +179,57 @@ async def pe(p):
   await pg.fill("#peFundName", "Alpenblick Fund I"); await pg.click("[data-act=peAddFund]"); await pg.wait_for_timeout(120); await pg.fill("#peCoName", "Gipfelwerk GmbH"); await pg.click("[data-act=peAddCo]"); await pg.wait_for_timeout(150)
   ad = await pg.evaluate("({ p: S.pe.principal, cos: NexoraPE.companies(peWorld(), peP(), {}).map(c => c.name + ':' + c.onboarding), log: S.pe.log.length })"); print("Verwaltung:", ad); assert ad["cos"] == ["Gipfelwerk GmbH:Nicht gestartet"] and ad["log"] == 3
   await pg.screenshot(path=SP + "pe_admin.png", full_page=True); await pg.evaluate("ACT.peResetAdmin(); S.pe.principal='p1'; peSave()")
+  # PE-Phase 3: Financial Intelligence, Cash & Liquidity, AI Financial Advisor
+  await pg.set_viewport_size({"width": 1440, "height": 900}); await pg.evaluate("S.pe.principal='p1'; S.pe.filter={period:'LTM'}; location.hash='pe-fin'; render()"); await pg.wait_for_timeout(200)
+  e0 = await pg.evaluate("NexoraPE.portfolioKpis(peWorld(), peP(), {basis:'ifrs'}).ebitda")
+  await pg.click("[data-act=peAdj][data-ok='1'] >> nth=0"); await pg.wait_for_timeout(150); e1 = await pg.evaluate("NexoraPE.portfolioKpis(peWorld(), peP(), {basis:'ifrs'}).ebitda"); print("IFRS-16-Freigabe: EBITDA Konzernsicht", round(e0/1e6,1), "→", round(e1/1e6,1)); assert e1 > e0
+  for t in ("cmp", "ana", "fc"): await pg.evaluate(f"ACT.peFinTab({{t:'{t}'}})"); await pg.wait_for_timeout(120)
+  assert await pg.evaluate("document.querySelectorAll('.pe-chart').length") == 2; await pg.screenshot(path=SP + "pe_forecast.png", full_page=True)
+  await pg.evaluate("location.hash='pe-cash'"); await pg.wait_for_timeout(200); lq = await pg.evaluate("[...document.querySelectorAll('.pe-tbl tbody tr')][0].innerText"); print("Liquidität, erste Zeile:", lq.replace("\n", " ")[:90]); assert "Velatis" in lq; await pg.screenshot(path=SP + "pe_cash.png", full_page=True)
+  await pg.evaluate("S.pe.chat=[]; S.pe.aiMode='rules'; location.hash='pe-ai'"); await pg.wait_for_timeout(120)
+  for q in await pg.evaluate("NexoraPE.EXAMPLES"): await pg.evaluate(f"peAsk({repr(q)})"); await pg.wait_for_timeout(60)
+  na = await pg.evaluate("({ n: document.querySelectorAll('.pe-ans').length, ev: document.querySelectorAll('.pe-ans .pe-ev').length, unmatched: [...document.querySelectorAll('.pe-ans b')].filter(b => b.innerText === 'Frage nicht zugeordnet').length })"); print("Advisor (Regeln):", na); assert na["n"] == 8 and na["ev"] == 8 and na["unmatched"] == 0
+  await pg.screenshot(path=SP + "pe_advisor.png", full_page=True)
+  await pg.evaluate("""BK.sample = async (turns, o) => { const t = o.tools.find(x => x.name === 'pe_analyse'); const r = t.execute({ frage: 'Welche Unternehmen bekommen in den nächsten sechs Monaten Liquiditätsprobleme?' }); const d = o.tools.find(x => x.name === 'pe_fonds').execute({ fund: 'F1' }); return { text: r.title + ': ' + r.rows.map(x => x.Unternehmen).join(', ') + ' · Belege: Kasse ' + r.rows[0]['Kasse heute'] + ' · Zeitraum: ' + r.period }; }; S.pe.aiMode='llm'; S.pe.chat=[]""")
+  await pg.evaluate("peAsk('Wer bekommt Liquiditätsprobleme?')"); await pg.wait_for_timeout(250)
+  cl = await pg.evaluate("document.querySelector('#peAiBody .ai-via') && document.querySelector('#peAiBody .ai-via').innerText"); print("Advisor (Claude-Double):", cl); assert cl and "pe_analyse" in cl and "pe_fonds" in cl
+  await pg.evaluate("S.pe.principal='p6'; S.pe.chat=[]"); fx = await pg.evaluate("peAiTools(peP()).find(t => t.name === 'pe_fonds').execute({ fund: 'F1' })"); print("Werkzeug mit CFO-Rechten:", fx); assert fx.get("fehler") == "FORBIDDEN"
+  await pg.evaluate("BK.sample = null; S.pe.aiMode=null; S.pe.principal='p1'; S.pe.log=[]; PEW=null; peSave()")
+  # PE-Phase 4: ERP Integration Hub – Mapping-Fehler beheben und neu synchronisieren
+  await pg.evaluate("S.pe.principal='p1'; S.pe.log=[]; PEW=null; location.hash='pe-hub'; render()"); await pg.wait_for_timeout(200)
+  h0 = await pg.evaluate("NexoraPE.hubMonitor(peWorld(), peP(), {}).error"); await pg.click("tr[data-id=PC25]"); await pg.wait_for_timeout(150)
+  for acc, cat in (("4730", "REV"), ("6640", "OPEX_OTHER"), ("6805", "OPEX_OTHER")):
+    await pg.select_option(f"#map-{acc}", cat); await pg.click(f"[data-act=peMap][data-acc='{acc}']"); await pg.wait_for_timeout(120)
+  await pg.click("[data-act=peSync][data-mode=voll]"); await pg.wait_for_timeout(200)
+  hs = await pg.evaluate("(() => { const d = NexoraPE.hubDetail(peWorld(), peP(), 'PC25'); return { health: d.health, diff: d.reconDiff, last: d.runs[0].status, by: d.runs[0].by, err: NexoraPE.hubMonitor(peWorld(), peP(), {}).error }; })()"); print("Integration Hub:", h0, "Fehler →", hs); assert hs["health"] == "ok" and hs["diff"] == 0 and hs["err"] == h0 - 1 and hs["by"] == "Dr. Katharina Brandt"
+  await pg.screenshot(path=SP + "pe_hub.png", full_page=True)
+  await pg.evaluate("S.pe.principal='p2'; render()"); await pg.click("tr[data-id=PC01]"); await pg.wait_for_timeout(120); assert await pg.evaluate("document.querySelectorAll('[data-act=peSync]').length") == 0, "Fund Manager ohne Lauf-Schaltflächen"
+  await pg.evaluate("S.pe.principal='p1'; S.pe.log=[]; PEW=null; S.pe.hub=null; peSave()")
+  # PE-Phase 5: Konsolidierung (IC-Klärung), Exit-Simulation, Value Creation, Risiko, Onboarding bis zur Aktivierung
+  await pg.evaluate("S.pe.principal='p1'; S.pe.log=[]; PEW=null; location.hash='pe-cons'; render()"); await pg.wait_for_timeout(200)
+  await pg.click("[data-act=peIcResolve]"); await pg.wait_for_timeout(150); ic = await pg.evaluate("NexoraPE.consolidate(peWorld(), peP(), 'HOLD-1').ic.diffPL"); print("Konsolidierung IC-Differenz nach Klärung:", ic); assert ic == 0
+  await pg.screenshot(path=SP + "pe_consolidation.png", full_page=True)
+  await pg.evaluate("location.hash='pe-inv'"); await pg.wait_for_timeout(200); await pg.click("[data-act=peExitPreset][data-k=up]"); await pg.wait_for_timeout(150)
+  ex = await pg.evaluate("[...document.querySelectorAll('.pe-exit .pe-kpi b')].map(b => b.innerText)"); print("Exit-Simulation (Aufwärts):", ex); assert len(ex) == 6; await pg.screenshot(path=SP + "pe_investment.png", full_page=True)
+  await pg.evaluate("location.hash='pe-vc'"); await pg.wait_for_timeout(200); assert await pg.evaluate("document.querySelectorAll('tr.dup').length") == 1, "Überschneidung markiert"; await pg.screenshot(path=SP + "pe_value_creation.png", full_page=True)
+  await pg.evaluate("location.hash='pe-risk'"); await pg.wait_for_timeout(200); assert "Bruch erwartet" in await pg.evaluate("document.querySelector('.pe-tbl tbody tr').innerText")
+  # Onboarding Clearpath: Mapping im Hub, Vollabzug, Datenfreigabe, Vorlage, Aktivierung durch zweiten Administrator
+  await pg.evaluate("""(() => { const A = peP(); for (const [a, c] of [["4730","REV"],["6640","OPEX_OTHER"],["6805","OPEX_OTHER"]]) peCmd("mapAccount", { companyId: "PC25", account: a, category: c }); peCmd("syncRun", { companyId: "PC25", mode: "voll" }); })()""")
+  await pg.evaluate("location.hash='pe-onb'"); await pg.wait_for_timeout(200); await pg.click("[data-act=peOnbDsa]"); await pg.wait_for_timeout(120); await pg.click("[data-act=peOnbReq]"); await pg.wait_for_timeout(120)
+  await pg.select_option("[data-on=pePrin]", "p11"); await pg.wait_for_timeout(100)
+  n0 = await pg.evaluate("NexoraPE.portfolioKpis(peWorld(), peP(), {}).companies"); await pg.click("[data-act=peOnbAct]"); await pg.wait_for_timeout(150); n1 = await pg.evaluate("NexoraPE.portfolioKpis(peWorld(), peP(), {}).companies"); print("Onboarding aktiviert: Unternehmen im Reporting", n0, "→", n1); assert n1 == n0 + 1
+  await pg.screenshot(path=SP + "pe_onboarding.png", full_page=True)
+  await pg.evaluate("S.pe.principal='p1'; S.pe.log=[]; PEW=null; peSave()")
+  # PE-Phase 6: ERP-Transformation – Kandidat öffnen, Annahme ändern, Rechnung folgt
+  await pg.evaluate("location.hash='pe-trans'; render()"); await pg.wait_for_timeout(200)
+  tt = await pg.evaluate("document.querySelector('#page').innerText"); assert "Beispielwerte, keine Herstellerpreise" in tt and "Roadmap" in tt and "Castell" in tt, tt[:300]
+  top = await pg.evaluate("NexoraPE.transformation(peWorld(), peP(), S.pe.filter, S.pe.ta).candidates[0].id"); await pg.click(f"tr[data-act=peTaOpen][data-id={top}]"); await pg.wait_for_selector(f"[data-ta={top}]", timeout=3000)
+  d0 = await pg.evaluate(f"NexoraPE.transformation(peWorld(), peP(), S.pe.filter, S.pe.ta).rows.find(r => r.id === '{top}').scenarios.D.oneTime")
+  await pg.evaluate("const el=document.querySelector('[data-on=peTaIn][data-k=parallelMonths]'); el.value='12'; el.dispatchEvent(new Event('change', {bubbles:true}))"); await pg.wait_for_timeout(150)
+  d1 = await pg.evaluate(f"NexoraPE.transformation(peWorld(), peP(), S.pe.filter, S.pe.ta).rows.find(r => r.id === '{top}').scenarios.D.oneTime"); print("ERP-Transformation", top, "Einmalkosten D", round(d0), "→", round(d1), "bei 12 Monaten Parallelbetrieb"); assert d1 > d0
+  await pg.screenshot(path=SP + "pe_transformation.png", full_page=True); await pg.click("[data-act=peTaReset]"); await pg.wait_for_timeout(100)
   await pg.set_viewport_size({"width": 400, "height": 820}); await pg.evaluate("location.hash='pe'; render()"); await pg.wait_for_timeout(200); sw = await pg.evaluate("document.documentElement.scrollWidth"); print("PE bei 400 px, Seitenbreite:", sw); assert sw <= 400
+  await pg.evaluate("location.hash='pe-trans'; render()"); await pg.wait_for_timeout(200); sw = await pg.evaluate("document.documentElement.scrollWidth"); print("ERP-Transformation bei 400 px:", sw); assert sw <= 400
   await pg.screenshot(path=SP + "pe_mobile.png"); await b.close(); assert not errs, errs; print("PE Command Center ok")
 
 async def main():
