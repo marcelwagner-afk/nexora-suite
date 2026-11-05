@@ -62,6 +62,26 @@ async def layer(p):
   await pg.evaluate("S.sel.sysF=null; ACT.setUser({id:'u2'}); openPalette(); S.pal='Monitor'; renderLayer()"); await pg.wait_for_timeout(100)
   assert await pg.evaluate("document.querySelectorAll('#layer .pal-item').length") > 0, "Suche"; await pg.screenshot(path=SP + "layer_search.png")
   await pg.click("#layer .pal-item"); await pg.wait_for_timeout(150); assert await pg.evaluate("location.hash") == "#obj"; await pg.screenshot(path=SP + "layer_obj.png")
+  # Phase 3: Assistent liefert Aktionskarten – Regel-Rückfall und (simuliertes) Claude identisch, Ausführung nur nach Bestätigung
+  await pg.evaluate("S.aiMode='rules'; S.chat.elevon=[]; ACT.setUser({id:'u2'}); location.hash='ai'"); await pg.wait_for_timeout(120)
+  await pg.evaluate("ask('Was muss ich heute freigeben?')"); await pg.wait_for_timeout(150)
+  nc = await pg.evaluate("document.querySelectorAll('#aiBody .ai-cards .ly-card').length"); print("Assistent (Regeln):", nc, "Karten"); assert nc >= 1
+  l0 = await pg.evaluate("C.ledger(W,'elevon').length")
+  await pg.click("#aiBody .ai-cards button.btn.pri"); await pg.wait_for_timeout(120)
+  assert await pg.evaluate("!!document.querySelector('[data-act=confirmOk]')"), "Bestätigungsdialog fehlt"
+  assert await pg.evaluate("C.ledger(W,'elevon').length") == l0, "vor Bestätigung ausgeführt"
+  await pg.screenshot(path=SP + "layer_ai_confirm.png")
+  await pg.click("[data-act=confirmOk]"); await pg.wait_for_timeout(150)
+  l1 = await pg.evaluate("C.ledger(W,'elevon').length"); nexo = await pg.evaluate("S.last && S.last.ok"); print("Nach Bestätigung:", l0, "→", l1, nexo); assert l1 > l0 or nexo
+  await pg.evaluate("ask('Was haben die Zugriffe diesen Monat gekostet?')"); await pg.wait_for_timeout(100)
+  assert await pg.evaluate("document.querySelector('#aiBody').innerText.includes('Beispielwerte')"), "Kostenantwort"
+  # Claude-Pfad mit Testdouble: Werkzeug aufgaben_alle wird aufgerufen, Karten erscheinen unter der Antwort
+  nrules = await pg.evaluate("layerTasks().length")
+  await pg.evaluate("""BK.sample = async (turns, o) => { const t = o.tools.find(x => x.name === 'aufgaben_alle'); const r = t.execute({}); const k = o.tools.find(x => x.name === 'kosten').execute(); return { text: 'Offen: ' + r.anzahl + ' Aufgaben.' }; }; S.aiMode='llm'; S.chat.elevon=[]""")
+  await pg.evaluate("ask('Was muss ich heute freigeben?')"); await pg.wait_for_timeout(250)
+  ncl = await pg.evaluate("document.querySelectorAll('#aiBody .ai-cards .ly-card').length"); print("Assistent (Claude-Double):", ncl, "Karten, Regeln:", min(nrules, 8)); assert ncl == min(nrules, 8)
+  await pg.screenshot(path=SP + "layer_ai.png")
+  await pg.evaluate("BK.sample = null; S.aiMode='rules'; S.chat.elevon=[]")
   await pg.evaluate("ACT.setLayer({v:'suite'})"); await pg.wait_for_timeout(100); assert await pg.evaluate("S.layer") == "suite"
   await b.close(); assert not errs, errs
 

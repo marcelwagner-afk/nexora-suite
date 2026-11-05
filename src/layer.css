@@ -16,3 +16,5 @@
 .ly-acts{margin-top:auto;gap:6px}
 body.layer .top2 [data-act=toggleMode]{display:none}
 body.layer .top2 .search{flex:0 0 auto;width:auto} body.layer .top2 .search span,body.layer .top2 .search kbd{display:none}
+.msg.a .ai-cards{margin-top:10px;grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}
+.ly-card.done{opacity:.7}

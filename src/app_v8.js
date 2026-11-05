@@ -53,7 +53,7 @@ function cardHtml(k, o) {
     <div class="row between" style="gap:8px;align-items:flex-start"><h3>${esc(k.title)}</h3>${k.status ? stPill(k.status) : ""}</div>
     ${pr ? `<span class="small faint">${esc(pr.label)}${k.due ? " · fällig " + dDe(k.due) : ""}</span>` : ""}
     ${k.fields && k.fields.length ? `<dl class="ly-fields">${k.fields.map(([a, b]) => `<dt>${esc(a)}</dt><dd>${esc(fmtVal(b))}</dd>`).join("")}</dl>` : ""}
-    ${o.preview ? "" : `<div class="row ly-acts">${(k.actions || []).map((a, i) => `<button class="btn sm ${a.primary ? "pri" : ""}" data-act="cardAct" data-ref="${esc(k.ref)}" data-i="${i}">${esc(a.label)}${a.fourEyes ? " · 4 Augen" : ""}</button>`).join("")}<button class="btn sm ghost" data-act="openObj" data-ref="${esc(k.deepLink || k.ref)}">Öffnen →</button></div>`}
+    ${o.preview ? "" : `<div class="row ly-acts">${(k.actions || []).map((a, i) => `<button class="btn sm ${a.primary ? "pri" : ""}" data-act="cardAct" data-ref="${esc(k.ref)}" data-i="${i}"${o.ai ? ' data-ai="1"' : ""}>${esc(a.label)}${a.fourEyes ? " · 4 Augen" : ""}</button>`).join("")}<button class="btn sm ghost" data-act="openObj" data-ref="${esc(k.deepLink || k.ref)}">Öffnen →</button></div>`}
   </article>`;
 }
 let CARD_CACHE = {};
@@ -70,8 +70,8 @@ function confirmCard(k, a, onOk) {
 }
 function runCardAction(k, a) { const r = act(a.cmd, a.p || {}); if (r && r.ok) toast(r.text); return r; }
 Object.assign(ACT, {
-  cardAct(d) { const k = CARD_CACHE[d.ref] || layerTasks().find(x => x.ref === d.ref); if (!k) return toast("Aufgabe nicht mehr vorhanden.", true); const a = k.actions[+d.i]; if (!a) return;
-    if (a.confirm || a.fourEyes || S.layerConfirmAll) confirmCard(k, a, () => runCardAction(k, a)); else runCardAction(k, a); },
+  cardAct(d) { const k = layerTasks().find(x => x.ref === d.ref); if (!k) return toast("Aufgabe nicht mehr vorhanden.", true); const a = k.actions[+d.i]; if (!a) return;
+    if (d.ai || a.confirm || a.fourEyes || S.layerConfirmAll) confirmCard(k, a, () => runCardAction(k, a)); else runCardAction(k, a); },
   confirmOk() { const f = S.pendingConfirm; S.pendingConfirm = null; S.modal = null; renderLayer(); if (f) f(); },
   openObj(d) { S.sel.obj = d.ref; S.modal = null; renderLayer(); go("obj"); },
   sysFilter(d) { S.sel.sysF = d.v || null; render(); }
@@ -124,3 +124,74 @@ document.addEventListener("click", e => { const a = e.target.closest("#layer .dl
 // Layer-Modus: Zähler in der Navigation zeigt alle Systeme, Kopfzeile kompakter
 const _taskCount8 = taskCount; taskCount = () => S.layer === "layer" ? C.listTasks(W, S.tenant, { user: S.users[S.tenant] }).length : _taskCount8();
 const _render8 = render; render = function () { document.body.classList.toggle("layer", S.layer === "layer"); _render8(); };
+
+/* ---------- Phase 3: Aktionskarten im Assistenten ----------
+   Claude und der Regel-Rückfall liefern dieselben Karten. Beide schlagen nur vor: Ausgeführt wird erst nach Klick
+   und Bestätigungsdialog, über act() → connector.dispatch() mit Rechteprüfung. */
+const AI_CARD_MAX = 8;
+const cardDesc = k => ({ ref: k.ref, system: k.source, simuliert: !!(C.CONNECTORS[k.sys] && C.CONNECTORS[k.sys].simulated), zugriffsweg: k.route, prozess: (C.PROCESSES[k.process] || {}).label || null, titel: k.title, status: k.status || null, faellig: k.due || null, felder: Object.fromEntries((k.fields || []).map(([a, b]) => [a, b])), aktionen: (k.actions || []).map(a => a.label + (a.fourEyes ? " (Vier-Augen)" : "")) });
+const aiNote = refs => { S.aiRefs = S.aiRefs || []; for (const r of refs) if (!S.aiRefs.includes(r)) S.aiRefs.push(r); };
+function aiTasks(sys) { const l = layerTasks().filter(k => !sys || k.sys === sys || (C.CONNECTORS[k.sys] || {}).name.toLowerCase().includes(String(sys).toLowerCase())); return l; }
+function aiSearch(q) { const hits = C.search(W, S.tenant, q, { user: S.users[S.tenant] }); const open = new Map(layerTasks().map(k => [k.ref, k])); return hits.map(h => ({ hit: h, task: open.get(h.ref) || null })); }
+function aiCosts() { const d = T().date; const today = C.costs(W, S.tenant, { date: d }), month = C.costs(W, S.tenant, { period: d.slice(0, 7) }); return { heute: today, monat: month, datum: d }; }
+const _aiTools8 = AI_TOOLS;
+AI_TOOLS = () => S.layer !== "layer" ? _aiTools8() : _aiTools8().concat([
+  { name: "aufgaben_alle", description: "Offene Aufgaben der angemeldeten Person aus allen Systemen (NEXORA-Engine live; SAP S/4HANA, Microsoft 365, ServiceNow, Workday als simulierte Demo-Konnektoren). Liefert je Aufgabe eine Kartenbeschreibung mit ref, System, Zugriffsweg, Feldern und möglichen Aktionen. Optional nach System filtern (nexora, sap, m365, servicenow, workday).", inputSchema: { type: "object", properties: { system: { type: "string" } } },
+    execute: i => { const l = aiTasks(i && i.system); aiNote(l.slice(0, AI_CARD_MAX).map(k => k.ref)); return { datum: T().date, person: U().name, anzahl: l.length, karten: l.slice(0, 20).map(cardDesc) }; } },
+  { name: "suche_alle", description: "Volltextsuche über alle Systeme (Bestellanforderungen, Rechnungen, Mails, Tickets, Abwesenheiten, Belege, Aufträge, Kunden, Material). Liefert Treffer mit ref; offene Aufgaben zusätzlich als Kartenbeschreibung.", inputSchema: { type: "object", properties: { q: { type: "string" } }, required: ["q"] },
+    execute: i => { const r = aiSearch(String(i.q || "")); aiNote(r.filter(x => x.task).slice(0, AI_CARD_MAX).map(x => x.task.ref)); return r.slice(0, 25).map(x => x.task ? cardDesc(x.task) : { ref: x.hit.ref, system: x.hit.source, simuliert: x.hit.simulated, art: x.hit.kind, titel: x.hit.title, info: x.hit.sub }); } },
+  { name: "objekt", description: "Details eines Objekts per ref (z. B. sap:pr:10004711, servicenow:ritm:RITM0014021): Felder, Verlauf und – falls offen – die Kartenbeschreibung mit Aktionen.", inputSchema: { type: "object", properties: { ref: { type: "string" } }, required: ["ref"] },
+    execute: i => { const o = C.getObject(W, S.tenant, String(i.ref)); if (!o) throw new Error("Objekt nicht gefunden"); const k = layerTasks().find(x => x.ref === o.ref || x.ref === String(i.ref)); if (k) aiNote([k.ref]); return { ref: String(i.ref), system: o.source, simuliert: o.simulated, titel: o.title, felder: Object.fromEntries(o.fields), verlauf: o.history || [], karte: k ? cardDesc(k) : null }; } },
+  { name: "kosten", description: "Kosten der protokollierten Zugriffe (Aktionen und Agentenabfragen) je System und Zugriffsweg, für heute und den laufenden Monat. Beispielwerte, keine Herstellerpreise.", execute: () => aiCosts() }
+]);
+const AI_RULES_LAYER = () => `
+Experience Layer: Du siehst Aufgaben aus allen Systemen über die Werkzeuge aufgaben_alle, suche_alle, objekt und kosten. Alle Systeme außer der NEXORA-Engine sind simulierte Demo-Konnektoren ohne echte Integration – sage das, wenn du sie nennst. Du führst nichts aus: Unter deiner Antwort zeigt die Oberfläche automatisch Aktionskarten zu den Aufgaben, die deine Werkzeuge geliefert haben; die Person bestätigt jede Aktion selbst. Nenne bei jeder Aufgabe System, Referenz und deine Empfehlung (freigeben, ablehnen, klären) mit kurzer Begründung. Kosten sind Beispielwerte, keine Herstellerpreise.`;
+const _askClaude8 = askClaude;
+askClaude = async function (q) {
+  if (S.layer !== "layer") return _askClaude8(q);
+  // AI_RULES ist eine Konstante: Layer-Regeln werden an die erste Nachricht des Aufrufs angehängt
+  const smp = BK.sample; S.aiRefs = [];
+  if (smp) BK.sample = (turns, o) => smp([Object.assign({}, turns[0], { content: turns[0].content + AI_RULES_LAYER() })].concat(turns.slice(1)), o);
+  try { await _askClaude8(q); } finally { if (smp) BK.sample = smp; } const ch = S.chat[S.tenant]; const slot = ch[ch.length - 1];
+  if (slot && S.aiRefs.length) { slot.cards = S.aiRefs.slice(0, AI_CARD_MAX); render(); } S.aiRefs = [];
+};
+// Regel-Rückfall: dieselben Karten, ohne Sprachmodell
+const AI_CARD_MARK = /<!--cards:([^>]*)-->/;
+const cardsMark = refs => refs.length ? `<!--cards:${refs.slice(0, AI_CARD_MAX).join(",")}-->` : "";
+const _answer8 = answer;
+answer = function (q) {
+  if (S.layer !== "layer") return _answer8(q);
+  const ql = q.toLowerCase(); const t = T(), d = t.date;
+  if (/(freigeben|freigabe|genehmig|aufgaben|zu tun|inbox|erledigen)/.test(ql) && !/(marge|budget|nachbestell|projekt)/.test(ql)) {
+    const l = layerTasks(); const due = l.filter(k => !k.due || k.due <= d); const by = {}; for (const k of l) by[k.source] = (by[k.source] || 0) + 1;
+    if (!l.length) return `<p>Für <b>${esc(U().name)}</b> liegen in keinem System offene Aufgaben vor.</p>` + basis("Alle angebundenen Systeme (NEXORA live, übrige simuliert)", "Stand " + dDe(d), "Offene Aufgaben mit Aktion für die Rolle " + esc((R() || {}).name || ""));
+    return `<p><b>${l.length} offene Aufgaben</b> für ${esc(U().name)}, davon <b>${due.length}</b> heute fällig oder überfällig. ${Object.entries(by).map(([s, n]) => `${esc(s)}: ${n}`).join(" · ")}.</p><p class="small muted">Ich schlage nur vor – jede Aktion bestätigst du selbst im Dialog. Systeme außer der NEXORA-Engine sind simulierte Demo-Konnektoren.</p>`
+      + cardsMark(l.map(k => k.ref)) + basis("Inbox des Experience Layers über alle Konnektoren", "Stand " + dDe(d), "Aufgaben mit offener Aktion für die Rolle " + esc((R() || {}).name || "") + ", sortiert nach Fälligkeit und Betrag");
+  }
+  if (/(zugriffskosten|ki-kosten|agentenkosten|kosten (heute|diesen monat|im monat|des layers)|was (hat|haben) .*gekostet|kosten der (zugriffe|agenten|aufrufe))/.test(ql)) {
+    const c = aiCosts(); const rows = c.monat.rows;
+    return `<p>Protokollierte Zugriffe kosten heute <b>${eur4(c.heute.total)}</b>, im laufenden Monat <b>${eur4(c.monat.total)}</b>.</p>` + (rows.length ? `<table><thead><tr><th>System · Zugriffsweg</th><th class="r">Aufrufe</th><th class="r">Kosten</th></tr></thead><tbody>${rows.map(r => `<tr><td>${esc(r.system)} · ${esc(r.route)}</td><td class="r num">${r.calls}</td><td class="r num">${eur4(r.cost)}</td></tr>`).join("")}</tbody></table>` : `<p class="small muted">Noch keine protokollierten Zugriffe in diesem Monat.</p>`)
+      + basis("Protokoll der Konnektor-Aufrufe", "Heute (" + dDe(c.datum) + ") und " + perDe(c.datum.slice(0, 7)), "Summe der Beispielkosten je Aufruf; Lesen der Inbox ist kostenfrei. " + C.COST_NOTE);
+  }
+  const sm = ql.match(/^(?:suche|finde|such|zeig(?:e)? mir)\s+(?:nach\s+)?(.{2,})$/);
+  if (sm) { const r = aiSearch(sm[1].replace(/[?.!]+$/, "").trim());
+    if (!r.length) return `<p>Keine Treffer für „${esc(sm[1])}“ in den angebundenen Systemen.</p>`;
+    return `<p>${r.length} Treffer für „${esc(sm[1])}“.</p><div class="list">${r.filter(x => !x.task).slice(0, 8).map(x => `<div class="li" style="padding:6px 0"><span class="grow small"><b>${esc(x.hit.title)}</b> <span class="faint">${esc(x.hit.source)} · ${esc(x.hit.kind)}</span></span><button class="btn sm ghost" data-act="openObj" data-ref="${esc(x.hit.ref)}">Öffnen →</button></div>`).join("")}</div>`
+      + cardsMark(r.filter(x => x.task).map(x => x.task.ref)) + basis("Suche über alle Konnektoren", "Stand " + dDe(d), "Textsuche in Nummer, Bezeichnung und Person");
+  }
+  return _answer8(q);
+};
+function aiCardsHtml(refs) {
+  const open = new Map(layerTasks().map(k => [k.ref, k]));
+  return `<div class="ly-grid ai-cards">${refs.map(r => { const k = open.get(r); if (k) return cardHtml(k, { ai: true }); const o = C.getObject(W, S.tenant, r);
+    return `<article class="ly-card card done"><div class="ly-src"><span class="ly-chip s-${esc(C.parseRef(r).sys)}">${esc(o ? o.source : r)}</span></div><h3>${esc(o ? o.title : r)}</h3><span class="small muted">Nicht mehr offen – bereits bearbeitet.</span><div class="row ly-acts"><button class="btn sm ghost" data-act="openObj" data-ref="${esc(r)}">Öffnen →</button></div></article>`; }).join("")}</div>`;
+}
+const _aiView8 = VIEWS.ai;
+VIEWS.ai = () => {
+  if (S.layer !== "layer") return _aiView8();
+  const ch = S.chat[S.tenant]; const saved = ch.map(m => m.a);
+  for (const m of ch) { if (m.u) continue; let refs = m.cards || null; const mk = !refs && m.a && m.a.match(AI_CARD_MARK); if (mk) refs = mk[1].split(",").filter(Boolean);
+    if (refs && refs.length) m.a = mk ? m.a.replace(AI_CARD_MARK, aiCardsHtml(refs)) : m.a + aiCardsHtml(refs); }
+  const sugg = AI_SUGG.slice(); AI_SUGG.unshift("Was muss ich heute freigeben?", "Suche Monitor", "Was haben die Zugriffe diesen Monat gekostet?");
+  try { return _aiView8(); } finally { ch.forEach((m, i) => { m.a = saved[i]; }); AI_SUGG.splice(0, AI_SUGG.length, ...sugg); }
+};
