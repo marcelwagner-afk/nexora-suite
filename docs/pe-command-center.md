@@ -1,7 +1,5 @@
 # STEGARC PE Command Center – Analyse und Umsetzungsplan
 
-*STEGARC*
-
 Stand: 05.11.2026. Dieses Dokument ist das Ergebnis von PE-Phase 1 („Architecture & Foundation“). Es beschreibt:
 
 - die vorhandene Architektur der STEGARC Suite,
