@@ -1,4 +1,4 @@
-/* Automatisierte Akzeptanztests der NEXORA Business Engine. Ausführen: node engine.test.js */
+/* Automatisierte Akzeptanztests der STEGARC Business Engine. Ausführen: node engine.test.js */
 const E = require("../src/engine.js");
 let pass = 0, failN = 0; const results = [];
 function test(name, fn) { try { fn(); pass++; results.push(["ok", name]); } catch (e) { failN++; results.push(["FEHLER", name + " → " + e.message]); } }

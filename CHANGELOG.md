@@ -1,14 +1,20 @@
 # Changelog
 
+## v0.10.0 – STEGARC (2026-11)
+
+- **Neuer Produktname STEGARC:** ersetzt den bisherigen Arbeitstitel in Suite, Produktseite (`stegarc.html`), Prototyp, Doku, Agentenkarte, MCP-Werkzeugen und Tests. Repository und Seite heißen `stegarc-suite`.
+- **Logo:** S-Zeichen in Strichstärke, Verlauf und Rundungen des bisherigen Zeichens; Design sonst unverändert.
+- **Filme vorerst ausgeblendet:** Die bisherigen Filme tragen den alten Namen. Schalter `FILMS` in `build.py` (Suite: `FILMS_ON`); neue Dateien heißen `media/stegarc-*.mp4|jpg`. Tests prüfen den ausgeblendeten Standard und weiter die Spieler-Mechanik.
+
 ## v0.9.12 – Ohne TRUESCALE-Seite (2026-11)
 
-- **TRUESCALE-Seite entfernt:** `truescale.html` gibt es nicht mehr. Die Inhalte (Film, Mehrwert, Marktposition, Experience Layer, Kostenrechner, Live-Demos, Weg zum eigenen ERP) stehen markenneutral auf der NEXORA-Produktseite `nexora.html`.
-- **Navigation:** „Business Case“ und „Marktposition“ ohne TRUESCALE-Zusatz; Verweise im Ablöse-Cockpit zeigen auf `nexora.html#roi`. Marktmatrix-Zeile heißt „NEXORA“; Herausgeber in den Film-Metadaten NEXORA AI.
+- **TRUESCALE-Seite entfernt:** `truescale.html` gibt es nicht mehr. Die Inhalte (Film, Mehrwert, Marktposition, Experience Layer, Kostenrechner, Live-Demos, Weg zum eigenen ERP) stehen markenneutral auf der STEGARC-Produktseite `stegarc.html`.
+- **Navigation:** „Business Case“ und „Marktposition“ ohne TRUESCALE-Zusatz; Verweise im Ablöse-Cockpit zeigen auf `stegarc.html#roi`. Marktmatrix-Zeile heißt „STEGARC“; Herausgeber in den Film-Metadaten STEGARC.
 - **Tests:** e2e prüft dieselben Punkte auf der neuen Seite (öffentliche und interne Marktposition, Storys, Suite-Link).
 
 ## v0.9.11 – Ohne TRUESCALE-Marke (2026-11)
 
-- **Marke:** Zusatz „A brand of TRUESCALE“ überall entfernt (Kopfzeilen der Suite, Prototyp, Einbettungsleiste, Fußzeile, Kommentare, README, Doku). Herausgeber in `agent-card.json`: Marcel Wagner, Marke NEXORA AI.
+- **Marke:** Zusatz „A brand of TRUESCALE“ überall entfernt (Kopfzeilen der Suite, Prototyp, Einbettungsleiste, Fußzeile, Kommentare, README, Doku). Herausgeber in `agent-card.json`: Marcel Wagner, Marke STEGARC.
 - **Filme:** Web-Fassungen in `media/` neu erzeugt ohne Markenzeile und ohne truescale.group-Adresse auf der Schlusskarte; im Imagespot ist das gesprochene „a brand of TRUESCALE“ abgesenkt. Die Originale bleiben unverändert.
 
 ## v0.9.10 – Filme (2026-11)
@@ -20,9 +26,9 @@
 
 ## v0.9.9 – IT-Infrastruktur und Sizing (2026-11)
 
-- **Neuer Kern `src/infra.js`:** Architekturprofile für alle ERP-Systeme des Portfolios und NEXORA, Sizing mit Formeln (Nutzer, Spitzenlast, vCPU/RAM, Datenbank inkl. In-Memory, Datenbestand heute und Prognose, Speicher, Netz, IOPS), Ziel-Sizing NEXORA, Was-wäre-wenn mit Zukauf, Live-Auslastung. Alles Beispielwerte, Herstellernamen nur als Text, SAP-Hinweis auf das Hersteller-Sizing.
+- **Neuer Kern `src/infra.js`:** Architekturprofile für alle ERP-Systeme des Portfolios und STEGARC, Sizing mit Formeln (Nutzer, Spitzenlast, vCPU/RAM, Datenbank inkl. In-Memory, Datenbestand heute und Prognose, Speicher, Netz, IOPS), Ziel-Sizing STEGARC, Was-wäre-wenn mit Zukauf, Live-Auslastung. Alles Beispielwerte, Herstellernamen nur als Text, SAP-Hinweis auf das Hersteller-Sizing.
 - **Suite → IT-Infrastruktur:** Architektur des Mandanten live aus Engine-Befehlen und Konnektor-Aufrufen; Ablösung im Ablöse-Cockpit ändert die Architektur sofort; „Lastspitze simulieren“ ohne Buchungen.
-- **PE → IT-Infrastruktur** und Reiter auf der Unternehmensseite: Sizing je Unternehmen, Portfolio-Summen, Betriebsmodelle, Ziel NEXORA; Integrationsstatus live aus dem ERP Integration Hub.
+- **PE → IT-Infrastruktur** und Reiter auf der Unternehmensseite: Sizing je Unternehmen, Portfolio-Summen, Betriebsmodelle, Ziel STEGARC; Integrationsstatus live aus dem ERP Integration Hub.
 - **Tests:** `test/infra.test.js` (10, in CI), e2e-Block, Stresstest um das Sizing erweitert. Doku: `docs/it-infrastruktur.md`.
 
 ## v0.9.8 – Stresstest (2026-11)
@@ -34,7 +40,7 @@
 
 ## v0.9.7 – Modell B mit Engine-Daten (2026-11)
 
-- **Elevon, NovaMart und Aventra im PE-Portfolio:** neuer Demo-Investor „Nordlicht Beteiligungen“ mit Fonds „Nordlicht Plattform I“ und Zugang Nora Lindqvist. Ab Nov 2025 kommen alle Monatswerte aus den Buchungen der NEXORA-Engine (Kontenplan der Engine, kein Mapping). Davor steht eine gekennzeichnete synthetische Fortschreibung ohne Belege.
+- **Elevon, NovaMart und Aventra im PE-Portfolio:** neuer Demo-Investor „Nordlicht Beteiligungen“ mit Fonds „Nordlicht Plattform I“ und Zugang Nora Lindqvist. Ab Nov 2025 kommen alle Monatswerte aus den Buchungen der STEGARC-Engine (Kontenplan der Engine, kein Mapping). Davor steht eine gekennzeichnete synthetische Fortschreibung ohne Belege.
 - **Drill-down bis zum Engine-Beleg** (Belegnummer, Datum, Text; Summe = Kontosaldo). Für die Fortschreibung meldet der Drill-down eine Datenlücke.
 - **Live-Karte** auf der Unternehmensseite: offene Periode (Nov 2026) direkt aus der Engine, mit Sprung in den Mandanten. Das abgeschlossene Reporting bis Okt 2026 ändert sich durch neue Buchungen nicht.
 - **Ehrlichkeit:** Für Engine-Mandanten gibt es keinen Vorjahresvergleich und keine Anomalieprüfung gegen die Fortschreibung. Finanzierung: ohne Fremdkapital.
@@ -44,7 +50,7 @@
 ## v0.9.6 – PE ERP-Transformation (2026-11)
 
 - **ERP-Transformation** (`PE.transformation`): Bewertung je Unternehmen mit Nutzerzahl, Lizenz/Abo, Wartung, Hosting, Schnittstellen, Individualentwicklung, funktionaler Abdeckung, technischer Schuld, Migrationskomplexität und geschätzter Implementierung.
-- **Szenarien A–D** über einen wählbaren Zeitraum: A unverändert, B nur Finanzintegration, C teilweise NEXORA (Finanzen), D vollständige Transformation. TCO = Einmalkosten + Jahre × laufende Kosten; Einsparung = TCO A − TCO Szenario. Negative Werte bleiben sichtbar.
+- **Szenarien A–D** über einen wählbaren Zeitraum: A unverändert, B nur Finanzintegration, C teilweise STEGARC (Finanzen), D vollständige Transformation. TCO = Einmalkosten + Jahre × laufende Kosten; Einsparung = TCO A − TCO Szenario. Negative Werte bleiben sichtbar.
 - **Kandidaten und Roadmap:** Bewertung aus technischer Schuld, Abdeckung und Einsparquote; Unternehmen mit Liquiditätsrisiko oder laufendem Onboarding werden zurückgestellt. Die Roadmap ist ein Vorschlag in drei Wellen.
 - **Annahmen** sind offen, in der Ansicht änderbar und als „Beispielwerte, keine Herstellerpreise“ gekennzeichnet. Herstellernamen nur als Text, keine echte Integration. Verweis auf das Ablöse-Cockpit.
 - **Tests:** `test/pe.test.js` hat jetzt 55 Tests; der e2e-Block öffnet einen Kandidaten, ändert den Parallelbetrieb und prüft die Rechnung sowie die Darstellung bei 400 px.
@@ -110,7 +116,7 @@
   - Rechteprüfung je Lesefunktion.
   - Drill-down bis zur Buchung, nur mit Freigabe und Einzelposten im Quellsystem.
   - Verwaltung: Organisation, Fonds und Unternehmen anlegen.
-- **Marke:** „NEXORA AI – A brand of TRUESCALE“ in Suite, Prototyp, TRUESCALE-Seite, Agentenkarte und README.
+- **Marke:** „STEGARC – A brand of TRUESCALE“ in Suite, Prototyp, TRUESCALE-Seite, Agentenkarte und README.
 - **Plan:** `docs/pe-command-center.md`.
 
 **Tests**
@@ -124,12 +130,12 @@
 
 ## v0.8 – Experience Layer (2026-11)
 
-Die Suite wird zu einer herstellerneutralen Oberfläche über mehrere Systeme. Die NEXORA-Engine bleibt vollständig erhalten und ist ein Konnektor unter mehreren. Die Suite-Ansicht funktioniert unverändert wie v0.7 und ist über den Umschalter erreichbar.
+Die Suite wird zu einer herstellerneutralen Oberfläche über mehrere Systeme. Die STEGARC-Engine bleibt vollständig erhalten und ist ein Konnektor unter mehreren. Die Suite-Ansicht funktioniert unverändert wie v0.7 und ist über den Umschalter erreichbar.
 
 **Neu**
 
 - **Konnektor-Schicht** (`src/connectors.js`):
-  - NEXORA-Engine (live) sowie SAP S/4HANA, Microsoft 365, ServiceNow und Workday. Alle Fremdsysteme sind **simuliert**: aus dem Seed erzeugt, ohne Netzwerkzugriff und überall gekennzeichnet.
+  - STEGARC-Engine (live) sowie SAP S/4HANA, Microsoft 365, ServiceNow und Workday. Alle Fremdsysteme sind **simuliert**: aus dem Seed erzeugt, ohne Netzwerkzugriff und überall gekennzeichnet.
   - Ein Befehlsweg `conn.<system>.<befehl>`, atomar und mit Rechteprüfung.
   - Ledger mit Person, Rolle, Zugriffsweg, Agent und Beispielkosten.
 - **Eine Inbox, eine Suche, ein Kartenformat:** Deep Links in alle Systeme und ein Bestätigungsdialog mit Kosten und Vier-Augen-Hinweis.
@@ -143,7 +149,7 @@ Die Suite wird zu einer herstellerneutralen Oberfläche über mehrere Systeme. D
   - Seite „Mitbestimmung & Datenschutz“, die nur die Demo beschreibt und keine Rechtsaussage trifft.
 - **Einbettung:** `#embed` bzw. `?embed=1` als Vorschau für etwa 400 px. Dazu kommen `dist/mcp-tools.json` und `dist/agent-card.json` als statische Vorführdateien.
 - **Individuelles Dashboard:** systemneutrale Kacheln und Vorlagen je Rolle. Die Konfiguration steht im Ereignisprotokoll.
-- **Ablöse-Cockpit** (Route `transition`): Der Prozess „Bestellanforderung“ wechselt von SAP (simuliert) auf die NEXORA-Engine:
+- **Ablöse-Cockpit** (Route `transition`): Der Prozess „Bestellanforderung“ wechselt von SAP (simuliert) auf die STEGARC-Engine:
   - Datenübernahme über das Migrationsmodul (neu: Migrationsprojekte),
   - Parallelbetrieb mit Spiegelung und Abstimmung,
   - Umschalten,

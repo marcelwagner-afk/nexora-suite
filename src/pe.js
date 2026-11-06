@@ -1,9 +1,9 @@
-/* NEXORA PE Command Center – Rechenkern (v0.9 MVP). Reine Logik, kein DOM, in Node testbar.
-   NEXORA AI.
+/* STEGARC PE Command Center – Rechenkern (v0.9 MVP). Reine Logik, kein DOM, in Node testbar.
+   STEGARC.
    Alle Organisationen, Fonds, Unternehmen und Zahlen sind SYNTHETISCH: deterministisch aus dem Seed erzeugt.
    Jede Lesefunktion verlangt einen Principal und prüft die Berechtigung selbst (Organisation, Fonds, Unternehmen,
    Freigabestufe). In dieser Auslieferung läuft die Prüfung im selben Programm wie die Oberfläche – kein Server. */
-(function (root, factory) { if (typeof module === "object" && module.exports) module.exports = factory(); else root.NexoraPE = factory(); })(typeof self !== "undefined" ? self : this, function () {
+(function (root, factory) { if (typeof module === "object" && module.exports) module.exports = factory(); else root.StegarcPE = factory(); })(typeof self !== "undefined" ? self : this, function () {
   "use strict"; const VERSION = "0.9.0";
   const SEED = 20261102;
   const VALUATION_DATE = "2026-10-31";
@@ -50,14 +50,14 @@
     sage: { REV: [["4000", "Sales Type A"], ["4010", "Sales Type B"]], COGS: [["5000", "Materials purchased"]], OPEX_PERS: [["7000", "Gross wages"]], OPEX_OTHER: [["7500", "Overheads"]], DA: [["8000", "Depreciation"]], INT: [["7900", "Bank interest"]], TAX: [["9000", "Corporation tax"]], CASH: [["1200", "Bank current account"]], AR: [["1100", "Debtors control"]], INV: [["1001", "Stock"]], FA: [["0030", "Plant and machinery"]], AP: [["2100", "Creditors control"]], DEBT: [["2300", "Loans"]], EQ: [["3000", "Capital and reserves"]], CAPEX: [["CF-CAPEX", "Capex"]], DIV: [["CF-DIV", "Dividend"]], EQIN: [["CF-EQ", "Equity"]] },
     infor: { REV: [["R-4000", "Revenue"], ["R-4050", "Other revenue"]], COGS: [["C-5000", "Cost of goods"]], OPEX_PERS: [["E-6000", "Personnel"]], OPEX_OTHER: [["E-6500", "Operating expense"]], DA: [["E-6900", "Depreciation"]], INT: [["F-7000", "Interest"]], TAX: [["T-7500", "Tax"]], CASH: [["A-1000", "Cash"]], AR: [["A-1200", "Receivables"]], INV: [["A-1300", "Inventory"]], FA: [["A-1600", "Fixed assets"]], AP: [["L-2000", "Payables"]], DEBT: [["L-2500", "Debt"]], EQ: [["Q-3000", "Equity"]], CAPEX: [["CF-1", "Capex"]], DIV: [["CF-2", "Dividend"]], EQIN: [["CF-3", "Equity"]] },
     custom: { REV: [["U100", "Erlöse"], ["U110", "Erlöse sonstige"]], COGS: [["K200", "Material"]], OPEX_PERS: [["K300", "Personal"]], OPEX_OTHER: [["K400", "Sachkosten"]], DA: [["K500", "AfA"]], INT: [["K600", "Zinsen"]], TAX: [["K700", "Steuern"]], CASH: [["B010", "Bankguthaben"]], AR: [["B020", "Debitoren"]], INV: [["B030", "Lager"]], FA: [["B040", "Anlagen"]], AP: [["B050", "Kreditoren"]], DEBT: [["B060", "Darlehen"]], EQ: [["B070", "Eigenkapital"]], CAPEX: [["Z1", "Investitionen"]], DIV: [["Z2", "Ausschüttung"]], EQIN: [["Z3", "Einlage"]] },
-    nexora: { REV: [["4000", "Umsatzerlöse"], ["4400", "Umsatzerlöse Service"]], COGS: [["5000", "Materialaufwand"]], OPEX_PERS: [["6000", "Personalaufwand"]], OPEX_OTHER: [["6800", "Sonstige Aufwendungen"]], DA: [["6200", "Abschreibungen"]], INT: [["7300", "Zinsaufwand"]], TAX: [["7600", "Ertragsteuern"]], CASH: [["1100", "Bank"]], AR: [["1200", "Forderungen"]], INV: [["1300", "Vorräte"]], FA: [["0400", "Anlagen"]], AP: [["1600", "Verbindlichkeiten LuL"]], DEBT: [["1700", "Darlehen"]], EQ: [["2000", "Eigenkapital"]], CAPEX: [["CF-INV", "Investitionen"]], DIV: [["CF-DIV", "Ausschüttung"]], EQIN: [["CF-EK", "Einlage"]] }
+    stegarc: { REV: [["4000", "Umsatzerlöse"], ["4400", "Umsatzerlöse Service"]], COGS: [["5000", "Materialaufwand"]], OPEX_PERS: [["6000", "Personalaufwand"]], OPEX_OTHER: [["6800", "Sonstige Aufwendungen"]], DA: [["6200", "Abschreibungen"]], INT: [["7300", "Zinsaufwand"]], TAX: [["7600", "Ertragsteuern"]], CASH: [["1100", "Bank"]], AR: [["1200", "Forderungen"]], INV: [["1300", "Vorräte"]], FA: [["0400", "Anlagen"]], AP: [["1600", "Verbindlichkeiten LuL"]], DEBT: [["1700", "Darlehen"]], EQ: [["2000", "Eigenkapital"]], CAPEX: [["CF-INV", "Investitionen"]], DIV: [["CF-DIV", "Ausschüttung"]], EQIN: [["CF-EK", "Einlage"]] }
   };
   /* ERP-Systeme: Familie des Kontenplans, Einzelposten über den (künftigen) Konnektor verfügbar? Alles simuliert. */
   const ERP = {
     "SAP ECC": { family: "sap", lineItems: false, method: "Datei-Export (simuliert)" }, "SAP S/4HANA": { family: "sap", lineItems: true, method: "OData (simuliert)" }, "SAP Business One": { family: "sap", lineItems: true, method: "Service Layer (simuliert)" },
     "Microsoft Dynamics 365": { family: "dynamics", lineItems: true, method: "REST (simuliert)" }, "Oracle ERP Cloud": { family: "oracle", lineItems: true, method: "REST (simuliert)" }, "Oracle NetSuite": { family: "netsuite", lineItems: true, method: "SuiteTalk (simuliert)" },
     "DATEV": { family: "datev", lineItems: false, method: "DATEV-Export (simuliert)" }, "Sage": { family: "sage", lineItems: false, method: "CSV-Import (simuliert)" }, "Infor": { family: "infor", lineItems: true, method: "ION API (simuliert)" },
-    "Eigenentwicklung": { family: "custom", lineItems: false, method: "SFTP-Datei (simuliert)" }, "NEXORA AI Suite": { family: "nexora", lineItems: true, method: "NEXORA-Engine (live in der Suite)" }
+    "Eigenentwicklung": { family: "custom", lineItems: false, method: "SFTP-Datei (simuliert)" }, "STEGARC Suite": { family: "stegarc", lineItems: true, method: "STEGARC-Engine (live in der Suite)" }
   };
   const FX_BASE = { EUR: 1, CHF: 0.94, GBP: 0.85, USD: 1.08, PLN: 4.32, SEK: 11.4, DKK: 7.46 }; // Einheiten Landeswährung je EUR (Beispielwerte)
   const SECTOR_MULT = { Industrie: 8.5, Maschinenbau: 8, Logistik: 7.5, Software: 13, "IT-Services": 10, Medizintechnik: 12.5, Pharma: 11.5, Konsumgüter: 9.5, Lebensmittel: 9, Handel: 8 };
@@ -80,7 +80,7 @@
     const scen = SCEN[idx] || null;
     const [country, currency] = idx === 0 ? ["Deutschland", "EUR"] : idx === 5 ? ["Vereinigtes Königreich", "GBP"] : pick(rng, COUNTRIES);
     const industry = pick(rng, fund.sectors);
-    let erp = scen === "erp" ? "SAP ECC" : scen === "acquisition" ? "DATEV" : idx === 7 ? "NEXORA AI Suite" : pick(rng, ERP_LIST.filter(e => e !== "NEXORA AI Suite"));
+    let erp = scen === "erp" ? "SAP ECC" : scen === "acquisition" ? "DATEV" : idx === 7 ? "STEGARC Suite" : pick(rng, ERP_LIST.filter(e => e !== "STEGARC Suite"));
     const fam = ERP[erp].family;
     const yr = Math.floor(between(rng, fund.years[0], fund.years[1] + 0.999));
     const acq0 = `${yr}-${String(1 + Math.floor(rng() * 12)).padStart(2, "0")}-15`; const acquired = scen === "acquisition" ? "2026-08-15" : acq0 > "2026-06-15" ? "2026-03-15" : acq0;
@@ -97,7 +97,7 @@
     const nLE = 1 + Math.floor(rng() * 3); const leW = Array.from({ length: nLE }, () => 0.5 + rng()); const leS = sum(leW);
     const entities = leW.map((w, i) => ({ id: id + "-LE" + (i + 1), name: i === 0 ? "Holding und Inland" : i === 1 ? "Vertriebsgesellschaft" : "Produktionsgesellschaft", weight: w / leS }));
     const units = [{ id: id + "-BU1", name: industry === "Software" ? "Lizenzen und Abos" : "Kerngeschäft", weight: 0.7 }, { id: id + "-BU2", name: "Service", weight: 0.3 }];
-    return { id, orgId, fundId: fund.id, portfolioId: fund.id + "-P", name: NAMES[idx] || "Portfolio " + (idx + 1), industry, country, currency, erp, erpFamily: fam, model: erp === "NEXORA AI Suite" ? "B" : "A",
+    return { id, orgId, fundId: fund.id, portfolioId: fund.id + "-P", name: NAMES[idx] || "Portfolio " + (idx + 1), industry, country, currency, erp, erpFamily: fam, model: erp === "STEGARC Suite" ? "B" : "A",
       standard, fyStart, acquired, ownership, scenario: scen, size, margin, growth, gm, ps,
       status: scen === "acquisition" ? "Onboarding" : idx === 12 ? "Exit-Vorbereitung" : "Halten",
       onboarding: scen === "acquisition" ? "Finanz-Mapping" : "Aktiv", integration: scen === "acquisition" ? "Mapping offen" : scen === "erp" ? "Verzögert" : "Synchron",
@@ -150,12 +150,12 @@
   function genFx(rng) { const out = {}; for (const [cur, base] of Object.entries(FX_BASE)) { let x = base; out[cur] = {}; for (const p of PERIODS) { const open = x; x = cur === "EUR" ? 1 : x * (1 + between(rng, -0.012, 0.012)); out[cur][p] = { avg: cur === "EUR" ? 1 : (open + x) / 2, close: x }; } } return out; }
 
 
-  /* ---------- Modell B: Engine-Mandanten (Elevon, NovaMart, Aventra) mit gebuchten Daten der NEXORA-Engine ----------
+  /* ---------- Modell B: Engine-Mandanten (Elevon, NovaMart, Aventra) mit gebuchten Daten der STEGARC-Engine ----------
      engineFeed liest nur die Belegstruktur der Engine (period, lines: acct/dr/cr) – keine Abhängigkeit vom Engine-Modul.
      Ab Nov 2025 sind alle Monatswerte Salden aus Buchungen; davor (Nov 2023 – Okt 2025) eine synthetische Fortschreibung. */
   const ENGINE_FROM = "2025-11"; const ENGINE_BACK_GROWTH = 0.04;
   const ENGINE_META = { elevon: { pc: "NX1", industry: "Industrie", ownership: 1, acquired: "2025-10-15" }, novamart: { pc: "NX2", industry: "Handel", ownership: 0.8, acquired: "2025-10-15" }, aventra: { pc: "NX3", industry: "IT-Services", ownership: 1, acquired: "2025-10-15" } };
-  const ENGINE_NOTE = "Ab Nov 2025 Salden aus Buchungen der NEXORA-Engine (Demo-Mandant, synthetische Geschäftsvorfälle); Nov 2023 – Okt 2025 synthetische Fortschreibung des ersten Engine-Jahres (4 % p. a. Wachstum), keine Buchungen.";
+  const ENGINE_NOTE = "Ab Nov 2025 Salden aus Buchungen der STEGARC-Engine (Demo-Mandant, synthetische Geschäftsvorfälle); Nov 2023 – Okt 2025 synthetische Fortschreibung des ersten Engine-Jahres (4 % p. a. Wachstum), keine Buchungen.";
   const ENGINE_KIND = (() => { const m = {}; for (const [cat, list] of Object.entries(COA_FAMILY.engine)) for (const [no] of list) m[no] = cat; return m; })();
   function engineFeed(tenants) {
     return tenants.filter(t => ENGINE_META[t.id]).map(t => {
@@ -185,11 +185,11 @@
     return pre.concat(real);
   }
   function addEngineCompanies(W, feed) {
-    W.orgs.push({ id: "nlb", name: "Nordlicht Beteiligungen (Demo-Investor der NEXORA-Mandanten)", currency: "EUR", demo: true });
+    W.orgs.push({ id: "nlb", name: "Nordlicht Beteiligungen (Demo-Investor der STEGARC-Mandanten)", currency: "EUR", demo: true });
     const fund = { id: "N1", orgId: "nlb", name: "Nordlicht Plattform I", vintage: "2025-06-01", size: 150e6, commitments: 150e6, fees: { mgmtPct: 0.02, carryPct: 0.2, hurdlePct: 0.08 } }; W.funds.push(fund); W.portfolios.push({ id: "N1-P", fundId: "N1", orgId: "nlb", name: "Kernportfolio Nordlicht Plattform I" });
     for (const f of feed) { const meta = ENGINE_META[f.id]; const id = meta.pc; const months = engineMonths(f); W.data[id] = months;
       const ltm = months.slice(-12); const S = cat => sum(ltm.map(m => sum(Object.entries(m.accounts).filter(([no]) => ENGINE_KIND[no] === cat).map(([, v]) => v)))); const rev = S("REV"), cogs = S("COGS"), pers = S("OPEX_PERS"), other = S("OPEX_OTHER");
-      const c = { id, orgId: "nlb", fundId: "N1", portfolioId: "N1-P", name: f.name, industry: meta.industry, country: "Deutschland", currency: "EUR", erp: "NEXORA AI Suite", erpFamily: "engine", model: "B", engine: { tenant: f.id, from: ENGINE_FROM, note: ENGINE_NOTE },
+      const c = { id, orgId: "nlb", fundId: "N1", portfolioId: "N1-P", name: f.name, industry: meta.industry, country: "Deutschland", currency: "EUR", erp: "STEGARC Suite", erpFamily: "engine", model: "B", engine: { tenant: f.id, from: ENGINE_FROM, note: ENGINE_NOTE },
         standard: "HGB", fyStart: 1, acquired: meta.acquired, ownership: meta.ownership, scenario: null, size: rev, margin: rev ? (rev - cogs - pers - other) / rev : 0, growth: ENGINE_BACK_GROWTH, gm: rev ? 1 - cogs / rev : 0, ps: rev ? pers / rev : 0,
         status: "Halten", onboarding: "Aktiv", integration: "Synchron", leaseShare: r2(0.14 + 0.12 * mulberry32(hashStr(id + "lease"))()), dsa: { level: "transactions" },
         entities: [{ id: id + "-LE1", name: f.name, weight: 1 }], units: [{ id: id + "-BU1", name: "Kerngeschäft", weight: 1 }], costCenters: ["Vertrieb", "Betrieb", "Verwaltung", "IT"].map((n, i) => ({ id: id + "-CC" + (i + 1), name: n })),
@@ -199,7 +199,7 @@
   function createWorld(opt) {
     opt = opt || {}; const seed = opt.seed || SEED; const rng = mulberry32(seed ^ hashStr("pe-command-center")); const scale = opt.scale || 1;
     const fx = genFx(rng);
-    const orgs = [{ id: "ngep", name: "Nexora Global Equity Partners", currency: "EUR", demo: true }, { id: "rtc", name: "Rheintal Capital (zweiter Demo-Investor)", currency: "EUR", demo: true }];
+    const orgs = [{ id: "ngep", name: "Stegarc Global Equity Partners", currency: "EUR", demo: true }, { id: "rtc", name: "Rheintal Capital (zweiter Demo-Investor)", currency: "EUR", demo: true }];
     const funds = NGEP_FUNDS.map(f => ({ id: f.id, orgId: "ngep", name: f.name, vintage: f.vintage, size: f.size, commitments: f.size, fees: { mgmtPct: 0.02, carryPct: 0.2, hurdlePct: 0.08 } }))
       .concat([{ id: "R1", orgId: "rtc", name: "Rheintal Mittelstand I", vintage: "2020-05-01", size: 250e6, commitments: 250e6, fees: { mgmtPct: 0.02, carryPct: 0.2, hurdlePct: 0.08 } }]);
     const portfolios = funds.map(f => ({ id: f.id + "-P", fundId: f.id, orgId: f.orgId, name: "Kernportfolio " + f.name.split(" – ")[0] }));
@@ -307,7 +307,7 @@
     rvpi: { label: "RVPI", unit: "x", level: "nur Fonds", formula: "NAV (netto) / eingezahltes Kapital" },
     tvpi: { label: "TVPI", unit: "x", level: "nur Fonds", formula: "DPI + RVPI" }
   };
-  const SOURCE = c => c.engine ? `NEXORA-Engine, Mandant ${c.engine.tenant} (Belege und Salden direkt, ohne Mapping) · ${ENGINE_NOTE}` : `${c.erp} (${ERP[c.erp].method}) → Harmonisierung (Kontenplan ${c.erpFamily.toUpperCase()} → Konzernkontenplan, ${c.currency} → EUR) · ${DEMO_NOTE}`;
+  const SOURCE = c => c.engine ? `STEGARC-Engine, Mandant ${c.engine.tenant} (Belege und Salden direkt, ohne Mapping) · ${ENGINE_NOTE}` : `${c.erp} (${ERP[c.erp].method}) → Harmonisierung (Kontenplan ${c.erpFamily.toUpperCase()} → Konzernkontenplan, ${c.currency} → EUR) · ${DEMO_NOTE}`;
 
   /* ---------- Investments: datierte Cashflows des Fonds ---------- */
   function genInvestment(rng, W, c) {
@@ -456,8 +456,8 @@
     if (!ERP[c.erp].lineItems) fail("DATA_GAP", `${c.erp} liefert über ${ERP[c.erp].method} nur Salden, keine Einzelposten.`);
     guard(W, p, c, "transactions");
     if (GROUP_COA[a.category][1] === "Bilanz") fail("DATA_GAP", "Bestandskonten zeigen den Saldo zum Monatsende; Bewegungen je Bestandskonto werden nicht aufgelöst (Abstimmung der Salden im ERP Integration Hub).");
-    if (c.engine) { if (W.periods[i] < c.engine.from) fail("DATA_GAP", "Für " + W.periods[i] + " gibt es keine Buchungen: synthetische Fortschreibung vor dem Start auf NEXORA (" + c.engine.from + ")."); const tx = (W.engineDocs[c.id] || {})[W.periods[i] + "|" + a.no] || [];
-      return { company: c.name, entity: le ? le.name : "alle Gesellschaften", period: W.periods[i], account: a, transactions: tx, source: "engine", note: "Belege aus der NEXORA-Engine (Demo-Mandant " + c.engine.tenant + ", synthetische Geschäftsvorfälle); Summe = Kontosaldo" }; }
+    if (c.engine) { if (W.periods[i] < c.engine.from) fail("DATA_GAP", "Für " + W.periods[i] + " gibt es keine Buchungen: synthetische Fortschreibung vor dem Start auf STEGARC (" + c.engine.from + ")."); const tx = (W.engineDocs[c.id] || {})[W.periods[i] + "|" + a.no] || [];
+      return { company: c.name, entity: le ? le.name : "alle Gesellschaften", period: W.periods[i], account: a, transactions: tx, source: "engine", note: "Belege aus der STEGARC-Engine (Demo-Mandant " + c.engine.tenant + ", synthetische Geschäftsvorfälle); Summe = Kontosaldo" }; }
     const rng = mulberry32(hashStr(c.id + a.no + W.periods[i] + (le ? le.id : ""))); const n = 4 + Math.floor(rng() * 7); const wts = Array.from({ length: n }, () => 0.3 + rng()); const ws = sum(wts); let rest = a.local;
     const tx = wts.map((x, j) => { const amt = j === n - 1 ? r2(rest) : r2(a.local * x / ws); rest = r2(rest - amt); return { doc: `${c.id}-${W.periods[i].replace("-", "")}-${String(j + 1).padStart(4, "0")}`, date: `${W.periods[i]}-${String(1 + Math.floor(rng() * 27)).padStart(2, "0")}`, text: a.category === "REV" ? "Ausgangsrechnung Kunde " + (100 + Math.floor(rng() * 800)) : a.category === "COGS" ? "Eingangsrechnung Lieferant " + (500 + Math.floor(rng() * 400)) : a.category === "OPEX_PERS" ? "Lohnlauf / Personalkosten" : "Buchung " + a.name, amount: amt }; });
     return { company: c.name, entity: le ? le.name : "alle Gesellschaften", period: W.periods[i], account: a, transactions: tx, note: "Synthetische Einzelposten, deterministisch erzeugt; Summe = Kontosaldo" };
@@ -610,7 +610,7 @@
     "Sage": { methods: ["CSV-Import", "REST (Sage Business Cloud)"], auth: "Datei-Upload bzw. OAuth", domains: ["Hauptbuch", "Debitoren", "Kreditoren"], incremental: false, note: "Produktlinie bestimmt die Schnittstelle." },
     "Infor": { methods: ["ION API (REST)", "Datenbank-Replikation (nur mit Freigabe)"], auth: "OAuth 2.0 (ION API Gateway)", domains: ["Hauptbuch", "Debitoren", "Kreditoren", "Kostenstellen"], incremental: true, note: "Je Produkt (M3, LN, CloudSuite) unterschiedlich." },
     "Eigenentwicklung": { methods: ["SFTP-Datei (CSV)", "Datenbank-View (nur mit Freigabe)"], auth: "SFTP-Schlüssel", domains: ["Hauptbuch (Salden)"], incremental: false, note: "Satzbeschreibung individuell vereinbart." },
-    "NEXORA AI Suite": { methods: ["NEXORA-Engine (Ereignisse, live)"], auth: "Mandantenfreigabe in NEXORA", domains: ["Hauptbuch", "Debitoren", "Kreditoren", "Kostenstellen", "Prozesse"], incremental: true, note: "Modell B: NEXORA ist das operative ERP." }
+    "STEGARC Suite": { methods: ["STEGARC-Engine (Ereignisse, live)"], auth: "Mandantenfreigabe in STEGARC", domains: ["Hauptbuch", "Debitoren", "Kreditoren", "Kostenstellen", "Prozesse"], incremental: true, note: "Modell B: STEGARC ist das operative ERP." }
   };
   // Quellkonten, die im Standard-Mapping fehlen (deterministisch je Unternehmen); ihr Betrag ist Teil der Kategorie „truth“
   const HUB_EXTRA = { PC10: [{ no: "480000", name: "Erlösschmälerungen", truth: "REV", share: -0.02 }, { no: "699900", name: "Sonstige Aufwendungen Altsystem", truth: "OPEX_OTHER", share: 0.1 }],
@@ -766,34 +766,34 @@
   function onboardingList(W, p) { return visibleCompanies(W, p, {}).filter(c => c.onboarding !== "Aktiv" || W.onb.req[c.id] || c.created).map(c => onboarding(W, p, c.id)); }
 
   /* ===== PE-Phase 6: ERP-Transformation – Bewertung und Szenarien A–D mit offenen Annahmen (Beispielwerte) ===== */
-  const ERP_FAMILY_LABEL = { engine: "NEXORA", sap: "SAP", dynamics: "Microsoft", oracle: "Oracle", netsuite: "Oracle", datev: "DATEV", sage: "Sage", infor: "Infor", custom: "Eigenentwicklung", nexora: "NEXORA" };
+  const ERP_FAMILY_LABEL = { engine: "STEGARC", sap: "SAP", dynamics: "Microsoft", oracle: "Oracle", netsuite: "Oracle", datev: "DATEV", sage: "Sage", infor: "Infor", custom: "Eigenentwicklung", stegarc: "STEGARC" };
   const TA = { // Annahmen (Beispielwerte, keine Herstellerpreise) – in der Oberfläche sichtbar und anpassbar
-    licensePerUser: { "SAP ECC": 1700, "SAP S/4HANA": 2100, "SAP Business One": 900, "Microsoft Dynamics 365": 1300, "Oracle ERP Cloud": 1900, "Oracle NetSuite": 1400, "DATEV": 450, "Sage": 600, "Infor": 1300, "Eigenentwicklung": 0, "NEXORA AI Suite": 0 },
+    licensePerUser: { "SAP ECC": 1700, "SAP S/4HANA": 2100, "SAP Business One": 900, "Microsoft Dynamics 365": 1300, "Oracle ERP Cloud": 1900, "Oracle NetSuite": 1400, "DATEV": 450, "Sage": 600, "Infor": 1300, "Eigenentwicklung": 0, "STEGARC Suite": 0 },
     maintenancePct: 0.22, onPrem: ["SAP ECC", "Sage", "Infor", "Eigenentwicklung", "DATEV"], hostingFix: 60000, hostingPerUser: 180, interfaceCost: 15000, customDevPerYear: 250000,
-    nexoraImplBase: 250000, nexoraImplPerUser: 1400, nexoraMaintPct: 0.18, nexoraHostingFix: 48000, nexoraHostingPerUser: 60, hubSetup: 20000, hubPerYear: 12000, financeShare: 0.3, parallelMonths: 6, years: 5 };
+    stegarcImplBase: 250000, stegarcImplPerUser: 1400, stegarcMaintPct: 0.18, stegarcHostingFix: 48000, stegarcHostingPerUser: 60, hubSetup: 20000, hubPerYear: 12000, financeShare: 0.3, parallelMonths: 6, years: 5 };
   const COVERAGE = { Industrie: 0.85, Maschinenbau: 0.85, Logistik: 0.7, Software: 0.65, "IT-Services": 0.8, Medizintechnik: 0.55, Pharma: 0.45, Konsumgüter: 0.75, Lebensmittel: 0.7, Handel: 0.85 };
-  const TECH_DEBT = { "SAP ECC": [0.9, "Mainstream-Wartung SAP ECC 6.0 endet laut SAP Ende 2027 (optional verlängert bis 2030)"], "Eigenentwicklung": [0.85, "Individuelle Lösung, Abhängigkeit von Einzelpersonen"], "Sage": [0.55, "Begrenzte Skalierung für Gruppenstrukturen"], "DATEV": [0.5, "Finanzbuchhaltung beim Steuerberater, keine operativen Prozesse"], "Infor": [0.4, "Releasewechsel anstehend"], "SAP Business One": [0.35, "Für Mittelstand ausgelegt"], "Microsoft Dynamics 365": [0.2, "Aktuelle Cloud-Plattform"], "SAP S/4HANA": [0.15, "Aktuelle Plattform"], "Oracle ERP Cloud": [0.15, "Aktuelle Cloud-Plattform"], "Oracle NetSuite": [0.2, "Aktuelle Cloud-Plattform"], "NEXORA AI Suite": [0, "NEXORA ist bereits das ERP (Modell B)"] };
+  const TECH_DEBT = { "SAP ECC": [0.9, "Mainstream-Wartung SAP ECC 6.0 endet laut SAP Ende 2027 (optional verlängert bis 2030)"], "Eigenentwicklung": [0.85, "Individuelle Lösung, Abhängigkeit von Einzelpersonen"], "Sage": [0.55, "Begrenzte Skalierung für Gruppenstrukturen"], "DATEV": [0.5, "Finanzbuchhaltung beim Steuerberater, keine operativen Prozesse"], "Infor": [0.4, "Releasewechsel anstehend"], "SAP Business One": [0.35, "Für Mittelstand ausgelegt"], "Microsoft Dynamics 365": [0.2, "Aktuelle Cloud-Plattform"], "SAP S/4HANA": [0.15, "Aktuelle Plattform"], "Oracle ERP Cloud": [0.15, "Aktuelle Cloud-Plattform"], "Oracle NetSuite": [0.2, "Aktuelle Cloud-Plattform"], "STEGARC Suite": [0, "STEGARC ist bereits das ERP (Modell B)"] };
   function assessCompany(W, c, A) {
     A = Object.assign({}, TA, A || {}); const k = companyKpis(W, c, "LTM"); const users = Math.max(25, Math.round(k.revenue / 1e6 * 1.6)); const interfaces = 4 + c.entities.length * 2 + (c.erp === "Eigenentwicklung" ? 6 : 0);
-    const lic = users * (A.licensePerUser[c.erp] || 0); const onPrem = A.onPrem.includes(c.erp); const maint = onPrem ? lic * A.maintenancePct : 0; const hosting = c.erp === "NEXORA AI Suite" ? A.nexoraHostingFix + users * A.nexoraHostingPerUser : A.hostingFix + users * A.hostingPerUser; const integ = interfaces * A.interfaceCost; const custom = c.erp === "Eigenentwicklung" ? A.customDevPerYear : 0;
+    const lic = users * (A.licensePerUser[c.erp] || 0); const onPrem = A.onPrem.includes(c.erp); const maint = onPrem ? lic * A.maintenancePct : 0; const hosting = c.erp === "STEGARC Suite" ? A.stegarcHostingFix + users * A.stegarcHostingPerUser : A.hostingFix + users * A.hostingPerUser; const integ = interfaces * A.interfaceCost; const custom = c.erp === "Eigenentwicklung" ? A.customDevPerYear : 0;
     const run = lic + maint + hosting + integ + custom; const coverage = COVERAGE[c.industry]; const [debt, debtText] = TECH_DEBT[c.erp]; const complexity = Math.min(1, 0.25 + c.entities.length * 0.15 + (c.currency !== "EUR" ? 0.1 : 0) + (1 - coverage) * 0.6 + (c.erp === "Eigenentwicklung" || c.erp === "SAP ECC" ? 0.15 : 0));
-    const impl = c.erp === "NEXORA AI Suite" ? 0 : (A.nexoraImplBase + users * A.nexoraImplPerUser) * (1 + complexity); const nxRun = impl * A.nexoraMaintPct + A.nexoraHostingFix + users * A.nexoraHostingPerUser + Math.max(0, interfaces - 4) * A.interfaceCost * 0.5;
-    const Y = A.years; const isNx = c.erp === "NEXORA AI Suite";
+    const impl = c.erp === "STEGARC Suite" ? 0 : (A.stegarcImplBase + users * A.stegarcImplPerUser) * (1 + complexity); const nxRun = impl * A.stegarcMaintPct + A.stegarcHostingFix + users * A.stegarcHostingPerUser + Math.max(0, interfaces - 4) * A.interfaceCost * 0.5;
+    const Y = A.years; const isNx = c.erp === "STEGARC Suite";
     const sc = { A: { label: "A: ERP bleibt unverändert", oneTime: 0, annual: run }, B: { label: "B: nur Finanzintegration", oneTime: A.hubSetup, annual: run + A.hubPerYear },
-      C: { label: "C: teilweise NEXORA (Finanzen)", oneTime: isNx ? 0 : impl * 0.4 + run * A.parallelMonths / 12 * 0.5, annual: isNx ? run : run * (1 - A.financeShare) + nxRun * 0.45 },
-      D: { label: "D: vollständige NEXORA-Transformation", oneTime: isNx ? 0 : impl + run * A.parallelMonths / 12, annual: isNx ? run : nxRun } };
+      C: { label: "C: teilweise STEGARC (Finanzen)", oneTime: isNx ? 0 : impl * 0.4 + run * A.parallelMonths / 12 * 0.5, annual: isNx ? run : run * (1 - A.financeShare) + nxRun * 0.45 },
+      D: { label: "D: vollständige STEGARC-Transformation", oneTime: isNx ? 0 : impl + run * A.parallelMonths / 12, annual: isNx ? run : nxRun } };
     for (const v of Object.values(sc)) v.tco = v.oneTime + Y * v.annual; for (const v of Object.values(sc)) v.saving = sc.A.tco - v.tco;
     const excluded = c.scenario === "liquidity" ? "Liquiditätsrisiko: Transformation erst nach Stabilisierung" : c.onboarding !== "Aktiv" ? "Erst nach abgeschlossenem Onboarding" : null;
     const score = isNx ? 0 : Math.round((debt * 0.35 + coverage * 0.35 + Math.min(1, Math.max(0, sc.D.saving / Math.max(1, sc.A.tco))) * 0.3) * 100);
     const candidate = !isNx && !excluded && sc.D.saving > 0 && coverage >= 0.65 && score >= 50;
-    return { id: c.id, name: c.name, industry: c.industry, erp: c.erp, family: ERP_FAMILY_LABEL[c.erpFamily], model: c.model, users, interfaces, revenue: k.revenue, entities: c.entities.length, growth: c.growth, engine: c.engine ? c.engine.tenant : null, costs: { license: lic, maintenance: maint, hosting, integration: integ, customDev: custom, run }, coverage, techDebt: debt, techDebtText: debtText, complexity, implementation: impl, nexoraRun: nxRun, scenarios: sc, score, candidate, excluded,
-      formulas: { run: "Lizenz/Abo (Nutzer × Satz) + Wartung (" + Math.round(A.maintenancePct * 100) + " % bei On-Premise) + Hosting + Schnittstellen × Satz + Individualentwicklung", D: `Einmalig: Implementierung (Basis + Nutzer × Satz) × (1 + Komplexität) + ${A.parallelMonths} Monate Parallelbetrieb; laufend: ${Math.round(A.nexoraMaintPct * 100)} % Wartung auf die Implementierung + Hosting + Restschnittstellen – keine nutzerabhängigen NEXORA-Lizenzen`, tco: `TCO = Einmalkosten + ${Y} × laufende Kosten; Einsparung = TCO A − TCO Szenario` } };
+    return { id: c.id, name: c.name, industry: c.industry, erp: c.erp, family: ERP_FAMILY_LABEL[c.erpFamily], model: c.model, users, interfaces, revenue: k.revenue, entities: c.entities.length, growth: c.growth, engine: c.engine ? c.engine.tenant : null, costs: { license: lic, maintenance: maint, hosting, integration: integ, customDev: custom, run }, coverage, techDebt: debt, techDebtText: debtText, complexity, implementation: impl, stegarcRun: nxRun, scenarios: sc, score, candidate, excluded,
+      formulas: { run: "Lizenz/Abo (Nutzer × Satz) + Wartung (" + Math.round(A.maintenancePct * 100) + " % bei On-Premise) + Hosting + Schnittstellen × Satz + Individualentwicklung", D: `Einmalig: Implementierung (Basis + Nutzer × Satz) × (1 + Komplexität) + ${A.parallelMonths} Monate Parallelbetrieb; laufend: ${Math.round(A.stegarcMaintPct * 100)} % Wartung auf die Implementierung + Hosting + Restschnittstellen – keine nutzerabhängigen STEGARC-Lizenzen`, tco: `TCO = Einmalkosten + ${Y} × laufende Kosten; Einsparung = TCO A − TCO Szenario` } };
   }
   function transformation(W, p, filter, A) {
     const cs = visibleCompanies(W, p, filter).filter(c => !c.noData); const rows = cs.map(c => assessCompany(W, c, A)); const fam = {}; for (const r of rows) fam[r.family] = (fam[r.family] || 0) + 1;
     const cand = rows.filter(r => r.candidate).sort((a, b) => b.score - a.score); const waves = { "Welle 1 · 2027 H1": [], "Welle 2 · 2027 H2": [], "Welle 3 · 2028": [] }; cand.forEach((r, i) => waves[i < 2 ? "Welle 1 · 2027 H1" : i < 5 ? "Welle 2 · 2027 H2" : "Welle 3 · 2028"].push(r.name));
     const S = (l, f) => l.reduce((a, r) => a + f(r), 0);
-    return { rows, landscape: fam, nexora: rows.filter(r => r.model === "B").map(r => r.name), candidates: cand, waves, totals: { runToday: S(rows, r => r.costs.run), implCandidates: S(cand, r => r.scenarios.D.oneTime), savingCandidates: S(cand, r => r.scenarios.D.saving), tcoA: S(cand, r => r.scenarios.A.tco), tcoD: S(cand, r => r.scenarios.D.tco) }, assumptions: Object.assign({}, TA, A || {}), coverage: COVERAGE,
+    return { rows, landscape: fam, stegarc: rows.filter(r => r.model === "B").map(r => r.name), candidates: cand, waves, totals: { runToday: S(rows, r => r.costs.run), implCandidates: S(cand, r => r.scenarios.D.oneTime), savingCandidates: S(cand, r => r.scenarios.D.saving), tcoA: S(cand, r => r.scenarios.A.tco), tcoD: S(cand, r => r.scenarios.D.tco) }, assumptions: Object.assign({}, TA, A || {}), coverage: COVERAGE,
       note: "Alle Kosten sind Beispielwerte aus offenen Annahmen, keine Herstellerpreise und kein Angebot. Einsparungen ergeben sich ausschließlich aus der gezeigten Rechnung." };
   }
   /* ---------- Verwaltung: Organisation, Fonds, Unternehmen anlegen (Befehle mit Rechteprüfung, wiederholbar aus einem Protokoll) ---------- */
@@ -811,7 +811,7 @@
       return { text: `Fonds „${name}“ angelegt`, id }; }
     if (cmd === "addCompany") { const f = W.funds.find(z => z.id === x.fundId); if (!f || f.orgId !== p.orgId) fail("FORBIDDEN", "Fonds gehört nicht zur eigenen Organisation.");
       const own = Math.min(1, Math.max(0.01, +x.ownership || 1)); const id = "NEW-" + slug(name) + "-" + (W.companies.length + 1);
-      const c = { id, orgId: p.orgId, fundId: f.id, portfolioId: f.id + "-P", name, industry: x.industry || "Industrie", country: x.country || "Deutschland", currency: x.currency || "EUR", erp: ERP[x.erp] ? x.erp : "Eigenentwicklung", erpFamily: (ERP[x.erp] || ERP.Eigenentwicklung).family, model: x.erp === "NEXORA AI Suite" ? "B" : "A", standard: x.standard || "HGB", fyStart: 1, acquired: x.acquired || VALUATION_DATE, ownership: own,
+      const c = { id, orgId: p.orgId, fundId: f.id, portfolioId: f.id + "-P", name, industry: x.industry || "Industrie", country: x.country || "Deutschland", currency: x.currency || "EUR", erp: ERP[x.erp] ? x.erp : "Eigenentwicklung", erpFamily: (ERP[x.erp] || ERP.Eigenentwicklung).family, model: x.erp === "STEGARC Suite" ? "B" : "A", standard: x.standard || "HGB", fyStart: 1, acquired: x.acquired || VALUATION_DATE, ownership: own,
         status: "Onboarding", onboarding: "Nicht gestartet", integration: "Nicht verbunden", dsa: { level: "kpi" }, entities: [{ id: id + "-LE1", name: "Hauptgesellschaft", weight: 1 }], units: [{ id: id + "-BU1", name: "Kerngeschäft", weight: 1 }], costCenters: [], debtInfo: { rate: 0, maturity: "–", covenantMaxLeverage: 0, dso: 0, dio: 0, dpo: 0 }, noData: true, created: true };
       W.companies.push(c); return { text: `Portfoliounternehmen „${name}“ in ${f.name} angelegt – Onboarding „Nicht gestartet“, noch keine Finanzdaten`, id }; }
     if (cmd === "approveAdjustment" || cmd === "rejectAdjustment") { const c = W.companies.find(z => z.id === x.companyId); if (!c || c.standard !== "HGB") fail("NOT_FOUND", "Keine Anpassung für dieses Unternehmen.");

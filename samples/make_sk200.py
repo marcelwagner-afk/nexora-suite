@@ -1,5 +1,5 @@
 """Erzeugt die synthetische Beispielzeichnung SK-200 (DXF R12, mm).
-Layer POS-n enthält die Abwicklung (Zuschnittkontur) des Blechteils n – daraus berechnet NEXORA die Schnittlänge.
+Layer POS-n enthält die Abwicklung (Zuschnittkontur) des Blechteils n – daraus berechnet STEGARC die Schnittlänge.
 Stücklistenattribute stehen an den Positionsnummern (Block POSNR), Kopfdaten im Schriftfeld (Block SCHRIFTFELD)."""
 import math, pathlib
 out=[]

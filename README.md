@@ -1,6 +1,6 @@
-# NEXORA AI Suite
+# STEGARC Suite
 
-*NEXORA AI*
+*STEGARC*
 
 KI-native Enterprise-Plattform als vollständig klickbare Demo mit drei verbundenen Digital Twins:
 
@@ -24,9 +24,9 @@ Alle Daten sind synthetisch und werden reproduzierbar erzeugt (Seed 20261102). E
 | `src/dxf.js` | DXF-Leser: Schriftfeld- und Positionsattribute, Geometrie, Schnittlängen aus Abwicklungen |
 | `samples/MR-1200.dxf` | Synthetische Werkstattzeichnung Maschinenrahmen, 2 Blätter A1, 15 Positionen (`samples/make_mr1200.py`) |
 | `samples/SK-200.dxf` | Einfache Beispielzeichnung Schachtkonsole (`samples/make_sk200.py`) |
-| `src/connectors.js`, `src/app_v8.js`, `src/layer.css` | Experience Layer: Konnektoren (NEXORA live, übrige simuliert), Router, Agenten, Protokoll, Einbettung |
+| `src/connectors.js`, `src/app_v8.js`, `src/layer.css` | Experience Layer: Konnektoren (STEGARC live, übrige simuliert), Router, Agenten, Protokoll, Einbettung |
 | `test/connectors.test.js` | Tests der Konnektor-Schicht (Determinismus, Reset, Rechte, Wege, Kosten, Vier-Augen, Router) |
-| `build.py` | Erzeugt die Einzeldatei `dist/nexora-suite.html` sowie `dist/mcp-tools.json` und `dist/agent-card.json` |
+| `build.py` | Erzeugt die Einzeldatei `dist/stegarc-suite.html` sowie `dist/mcp-tools.json` und `dist/agent-card.json` |
 
 ## Prozesse
 
@@ -91,13 +91,13 @@ Jede Person, mit der die Seite geteilt ist, kann sich je Unternehmen einen eigen
 
 ## Experience Layer
 
-Seit v0.8 hat die Suite zwei Ansichten. Standard ist der „Experience Layer“: eine herstellerneutrale Oberfläche über mehrere Systeme, in der die NEXORA-Engine ein Konnektor unter mehreren ist. Der Umschalter oben führt zur „Suite“-Ansicht, die unverändert wie v0.7 funktioniert; die Wahl wird im Browser gespeichert. `index.html?layer=1` bzw. `?layer=0` erzwingt eine Ansicht.
+Seit v0.8 hat die Suite zwei Ansichten. Standard ist der „Experience Layer“: eine herstellerneutrale Oberfläche über mehrere Systeme, in der die STEGARC-Engine ein Konnektor unter mehreren ist. Der Umschalter oben führt zur „Suite“-Ansicht, die unverändert wie v0.7 funktioniert; die Wahl wird im Browser gespeichert. `index.html?layer=1` bzw. `?layer=0` erzwingt eine Ansicht.
 
 ```mermaid
 flowchart LR
   P[Person im Browser<br/>oder eingebettet] --> UI[Experience Layer<br/>Inbox · Suche · Karten · Assistent]
   UI --> R{Router}
-  R -->|Engine| N[NEXORA-Engine<br/>live]
+  R -->|Engine| N[STEGARC-Engine<br/>live]
   R -->|Joule A2A| S[SAP S/4HANA<br/>simuliert]
   R -->|Copilot A2A| M[Microsoft 365<br/>simuliert]
   R -->|Now Assist A2A| SN[ServiceNow<br/>simuliert]
@@ -112,7 +112,7 @@ flowchart LR
 
 | Teil | Stand |
 |---|---|
-| NEXORA-Engine (Buchungen, Prozesse, Rechte) | Live-Engine |
+| STEGARC-Engine (Buchungen, Prozesse, Rechte) | Live-Engine |
 | SAP S/4HANA, Microsoft 365, ServiceNow, Workday | **Simuliert**: deterministisch aus dem Seed, ohne Netzwerkzugriff, keine echte Integration |
 | Agenten Joule, Copilot, Now Assist, Workday-Agent | **Simuliert** (Agentenkarten im A2A-Stil) |
 | Kosten je Zugriffsweg | Beispielwerte, keine Herstellerpreise |
@@ -133,23 +133,23 @@ flowchart LR
 
 **Ansichten:** Dashboard (Kacheln je Person, Vorlagen je Rolle), Meine Aufgaben (Inbox), AI Assistant mit Aktionskarten, Systeme, Agenten, Ablöse-Cockpit, Protokoll (CSV-Export) und „Mitbestimmung & Datenschutz“ im Demo Control Center.
 
-**Vom Layer zum eigenen ERP (Ablöse-Cockpit):** Jeder Prozess hat ein System of Record (`processOwner`). Inbox, Karten, Suche und Dashboard lesen über diese Zuordnung. Der Prozess „Bestellanforderung“ lässt sich von SAP (simuliert) auf die NEXORA-Engine umstellen:
+**Vom Layer zum eigenen ERP (Ablöse-Cockpit):** Jeder Prozess hat ein System of Record (`processOwner`). Inbox, Karten, Suche und Dashboard lesen über diese Zuordnung. Der Prozess „Bestellanforderung“ lässt sich von SAP (simuliert) auf die STEGARC-Engine umstellen:
 
 1. Datenübernahme über das bestehende Migrationsmodul (Migrationsprojekt `sap-pr`): Testlauf, Fehlerliste, Regeln, Vier-Augen-Freigabe, Produktivlauf und Abstimmung.
 2. Parallelbetrieb: Neue Vorgänge entstehen in der Engine und werden ins Altsystem gespiegelt; die Abstimmung vergleicht Stückzahl und Summe.
 3. Umschalten nur bei Differenz 0. Danach ist das Altsystem für den Prozess lesend.
-4. Rückweg bis zum Umschalten: Das Altsystem führt wieder, offene NEXORA-Vorgänge werden zurückgezogen.
+4. Rückweg bis zum Umschalten: Das Altsystem führt wieder, offene STEGARC-Vorgänge werden zurückgezogen.
 
 Die Karten in der Inbox sehen vorher und nachher gleich aus, nur Quelle und Zugriffsweg ändern sich. Andere Prozesse sind in dieser Demo nicht umstellbar und so gekennzeichnet.
 
 **Storys im Experience Layer:** `crosssys` (Freigabe über Systemgrenzen), `oneday` (Ein Tag im Experience Layer), `replace` (Prozess für Prozess ablösen). Direkt starten mit `index.html?story=<id>`.
 
-**Einbettung:** `index.html#embed` oder `index.html?embed=1` zeigt eine kompakte Vorschau für etwa 400 px Breite, nur mit Inbox und Assistent. So würde NEXORA z. B. in Teams oder Copilot laufen. Eine echte Einbettung ist das nicht.
+**Einbettung:** `index.html#embed` oder `index.html?embed=1` zeigt eine kompakte Vorschau für etwa 400 px Breite, nur mit Inbox und Assistent. So würde STEGARC z. B. in Teams oder Copilot laufen. Eine echte Einbettung ist das nicht.
 
 **Offene Standards (statische Vorführdateien, kein laufender Server):**
 
 - `dist/mcp-tools.json`: Werkzeugliste des Assistenten mit Name, Beschreibung und `inputSchema`. `build.py` erzeugt sie aus `AI_TOOLS`.
-- `dist/agent-card.json`: A2A-artige Agentenkarte des NEXORA-Agenten mit Fähigkeiten und delegierten (simulierten) Agenten.
+- `dist/agent-card.json`: A2A-artige Agentenkarte des STEGARC-Agenten mit Fähigkeiten und delegierten (simulierten) Agenten.
 
 **Grenzen:**
 
@@ -162,10 +162,10 @@ Die Karten in der Inbox sehen vorher und nachher gleich aus, nur Quelle und Zugr
 Ein Bereich **Private Equity** in derselben Navigation, für PE-Investoren. Plan, Datenmodell, Berechtigungsmodell und Roadmap stehen in [`docs/pe-command-center.md`](docs/pe-command-center.md).
 
 - **Demo-Umgebung:**
-  - Investor „Nexora Global Equity Partners“ mit drei Fonds (10/8/7 Unternehmen, 25 insgesamt) und 36 Monaten Historie.
+  - Investor „Stegarc Global Equity Partners“ mit drei Fonds (10/8/7 Unternehmen, 25 insgesamt) und 36 Monaten Historie.
   - Verschiedene Länder, Währungen, ERP-Systeme, Rechnungslegungsstandards und Beteiligungsquoten.
   - Ein zweiter Investor („Rheintal Capital“) prüft die Mandantentrennung.
-  - Ein dritter Investor („Nordlicht Beteiligungen“) hält die Engine-Mandanten Elevon, NovaMart und Aventra (Modell B). Ihre Zahlen ab Nov 2025 kommen aus den Buchungen der NEXORA-Engine.
+  - Ein dritter Investor („Nordlicht Beteiligungen“) hält die Engine-Mandanten Elevon, NovaMart und Aventra (Modell B). Ihre Zahlen ab Nov 2025 kommen aus den Buchungen der STEGARC-Engine.
   - Alles ist **synthetisch** und deterministisch aus dem Seed erzeugt; ERP-Anbindungen sind simuliert.
 - **Rechenkern** `src/pe.js` (UMD, in Node testbar):
   - Lokale Kontenpläne je ERP-Familie werden auf den Konzernkontenplan gemappt.
@@ -187,22 +187,22 @@ Ein Bereich **Private Equity** in derselben Navigation, für PE-Investoren. Plan
 
 ## IT-Infrastruktur und Sizing (v0.9.9)
 
-Seite „IT-Infrastruktur“ in der Suite (je Mandant, live aus Engine und Konnektoren) und im PE-Bereich (Portfolio und je Unternehmen, Integrationsstatus live aus dem Hub). Sizing mit Formeln, Ziel NEXORA und Was-wäre-wenn. Alles Beispielwerte – keine Herstellerangaben. Details: [`docs/it-infrastruktur.md`](docs/it-infrastruktur.md). Tests: `node test/infra.test.js`.
+Seite „IT-Infrastruktur“ in der Suite (je Mandant, live aus Engine und Konnektoren) und im PE-Bereich (Portfolio und je Unternehmen, Integrationsstatus live aus dem Hub). Sizing mit Formeln, Ziel STEGARC und Was-wäre-wenn. Alles Beispielwerte – keine Herstellerangaben. Details: [`docs/it-infrastruktur.md`](docs/it-infrastruktur.md). Tests: `node test/infra.test.js`.
 
 ## Filme
 
-Web-Fassungen der Filme liegen in `media/` (16:9, 720p, je 2–4 MB, mit Vorschaubild); die Originale bleiben außerhalb des Repos. Zuordnung in `src/app_media.js` (`VIDEOS`) und in `src/nexora.html`. Neue Filme: Datei nach `media/` (Name `nexora-<thema>.mp4` und `.jpg`), Eintrag in `VIDEOS`, Einbau mit `vidAfterH1`.
+Web-Fassungen der Filme liegen in `media/` (16:9, 720p, je 2–4 MB, mit Vorschaubild); die Originale bleiben außerhalb des Repos. Zuordnung in `src/app_media.js` (`VIDEOS`) und in `src/stegarc.html`. Neue Filme: Datei nach `media/` (Name `stegarc-<thema>.mp4` und `.jpg`), Eintrag in `VIDEOS`, Einbau mit `vidAfterH1`.
 
 ## Marktposition pflegen
 
-Die Positionierungsmatrix „Wer liefert die eine Oberfläche für alle Anwendungen?“ steht auf der NEXORA-Produktseite unter `nexora.html#markt`. Die Suite verlinkt sie in der Navigation („Marktposition“). Die Referenzumsetzung liegt in `docs/positionierung-referenz.html`.
+Die Positionierungsmatrix „Wer liefert die eine Oberfläche für alle Anwendungen?“ steht auf der STEGARC-Produktseite unter `stegarc.html#markt`. Die Suite verlinkt sie in der Navigation („Marktposition“). Die Referenzumsetzung liegt in `docs/positionierung-referenz.html`.
 
 - **Daten:** alles im Objekt `MARKET` in `src/market.js`. Dort stehen Punkte der Karte (`points`), Zeilen der Matrix (`rows`), Kriterien, variable Texte und Quellen. Karte und Tabelle werden daraus gezeichnet; `python build.py` baut die Seite neu.
 - **Stand-Datum:** `asOf` und `asOfLabel` bei jeder inhaltlichen Aktualisierung anpassen. Die Angabe erscheint im Kopf des Abschnitts.
 - **Quellen:** neuen Eintrag `{ label, url }` in `sources` ergänzen. Bewertungen nur mit Beleg ändern; ohne belastbare Angabe die Bewertung 0 (Strich) setzen.
 - **Öffentliche und interne Fassung:**
-  - Standard ist die öffentliche Fassung (`MARKET_INTERNAL = false`). Sie hat keinen Punkt und keine Zeile „NEXORA heute“ und keinen Umbau-Pfeil. Die eigene Zeile heißt „NEXORA · Roadmap“ und ist als „geplant“ markiert.
-  - Die interne Fassung entspricht der Referenz und öffnet sich über `nexora.html#markt-intern`.
+  - Standard ist die öffentliche Fassung (`MARKET_INTERNAL = false`). Sie hat keinen Punkt und keine Zeile „STEGARC heute“ und keinen Umbau-Pfeil. Die eigene Zeile heißt „STEGARC · Roadmap“ und ist als „geplant“ markiert.
+  - Die interne Fassung entspricht der Referenz und öffnet sich über `stegarc.html#markt-intern`.
   - Einträge nur für intern bekommen `internal: true`, öffentliche Ersatztexte stehen in `publicName`, `publicSub`, `publicMaturity` und `texts.*.public`.
 - **Farben:** Kategorien- und Bewertungsfarben sind Tokens in `src/base.css` (`--cat-*`, `--rate-*`, `--quad`) für Hell und Dunkel.
 

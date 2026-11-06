@@ -1,8 +1,8 @@
-/* NEXORA IT-Infrastruktur und Sizing (v0.9.9). Reine Logik, kein DOM, in Node testbar.
+/* STEGARC IT-Infrastruktur und Sizing (v0.9.9). Reine Logik, kein DOM, in Node testbar.
    Architekturprofile je System, Sizing aus offenen Annahmen (Beispielwerte), Live-Auslastung aus Ereignissen.
    Keine echte Infrastruktur, keine Herstellerangaben und kein Sizing-Werkzeug eines Herstellers: Herstellernamen nur als Text.
    Für ein verbindliches Sizing gelten die Werkzeuge und Vorgaben des jeweiligen Herstellers. */
-(function (root, factory) { if (typeof module === "object" && module.exports) module.exports = factory(); else root.NexoraInfra = factory(); })(typeof self !== "undefined" ? self : this, function () {
+(function (root, factory) { if (typeof module === "object" && module.exports) module.exports = factory(); else root.StegarcInfra = factory(); })(typeof self !== "undefined" ? self : this, function () {
   "use strict";
   const VERSION = "0.9.9";
   const NOTE = "Architektur und Sizing sind Beispielwerte aus offenen Annahmen – keine Herstellerangaben, kein Sizing-Werkzeug eines Herstellers und keine echte Infrastruktur. Herstellernamen nur als Text.";
@@ -14,7 +14,7 @@
   /* Profile: Hosting, Komponenten, Sizing-Faktoren. self = selbst zu betreiben (Sizing in vCPU/RAM); saas = beim Anbieter */
   const C = (id, kind, tier, name, tech, o) => Object.assign({ id, kind, tier, name, tech }, o || {});
   const PROFILES = {
-    "NEXORA AI Suite": { label: "NEXORA AI Suite", family: "NEXORA", hosting: "Cloud (Zielarchitektur)", self: true, usersPerVcpu: 25, ramPerAppVcpu: 2, bytesPerLine: 2000, inMemory: false, historyMonths: 12, appNodes: 2,
+    "STEGARC Suite": { label: "STEGARC Suite", family: "STEGARC", hosting: "Cloud (Zielarchitektur)", self: true, usersPerVcpu: 25, ramPerAppVcpu: 2, bytesPerLine: 2000, inMemory: false, historyMonths: 12, appNodes: 2,
       note: "Zielarchitektur-Annahme. In dieser Demo laufen Engine und Oberfläche vollständig im Browser.",
       comps: [C("sso", "idm", "access", "Single Sign-on", "OIDC/SAML (Annahme)"), C("web", "web", "access", "Web-Oberfläche", "Browser, Experience Layer"), C("app", "app", "app", "Anwendungsdienst", "Container, horizontal skalierend", { sized: "app" }), C("ai", "ai", "app", "KI-Dienst", "Claude über API, Regel-Rückfall", { sized: "ai" }),
         C("db", "db", "data", "Ereignis- und Belegspeicher", "relationale Datenbank (Annahme)", { sized: "db" }), C("files", "db", "data", "Dokumentablage", "Objektspeicher (Annahme)", { sized: "files" }), C("int", "int", "int", "Integrationsdienst", "Konnektoren, MCP/A2A, Ereignisse", { sized: "int" }),
@@ -72,8 +72,8 @@
         db: `Positionen/Monat × Historie ${hist} Monate × ${P.bytesPerLine} Byte je Position (inkl. Nebentabellen, Indizes, Protokolle) + 0,2 GB je Gesellschaft; Zukunft: + ${A.years} Jahre Zuwachs bei ${Math.round((i.growth || 0) * 100)} % p. a.` + (P.self ? (P.inMemory ? "; In-Memory: RAM = Datenbestand × 1,2 + 32 GB" : "; RAM = 15 % des Datenbestands + 8 GB") : ""),
         storage: P.self ? `(Datenbank in ${A.years} Jahren + Dokumente ${A.attachKbPerDoc} KB/Beleg) × (1 + Sicherungsfaktor ${A.backupFactor})` : "beim Anbieter", network: `gleichzeitige Nutzer × ${A.kbitPerUser} kbit/s + Schnittstellen × ${A.mbitPerInterface} Mbit/s`, iops: `Spitzenbelege/s × Positionen × ${A.ioPerLine} + gleichzeitige Nutzer × 2`, util: P.self ? `Grundlast = (gleichzeitige Nutzer × ${A.actionsPerUserMin} Aktionen/min + Belege/min) ÷ Kapazität; Kapazität = vCPU × ${P.usersPerVcpu} Nutzer/vCPU × ${A.actionsPerUserMin} ÷ Zielauslastung ${Math.round(A.targetUtil * 100)} % = ${r1(appVcpu * P.usersPerVcpu * A.actionsPerUserMin / A.targetUtil)} Aktionen/min; live: + Ereignisse der letzten Minute ÷ Kapazität` : "beim Anbieter" } };
   }
-  /* Ziel-Sizing auf NEXORA (Szenario D): gleiche Nutzer und Volumen, Altdaten nur teilweise übernommen */
-  function target(input, A) { A = Object.assign({}, ASSUME, A || {}); const hist = Math.min(input.historyMonths != null ? input.historyMonths : 999, A.migrateMonths); return sizing("NEXORA AI Suite", Object.assign({}, input, { historyMonths: hist, interfaces: Math.max(2, Math.round((input.interfaces || 4) / 2)) }), A); }
+  /* Ziel-Sizing auf STEGARC (Szenario D): gleiche Nutzer und Volumen, Altdaten nur teilweise übernommen */
+  function target(input, A) { A = Object.assign({}, ASSUME, A || {}); const hist = Math.min(input.historyMonths != null ? input.historyMonths : 999, A.migrateMonths); return sizing("STEGARC Suite", Object.assign({}, input, { historyMonths: hist, interfaces: Math.max(2, Math.round((input.interfaces || 4) / 2)) }), A); }
   /* Was-wäre-wenn: Faktoren auf Nutzer und Volumen, Zukauf mit eigenen Nutzern/Belegen */
   function whatIf(input, w) { w = w || {}; const acq = w.acquisition || null; return Object.assign({}, input, { users: Math.round(input.users * (w.usersX || 1) + (acq ? acq.users : 0)), docsPerMonth: Math.round(input.docsPerMonth * (w.volumeX || 1) + (acq ? acq.docsPerMonth : 0)), entities: (input.entities || 1) + (acq ? acq.entities || 1 : 0), interfaces: (input.interfaces || 4) + (acq ? 2 : 0) }); }
   /* Auslastung: Grundlast aus dem Sizing + Ereignisse der letzten Minute im Verhältnis zur Kapazität */
@@ -113,10 +113,10 @@
       derived: `Belege/Monat = Umsatz ÷ ${DOC_VALUE[c.industry] || 5000} € je Ausgangsrechnung (Branche ${c.industry}, Annahme) ÷ 12 × ${ASSUME.docMult} (Eingangsrechnungen, Warenbewegungen, Zahlungen); Positionen je Beleg ${LINES_PER_DOC[c.industry] || 5} (Annahme)` };
   }
   /* Portfolio-Summe: nur selbst betriebene Systeme haben vCPU/RAM */
-  function summarize(rows) { const s = { companies: rows.length, selfHosted: 0, saas: 0, vcpu: 0, ram: 0, storage: 0, dbNow: 0, dbFuture: 0, users: 0, byHosting: {}, nexora: { vcpu: 0, ram: 0, storage: 0 } };
+  function summarize(rows) { const s = { companies: rows.length, selfHosted: 0, saas: 0, vcpu: 0, ram: 0, storage: 0, dbNow: 0, dbFuture: 0, users: 0, byHosting: {}, stegarc: { vcpu: 0, ram: 0, storage: 0 } };
     for (const r of rows) { const z = r.sizing; s.users += z.input.users; s.dbNow += z.db.sizeNow; s.dbFuture += z.db.sizeFuture; s.byHosting[z.hosting] = (s.byHosting[z.hosting] || 0) + 1; if (z.self) { s.selfHosted++; s.vcpu += z.app.vcpu + z.db.vcpu; s.ram += z.app.ram + z.db.ram; s.storage += z.storage; } else s.saas++;
-      if (r.target) { s.nexora.vcpu += r.target.app.vcpu + r.target.db.vcpu; s.nexora.ram += r.target.app.ram + r.target.db.ram; s.nexora.storage += r.target.storage; } }
-    for (const k of ["storage", "dbNow", "dbFuture"]) s[k] = r1(s[k]); s.nexora.storage = r1(s.nexora.storage); return s; }
+      if (r.target) { s.stegarc.vcpu += r.target.app.vcpu + r.target.db.vcpu; s.stegarc.ram += r.target.app.ram + r.target.db.ram; s.stegarc.storage += r.target.storage; } }
+    for (const k of ["storage", "dbNow", "dbFuture"]) s[k] = r1(s[k]); s.stegarc.storage = r1(s.stegarc.storage); return s; }
 
   return { VERSION, NOTE, SAP_NOTE, KIND, TIERS, ASSUME, PROFILES, EXTERNAL, DOC_VALUE, LINES_PER_DOC, profile, sizing, target, whatIf, util, topology, inputFromEngine, inputFromCompany, summarize };
 });

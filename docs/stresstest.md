@@ -1,4 +1,4 @@
-# Stresstest – NEXORA Suite und PE Command Center
+# Stresstest – STEGARC Suite und PE Command Center
 
 Stand: 05.11.2026 · gemessen im Cloud-Container der Entwicklung (2 Kerne, Node 22, Chromium headless). Kein Server, keine Datenbank: gemessen wird der Rechenkern im Browser- bzw. Node-Prozess. Alle Daten sind synthetisch. Die Werte gelten für diese Maschine und sind keine Zusage für einen Produktivbetrieb.
 

@@ -1,7 +1,7 @@
-/* NEXORA DXF-Leser: liest ASCII-DXF (R12 bis aktuelle Versionen), Schriftfeld- und Positionsattribute
+/* STEGARC DXF-Leser: liest ASCII-DXF (R12 bis aktuelle Versionen), Schriftfeld- und Positionsattribute
    sowie Geometrie (LINE, CIRCLE, ARC, LWPOLYLINE, POLYLINE/VERTEX, TEXT, MTEXT).
    Ergebnis: normalisierte Zeichnung für die Engine + Geometrie für die Anzeige. Keine Abhängigkeiten. */
-(function (root, factory) { if (typeof module === "object" && module.exports) module.exports = factory(); else root.NexoraDXF = factory(); })(typeof self !== "undefined" ? self : this, function () {
+(function (root, factory) { if (typeof module === "object" && module.exports) module.exports = factory(); else root.StegarcDXF = factory(); })(typeof self !== "undefined" ? self : this, function () {
   function pairs(text) {
     const lines = String(text).replace(/\r\n?/g, "\n").split("\n"); const out = [];
     for (let i = 0; i + 1 < lines.length; i += 2) { const c = parseInt(lines[i].trim(), 10); if (isNaN(c)) { i--; continue; } out.push([c, lines[i + 1].replace(/\s+$/, "")]); }

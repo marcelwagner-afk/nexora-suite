@@ -1,6 +1,6 @@
 {
-  "$comment": "Statische Vorführdatei der NEXORA AI Suite (Demo). Kein laufender MCP-Server. Alle Werkzeuge lesen nur; Aktionen führt ausschließlich ein Mensch nach Bestätigung aus.",
-  "name": "nexora-suite-demo",
+  "$comment": "Statische Vorführdatei der STEGARC Suite (Demo). Kein laufender MCP-Server. Alle Werkzeuge lesen nur; Aktionen führt ausschließlich ein Mensch nach Bestätigung aus.",
+  "name": "stegarc-suite-demo",
   "version": "0.8.0",
   "tools": [
     {
@@ -176,7 +176,7 @@
     },
     {
       "name": "aufgaben_alle",
-      "description": "Offene Aufgaben der angemeldeten Person aus allen Systemen (NEXORA-Engine live; SAP S/4HANA, Microsoft 365, ServiceNow, Workday als simulierte Demo-Konnektoren). Liefert je Aufgabe eine Kartenbeschreibung mit ref, System, Zugriffsweg, Feldern und möglichen Aktionen. Optional nach System filtern (nexora, sap, m365, servicenow, workday).",
+      "description": "Offene Aufgaben der angemeldeten Person aus allen Systemen (STEGARC-Engine live; SAP S/4HANA, Microsoft 365, ServiceNow, Workday als simulierte Demo-Konnektoren). Liefert je Aufgabe eine Kartenbeschreibung mit ref, System, Zugriffsweg, Feldern und möglichen Aktionen. Optional nach System filtern (stegarc, sap, m365, servicenow, workday).",
       "inputSchema": {
         "type": "object",
         "properties": {

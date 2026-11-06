@@ -1,7 +1,7 @@
 """Erzeugt die synthetische Werkstattzeichnung MR-1200 „Maschinenrahmen Antriebseinheit“ (DXF R12, mm).
 Blatt 1 (A1, M 1:5): Draufsicht, Vorderansicht, Seitenansicht, Schnitt A-A, Details, Bemaßung,
 Schweißangaben, Stückliste, Änderungsindex, Schriftfeld.
-Blatt 2 (A1, M 1:1): Abwicklungen aller Blechteile auf Layer POS-n – daraus berechnet NEXORA die Schnittlängen.
+Blatt 2 (A1, M 1:1): Abwicklungen aller Blechteile auf Layer POS-n – daraus berechnet STEGARC die Schnittlängen.
 Alle Angaben sind fiktiv."""
 import math, pathlib
 out=[]

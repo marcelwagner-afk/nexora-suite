@@ -1,4 +1,4 @@
-<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"></head><body style="margin:0"><title>NEXORA AI Prototyp</title>
+<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"></head><body style="margin:0"><title>STEGARC Prototyp</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap">
@@ -363,7 +363,7 @@ const S={
  setTab:"mandant",
  projSel:"p1"
 };
-const SUITE_URL=/github\.io$/.test(location.hostname)?"index.html":"https://claude.ai/artifact/Q47g6waQPsEyxXtKd6JgBe"; /* Hauptseite: NEXORA AI Enterprise Suite */
+const SUITE_URL=/github\.io$/.test(location.hostname)?"index.html":"https://claude.ai/artifact/Q47g6waQPsEyxXtKd6JgBe"; /* Hauptseite: STEGARC Enterprise Suite */
 const REV=[812,798,845,861,879,902,870,915,938,951,967,990]; /* Umsatz 2026 in T€ (synthetisch) */
 const MONTHS=["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"];
 
@@ -419,7 +419,7 @@ const IC={
  dots:'<circle cx="5.5" cy="12" r="1.3" fill="currentColor"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/><circle cx="18.5" cy="12" r="1.3" fill="currentColor"/>'
 };
 const ic=(k,s=18)=>`<svg class="ic" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[k]}</svg>`;
-const LOGO=(s=34)=>`<svg width="${s}" height="${s}" viewBox="0 0 40 40" aria-hidden="true"><defs><linearGradient id="lg-n" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#4f7bff"/><stop offset=".55" stop-color="#7b5cff"/><stop offset="1" stop-color="#c06bff"/></linearGradient></defs><path d="M7 32V12.5c0-3 3.7-4.4 5.7-2.2L27.3 27c2 2.2 5.7.8 5.7-2.2V8" fill="none" stroke="url(#lg-n)" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const LOGO=(s=34)=>`<svg width="${s}" height="${s}" viewBox="0 0 40 40" aria-hidden="true"><defs><linearGradient id="lg-n" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#4f7bff"/><stop offset=".55" stop-color="#7b5cff"/><stop offset="1" stop-color="#c06bff"/></linearGradient></defs><path d="M31 11.5C28.8 8.6 25 7.5 20.5 7.5 14.4 7.5 10 10.3 10 14.4s4 5.9 10.3 6.9c6.3 1 10.2 2.8 10.2 7S26 34 19.7 34C15 34 11.3 32.8 9 30" fill="none" stroke="url(#lg-n)" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 const ROUTES=["start","projekte","migration","tests","cutover","prozesse","analytics","freigaben","assistent","einstellungen"];
 function route(){const h=location.hash.slice(1);return ROUTES.includes(h)?h:"start"}
 function go(r){if(location.hash.slice(1)===r)render();else location.hash=r}
@@ -479,16 +479,16 @@ function render(){
  const u=me();
  r.innerHTML=`<div class="app ${side?"with-ai":""}">
   <nav class="side nav" aria-label="Hauptnavigation">
-   <a class="brand" href="#start" aria-label="NEXORA AI Startseite">${LOGO(34)}<span><b>NEXORA AI</b><small>Demo</small></span></a>
+   <a class="brand" href="#start" aria-label="STEGARC Startseite">${LOGO(34)}<span><b>STEGARC</b><small>Demo</small></span></a>
    <a class="suite" href="${SUITE_URL}" target="_blank" rel="noopener" style="margin-bottom:8px;border:1px solid var(--nav-line);color:var(--nav-fg-strong)">${ic("arrowr",18)}<span>Zur Enterprise Suite</span></a>
    ${[["start","Home","start"],["projekte","Projekte","proj"],["migration","Migrationen","mig"],["prozesse","Prozesse","proc"],["tests","Tests","test"],["cutover","Cutover","cut"],["analytics","Analysen","an"]].map(nv).join("")}
    <div class="nav-sep"></div>
    ${nv(["assistent","KI-Assistent","ai"])}
    <div class="nav-sep"></div>
    <div class="nav-label">Apps &amp; Module</div>
-   <a class="appl" href="#migration"><span class="app-ic m">${ic("layers",16)}</span>NEXORA Migrate</a>
-   <a class="appl" href="#projekte"><span class="app-ic t">${ic("layers",16)}</span>NEXORA Transform</a>
-   <a class="appl" href="#analytics"><span class="app-ic i">${ic("an",16)}</span>NEXORA Intelligence</a>
+   <a class="appl" href="#migration"><span class="app-ic m">${ic("layers",16)}</span>STEGARC Migrate</a>
+   <a class="appl" href="#projekte"><span class="app-ic t">${ic("layers",16)}</span>STEGARC Transform</a>
+   <a class="appl" href="#analytics"><span class="app-ic i">${ic("an",16)}</span>STEGARC Intelligence</a>
    <button class="tenant" data-act="goSettings" aria-label="Mandant und Einstellungen"><span class="av">${ic("building",18)}</span><span style="flex:1;min-width:0"><b style="font-weight:600">Muster Industrie GmbH</b><small>Professional · Demo</small></span>${ic("chev",16)}</button>
   </nav>
   <div class="main">
@@ -528,10 +528,10 @@ function renderLayer(){
 /* ============ Login ============ */
 function viewLogin(){return`<div class="login">
  <div class="login-l">
-  <div class="row" style="gap:12px">${LOGO(38)}<div><b style="font-size:20px;font-family:var(--f-display);font-weight:800">NEXORA AI</b><div class="small" style="opacity:.75">Intelligent Enterprise Platform</div></div></div>
+  <div class="row" style="gap:12px">${LOGO(38)}<div><b style="font-size:20px;font-family:var(--f-display);font-weight:800">STEGARC</b><div class="small" style="opacity:.75">Intelligent Enterprise Platform</div></div></div>
   <div style="display:flex;flex-direction:column;gap:14px"><h1>Migration und Transformation, ohne Schulung bedienbar.</h1>
-  <p style="max-width:42ch;opacity:.85;font-size:15px">Beschreibe, was du erreichen willst. NEXORA plant, prüft und zeigt dir jeden Schritt, bevor etwas Produktives passiert.</p></div>
-  <div style="display:flex;flex-direction:column;gap:10px;align-items:flex-start"><a class="btn sm" href="${SUITE_URL}" target="_blank" rel="noopener">← Zur NEXORA Enterprise Suite</a><p class="small" style="opacity:.7">Prototyp v0.2 · Alle Daten synthetisch · Engine = Test-Engine</p></div>
+  <p style="max-width:42ch;opacity:.85;font-size:15px">Beschreibe, was du erreichen willst. STEGARC plant, prüft und zeigt dir jeden Schritt, bevor etwas Produktives passiert.</p></div>
+  <div style="display:flex;flex-direction:column;gap:10px;align-items:flex-start"><a class="btn sm" href="${SUITE_URL}" target="_blank" rel="noopener">← Zur STEGARC Enterprise Suite</a><p class="small" style="opacity:.7">Prototyp v0.2 · Alle Daten synthetisch · Engine = Test-Engine</p></div>
  </div>
  <div class="login-r"><form class="login-box" data-form="login">
   <h2 style="font-size:24px">Anmelden</h2>
@@ -596,7 +596,7 @@ function viewStart(){
  </div>
  <section class="card promo">
   <div class="art">${promoArt()}</div>
-  <div style="display:flex;flex-direction:column;gap:8px"><span class="kick">NEXORA Migrate</span><h2>Neue Migration starten</h2><p class="muted">Übertrage deine Daten sicher, automatisch und KI-gestützt zwischen unterstützten Systemen.</p><div><button class="btn pri" data-act="newMig" style="margin-top:6px">Migration konfigurieren ${ic("arrowr",16)}</button></div></div>
+  <div style="display:flex;flex-direction:column;gap:8px"><span class="kick">STEGARC Migrate</span><h2>Neue Migration starten</h2><p class="muted">Übertrage deine Daten sicher, automatisch und KI-gestützt zwischen unterstützten Systemen.</p><div><button class="btn pri" data-act="newMig" style="margin-top:6px">Migration konfigurieren ${ic("arrowr",16)}</button></div></div>
   <div class="checks">${["Systeme verbinden","Daten analysieren","KI-Mapping erhalten","Testmigration durchführen","Produktive Migration starten"].map(t=>`<span>${ic("check",18)}${t}</span>`).join("")}</div>
  </section>
  <section class="card">
@@ -655,7 +655,7 @@ function viewMigration(){
  if(S.wiz)return viewWizard();
  const tot=S.jobs.reduce((a,j)=>a+j.total,0),ok=S.jobs.reduce((a,j)=>a+j.ok,0),err=S.jobs.reduce((a,j)=>a+j.err,0),warn=S.jobs.reduce((a,j)=>a+j.warn,0);
  const cov=Math.round(S.jobs.reduce((a,j)=>a+j.cov,0)/S.jobs.length);
- return`<div class="page-head"><div><p class="eyebrow">NEXORA Migrate</p><h1>Migrationen</h1></div><button class="btn pri" data-act="newMig">Neue Migration</button></div>
+ return`<div class="page-head"><div><p class="eyebrow">STEGARC Migrate</p><h1>Migrationen</h1></div><button class="btn pri" data-act="newMig">Neue Migration</button></div>
  <div class="grid g4">
   <div class="card kpi"><span class="eyebrow">Erfolgreich</span><span class="v" style="color:var(--good)">${n(ok)}</span><span class="small muted">von ${n(tot)} Datensätzen</span></div>
   <div class="card kpi"><span class="eyebrow">Fehlerhaft</span><span class="v" style="color:var(--crit)">${n(err)}</span><span class="small muted">${n(warn)} Warnungen</span></div>
@@ -687,7 +687,7 @@ function wizCanReach(w,i){
 }
 function viewWizard(){
  const w=S.wiz;
- const what=["Beschreibe die Migration in eigenen Worten. NEXORA erkennt Quelle, Ziel und Objekt.","Wähle Quell- und Zielsystem und prüfe die Verbindung.","Wähle die Objekte. Angeboten wird nur, was der Konnektor unterstützt.","NEXORA prüft Struktur und Datenqualität. Du entscheidest, wie mit Problemen umgegangen wird.","Ordne Felder zu. KI-Vorschläge sind gestrichelt und müssen bestätigt werden.","Ein Testlauf lädt in die Testumgebung. Produktive Daten bleiben unberührt.","Prüfe Ergebnis und Reconciliation, bevor du die Freigabe anforderst.","Produktive Läufe brauchen eine Vier-Augen-Freigabe durch eine berechtigte Rolle."][w.step-1];
+ const what=["Beschreibe die Migration in eigenen Worten. STEGARC erkennt Quelle, Ziel und Objekt.","Wähle Quell- und Zielsystem und prüfe die Verbindung.","Wähle die Objekte. Angeboten wird nur, was der Konnektor unterstützt.","STEGARC prüft Struktur und Datenqualität. Du entscheidest, wie mit Problemen umgegangen wird.","Ordne Felder zu. KI-Vorschläge sind gestrichelt und müssen bestätigt werden.","Ein Testlauf lädt in die Testumgebung. Produktive Daten bleiben unberührt.","Prüfe Ergebnis und Reconciliation, bevor du die Freigabe anforderst.","Produktive Läufe brauchen eine Vier-Augen-Freigabe durch eine berechtigte Rolle."][w.step-1];
  return`<div class="page-head"><div><p class="eyebrow">Neue Migration · Kunden</p><h1>Migrations-Assistent</h1></div><button class="btn ghost" data-act="closeWiz">Zur Übersicht</button></div>
  <div class="steps" role="list">${WSTEPS.map((s,i)=>{const k=i+1,can=wizCanReach(w,k);return`<button class="step ${k<w.step?"done":k===w.step?"cur":""}" role="listitem" data-act="wizGo" data-s="${k}" ${can?"":"disabled"} aria-current="${k===w.step?"step":"false"}"><span class="ln"></span><span class="t">${k}. ${s}</span></button>`}).join("")}</div>
  <div class="what">${what}</div>

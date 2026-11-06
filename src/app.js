@@ -1,6 +1,6 @@
-/* NEXORA AI Suite – Oberfläche. Alle Zahlen kommen aus der Engine (Belege, Nebenbücher), nichts ist fest eingetragen. */
-const E = window.NexoraEngine;
-const LS_KEY = "nexora-suite-v08", LS_KEY_OLD = "nexora-suite-v03";
+/* STEGARC Suite – Oberfläche. Alle Zahlen kommen aus der Engine (Belege, Nebenbücher), nichts ist fest eingetragen. */
+const E = window.StegarcEngine;
+const LS_KEY = "stegarc-suite-v08", LS_KEY_OLD = "stegarc-suite-v03";
 const T_NAMES = { elevon: "Elevon Industries", novamart: "NovaMart Retail", aventra: "Aventra Consulting" };
 const ON_PAGES = /github\.io$/.test(location.hostname); const PROTO_URL = ON_PAGES ? "prototyp.html" : "https://claude.ai/artifact/6p7imWPiPw1T5V3ABFq2Di";
 
@@ -111,12 +111,12 @@ function render() {
   const live = S.live && rt !== "admin";
   document.getElementById("root").innerHTML = `<div class="app ${live ? "live" : ""}">
    <nav class="side nav" aria-label="Hauptnavigation">
-    <a class="brand" href="#home" aria-label="NEXORA AI">${LOGO(32)}<span><b>NEXORA AI</b><small>Demo</small></span></a>
+    <a class="brand" href="#home" aria-label="STEGARC">${LOGO(32)}<span><b>STEGARC</b><small>Demo</small></span></a>
     ${mods.filter(m => modSt(m) === "live" && m !== "admin").map(navA).join("")}
     <div class="nav-sep"></div><div class="nav-label">Weitere Module</div>
     ${mods.filter(m => modSt(m) !== "live" && m !== "admin").map(navA).join("")}
-    <a href="${ON_PAGES ? "nexora.html" : "https://marcelwagner-afk.github.io/nexora-suite/nexora.html"}" target="${ON_PAGES ? "_self" : "_blank"}" rel="noopener">${ic("an", 19)}<span>Business Case</span></a>
-    <a href="${ON_PAGES ? "nexora.html#markt" : "https://marcelwagner-afk.github.io/nexora-suite/nexora.html#markt"}" target="${ON_PAGES ? "_self" : "_blank"}" rel="noopener">${ic("pie", 19)}<span>Marktposition</span></a>
+    <a href="${ON_PAGES ? "stegarc.html" : "https://marcelwagner-afk.github.io/stegarc-suite/stegarc.html"}" target="${ON_PAGES ? "_self" : "_blank"}" rel="noopener">${ic("an", 19)}<span>Business Case</span></a>
+    <a href="${ON_PAGES ? "stegarc.html#markt" : "https://marcelwagner-afk.github.io/stegarc-suite/stegarc.html#markt"}" target="${ON_PAGES ? "_self" : "_blank"}" rel="noopener">${ic("pie", 19)}<span>Marktposition</span></a>
     <div class="nav-sep"></div>${navA("admin")}
     <button class="tenant" data-act="goAdmin"><span class="av">${ic("building", 18)}</span><span style="flex:1;min-width:0"><b style="font-weight:600">${esc(T_NAMES[S.tenant])}</b><small>${esc(t.companies.length)} Gesellschaften · Größe ${S.size}</small></span></button>
    </nav>
@@ -211,7 +211,7 @@ function trendChart(k) {
 VIEWS.processes = () => {
   const t = T(); const list = E.processInstances(t); const sel = list.find(i => i.id === S.sel.inst) || list[0];
   const idx = sel ? Math.min(S.sel.step == null ? sel.steps.findIndex(s => s.state === "active") : S.sel.step, sel.steps.length - 1) : -1; const step = sel && idx >= 0 ? sel.steps[idx] : sel && sel.steps[0];
-  return head("NEXORA Process Explorer · " + esc(T_NAMES[t.id]), "Business Processes", `<div class="row">${t.id === "elevon" ? `<button class="btn" data-act="newSO">Neuer Kundenauftrag</button>` : t.id === "novamart" ? `<a class="btn" href="#sales">Neue Onlinebestellung</a>` : ""}</div>`)
+  return head("STEGARC Process Explorer · " + esc(T_NAMES[t.id]), "Business Processes", `<div class="row">${t.id === "elevon" ? `<button class="btn" data-act="newSO">Neuer Kundenauftrag</button>` : t.id === "novamart" ? `<a class="btn" href="#sales">Neue Onlinebestellung</a>` : ""}</div>`)
    + statusNote("live", "Jede Instanz und jeder Status wird aus Belegen und Vorgängen der Engine abgeleitet, nicht gesetzt.")
    + (list.length ? `<section class="card"><div class="card-h"><h3>Prozessinstanzen</h3><span class="small faint">${list.length}</span></div><div class="tbl-wrap"><table><thead><tr><th>Instanz</th><th>Prozess</th><th>Fortschritt</th><th>Aktueller Schritt</th></tr></thead><tbody>${list.map(i => { const done = i.steps.filter(s => s.state === "done" || s.state === "skipped").length; const a = i.steps.find(s => s.state === "active" || s.state === "error"); return `<tr class="click" data-act="selInst" data-id="${esc(i.id)}" ${sel && sel.id === i.id ? 'style="background:var(--accent-soft)"' : ""}><td><b>${esc(i.title)}</b></td><td class="small">${esc(i.chain)}</td><td style="min-width:140px"><div class="row" style="flex-wrap:nowrap"><div class="bar acc" style="flex:1"><i style="width:${done / i.steps.length * 100}%"></i></div><span class="num small">${done}/${i.steps.length}</span></div></td><td>${a ? pill(a.state === "error" ? "p-crit" : "p-acc", a.name) : pill("p-good", "abgeschlossen")}</td></tr>`; }).join("")}</tbody></table></div></section>`
    + (sel ? `<section class="card card-pad" style="display:flex;flex-direction:column;gap:12px"><div class="row between"><h2>${esc(sel.title)}</h2><span class="small muted">${esc(sel.chain)}</span></div>

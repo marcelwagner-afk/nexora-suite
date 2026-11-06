@@ -1,10 +1,10 @@
-# NEXORA PE Command Center – Analyse und Umsetzungsplan
+# STEGARC PE Command Center – Analyse und Umsetzungsplan
 
-*NEXORA AI*
+*STEGARC*
 
 Stand: 05.11.2026. Dieses Dokument ist das Ergebnis von PE-Phase 1 („Architecture & Foundation“). Es beschreibt:
 
-- die vorhandene Architektur der NEXORA AI Suite,
+- die vorhandene Architektur der STEGARC Suite,
 - was davon für das Private-Equity-Modul wiederverwendet wird,
 - welche Fähigkeiten fehlen,
 - welche Zielarchitektur gilt,
@@ -56,7 +56,7 @@ flowchart LR
   subgraph Quellen[ERP-Quellen je Portfoliounternehmen]
     A1[SAP ECC / S/4HANA]:::sim
     A2[Dynamics 365 / NetSuite / DATEV / Sage]:::sim
-    A3[NEXORA-Engine]:::live
+    A3[STEGARC-Engine]:::live
   end
   Quellen --> I[Integration Layer<br/>Extraktion · Validierung]
   I --> H[Harmonisierung<br/>Konzernkontenplan · Währung · GAAP-Anpassungen]
@@ -196,7 +196,7 @@ Fehler sind strukturiert: `{ code: "FORBIDDEN" | "NOT_FOUND" | "DATA_GAP", text 
 
 **Stand (05.11.2026):** Phasen 1–6 sind umgesetzt (Phase 6: ERP-Transformation mit Kostenaufbau je Unternehmen, Szenarien A–D, Kandidaten-Bewertung und Roadmap-Vorschlag, alle Kosten als Beispielwerte aus offenen, in der Ansicht änderbaren Annahmen; Verweis auf das Ablöse-Cockpit; Trevor Steel Components als Modell-B-Unternehmen) (Phase 5: Phase 5: Konsolidierung einer Plattform-Holding, Exit-Simulation, Value Creation ohne Doppelzählung, Covenant-Prognose, Onboarding mit Vier-Augen-Aktivierung) (Phase 4: ERP Integration Hub mit Connector-Spezifikationen, Synchronisationslauf, Mapping-Editor, dreistufiger Abstimmung und Monitoring) (Phase 3: GAAP-Anpassungen mit Freigabe, Vergleich, EBITDA-Brücke, Anomalien, Prognose mit Rückrechnung, Liquiditätsprognose, Working Capital, AI Financial Advisor); `node test/pe.test.js` hat 60 Tests, alle bestanden.
 
-**Modell B mit Engine-Daten (v0.9.7):** Elevon, NovaMart und Aventra stehen als Portfoliounternehmen des Demo-Investors „Nordlicht Beteiligungen“ (Fonds „Nordlicht Plattform I“, Zugang Nora Lindqvist) im PE-Reporting. Ab Nov 2025 stammen alle Monatswerte aus den Buchungen der NEXORA-Engine – mit deren Kontenplan, ohne Mapping, Drill-down bis zum Engine-Beleg. Nov 2023 – Okt 2025 ist eine gekennzeichnete synthetische Fortschreibung ohne Belege; deshalb gibt es für diese Unternehmen keinen Vorjahresvergleich und keine Anomalieprüfung. Die offene Periode (Nov 2026) zeigt die Unternehmensseite live aus der Engine; das abgeschlossene Reporting bis Okt 2026 bleibt davon unberührt. Die 25 Unternehmen von Nexora Global Equity Partners bleiben unverändert.
+**Modell B mit Engine-Daten (v0.9.7):** Elevon, NovaMart und Aventra stehen als Portfoliounternehmen des Demo-Investors „Nordlicht Beteiligungen“ (Fonds „Nordlicht Plattform I“, Zugang Nora Lindqvist) im PE-Reporting. Ab Nov 2025 stammen alle Monatswerte aus den Buchungen der STEGARC-Engine – mit deren Kontenplan, ohne Mapping, Drill-down bis zum Engine-Beleg. Nov 2023 – Okt 2025 ist eine gekennzeichnete synthetische Fortschreibung ohne Belege; deshalb gibt es für diese Unternehmen keinen Vorjahresvergleich und keine Anomalieprüfung. Die offene Periode (Nov 2026) zeigt die Unternehmensseite live aus der Engine; das abgeschlossene Reporting bis Okt 2026 bleibt davon unberührt. Die 25 Unternehmen von Stegarc Global Equity Partners bleiben unverändert.
 
 **Annahmen:** Funktionale Abdeckung je Branche und Kostensätze sind Annahmen, keine gemessenen Werte und keine Herstellerpreise.
 

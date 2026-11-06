@@ -13,7 +13,7 @@ async def shots(folder):
   folder.mkdir(parents=True, exist_ok=True)
   async with async_playwright() as p:
     b = await p.chromium.launch(); pg = await b.new_page(viewport={"width": 1440, "height": 900}); errs = []; pg.on("pageerror", lambda e: errs.append(str(e)))
-    html = "<!doctype html><html><head><meta charset='utf-8'></head><body>" + (ROOT / "dist" / "nexora-suite.html").read_text() + "</body></html>"
+    html = "<!doctype html><html><head><meta charset='utf-8'></head><body>" + (ROOT / "dist" / "stegarc-suite.html").read_text() + "</body></html>"
     await pg.set_content(html); await pg.wait_for_timeout(400)
     await pg.evaluate("S.live=false; S.layer='suite'; render()")
     for r in ROUTES:

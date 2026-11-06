@@ -40,26 +40,26 @@ function gdErr(e) { const m = { server_not_connected: "Google Drive ist nicht ve
 function currentLog() { return BK.mode === "db" ? BK.control.map(c => Object.assign({ kind: "control" }, c)).concat(BK.events.map(e => Object.assign({ kind: "event" }, e))).sort((a, b) => a.ts - b.ts).map(({ _id, ...r }) => r) : LOG; }
 async function gdBackup() {
   if (!BK.mcp) return toast("Google Drive ist in dieser Ansicht nicht verfügbar.", true); S.gd = { busy: "Sicherung wird erstellt …" }; render();
-  const body = JSON.stringify({ app: "NEXORA AI Suite", version: E.VERSION, seed: W.seed, size: S.size, createdAt: new Date().toISOString(), log: currentLog(), fingerprints: Object.fromEntries(E.TENANT_IDS.map(id => [id, E.tenantHash(W.tenants[id])])) });
-  try { const r = await BK.mcp.callTool(GD, "create_file", { title: "NEXORA Sicherung " + new Date().toLocaleString("de-DE").replace(/[/:]/g, "-"), textContent: body, contentMimeType: "text/plain", disableConversionToGoogleType: true }); const f = r.payload || {}; S.gd = { ok: `Sicherung in Google Drive erstellt (${(f.title || f.name || "Datei")}, ${currentLog().length} Ereignisse).`, link: f.alternateLink || f.webViewLink || f.url || null }; }
+  const body = JSON.stringify({ app: "STEGARC Suite", version: E.VERSION, seed: W.seed, size: S.size, createdAt: new Date().toISOString(), log: currentLog(), fingerprints: Object.fromEntries(E.TENANT_IDS.map(id => [id, E.tenantHash(W.tenants[id])])) });
+  try { const r = await BK.mcp.callTool(GD, "create_file", { title: "STEGARC Sicherung " + new Date().toLocaleString("de-DE").replace(/[/:]/g, "-"), textContent: body, contentMimeType: "text/plain", disableConversionToGoogleType: true }); const f = r.payload || {}; S.gd = { ok: `Sicherung in Google Drive erstellt (${(f.title || f.name || "Datei")}, ${currentLog().length} Ereignisse).`, link: f.alternateLink || f.webViewLink || f.url || null }; }
   catch (e) { S.gd = { err: gdErr(e) }; } render();
 }
 async function gdExportJournal() {
   if (!BK.mcp) return toast("Google Drive ist in dieser Ansicht nicht verfügbar.", true); const t = T(); S.gd = { busy: "Belegjournal wird exportiert …" }; render();
   const rows = [["Beleg", "Datum", "Periode", "Text", "Konto", "Kontobezeichnung", "Soll", "Haben", "Benutzer"]]; for (const d of t.docs) for (const l of d.lines) rows.push([d.no, d.date, d.period, d.text, l.acct, E.COA[l.acct][0], String(l.dr).replace(".", ","), String(l.cr).replace(".", ","), d.user]);
   const csv = rows.map(r => r.map(c => '"' + String(c).replace(/"/g, '""') + '"').join(";")).join("\n");
-  try { const r = await BK.mcp.callTool(GD, "create_file", { title: "NEXORA Belegjournal " + T_NAMES[t.id] + " " + dDe(t.date), textContent: csv, contentMimeType: "text/csv" }); const f = r.payload || {}; S.gd = { ok: `Belegjournal ${T_NAMES[t.id]} als Google-Tabelle angelegt (${t.docs.length} Belege).`, link: f.alternateLink || f.webViewLink || f.url || null }; }
+  try { const r = await BK.mcp.callTool(GD, "create_file", { title: "STEGARC Belegjournal " + T_NAMES[t.id] + " " + dDe(t.date), textContent: csv, contentMimeType: "text/csv" }); const f = r.payload || {}; S.gd = { ok: `Belegjournal ${T_NAMES[t.id]} als Google-Tabelle angelegt (${t.docs.length} Belege).`, link: f.alternateLink || f.webViewLink || f.url || null }; }
   catch (e) { S.gd = { err: gdErr(e) }; } render();
 }
 async function gdList() {
   if (!BK.mcp) return toast("Google Drive ist in dieser Ansicht nicht verfügbar.", true); S.gd = { busy: "Suche Sicherungen …" }; render();
-  try { const r = await BK.mcp.callTool(GD, "search_files", { query: "title contains 'NEXORA Sicherung' and trashed = false", pageSize: 10, excludeContentSnippets: true }); const p = r.payload || {}; const files = (p.files || p.results || p.items || (Array.isArray(p) ? p : [])).map(f => ({ id: f.id || f.fileId, title: f.title || f.name, modified: f.modifiedTime || f.modifiedDate || "" })).filter(f => f.id); S.gd = { files, ok: files.length ? null : "Keine Sicherung gefunden." }; }
+  try { const r = await BK.mcp.callTool(GD, "search_files", { query: "title contains 'STEGARC Sicherung' and trashed = false", pageSize: 10, excludeContentSnippets: true }); const p = r.payload || {}; const files = (p.files || p.results || p.items || (Array.isArray(p) ? p : [])).map(f => ({ id: f.id || f.fileId, title: f.title || f.name, modified: f.modifiedTime || f.modifiedDate || "" })).filter(f => f.id); S.gd = { files, ok: files.length ? null : "Keine Sicherung gefunden." }; }
   catch (e) { S.gd = { err: gdErr(e) }; } render();
 }
 async function gdRestore(fileId) {
   if (!isAdmin()) return toast("Nur Editoren dürfen wiederherstellen.", true); S.gd = { busy: "Sicherung wird gelesen …" }; render();
   try { const r = await BK.mcp.callTool(GD, "read_file_content", { fileId }); let txt = typeof r.payload === "string" ? r.payload : (r.payload && (r.payload.content || r.payload.text)) || (r.content || []).filter(c => c.type === "text").map(c => c.text).join("\n");
-    const data = JSON.parse(txt.slice(txt.indexOf("{"), txt.lastIndexOf("}") + 1)); if (!Array.isArray(data.log)) throw { message: "Datei ist keine NEXORA-Sicherung." };
+    const data = JSON.parse(txt.slice(txt.indexOf("{"), txt.lastIndexOf("}") + 1)); if (!Array.isArray(data.log)) throw { message: "Datei ist keine STEGARC-Sicherung." };
     // Wiederherstellung: neutraler Ausgangszustand, dann alle Ereignisse in Originalreihenfolge
     if (BK.mode === "db") { await BK.db.collection("control").doc().set({ ts: newTs(), resetAll: true, size: data.size || "S", restoredFrom: fileId }); let i = 0; for (const x of data.log) { const base = newTs() + (++i); if (x.kind === "control" || x.reset || x.resetAll) await BK.db.collection("control").doc().set(Object.assign({}, x, { ts: base })); else await BK.db.collection("events").doc().set(Object.assign({}, x, { ts: base })); } }
     else { S.size = data.size || "S"; W = E.createWorld({ size: S.size }); captureBase(); LOG = []; for (const x of data.log) { try { applyLog(x); LOG.push(x); } catch (e) {} } saveLog(); }
@@ -79,7 +79,7 @@ let AI_TOOLS = () => [
   { name: "lieferanten", description: "NovaMart-Lieferanten mit Liefertreue (Anteil termingerechter Lieferungen).", execute: () => W.tenants.novamart.master.suppliers.filter(s => s.otd).sort((a, b) => a.otd - b.otd).slice(0, 15).map(s => ({ name: s.name, liefertreue: s.otd })) },
   { name: "migration", description: "Elevon: Status der Datenmigration Liftservice Nord (Testläufe, Fehler, Abstimmung, Freigabe, Cutover).", execute: () => { const t = W.tenants.elevon; const M = t.migration; return M ? { tests: M.tests, migriert: M.done, freigabe: M.approval, verrechnungskonto_9000: E.balance(t, "9000"), cutover: E.cutoverStatus(t).acts.map(a => ({ name: a.name, erledigt: a.done })) } : { status: "noch nicht gestartet" }; } }
 ];
-const AI_RULES = () => `Du bist der KI-Assistent der NEXORA AI Suite (Demo mit drei fiktiven Unternehmen: elevon = Elevon Industries, Aufzugshersteller; novamart = NovaMart Retail, Handel; aventra = Aventra Consulting, Beratung). Aktives Unternehmen: ${S.tenant}. Geschäftsdatum ${T().date}, letzte abgeschlossene Periode ${E.kpis(T()).lastClosed}.
+const AI_RULES = () => `Du bist der KI-Assistent der STEGARC Suite (Demo mit drei fiktiven Unternehmen: elevon = Elevon Industries, Aufzugshersteller; novamart = NovaMart Retail, Handel; aventra = Aventra Consulting, Beratung). Aktives Unternehmen: ${S.tenant}. Geschäftsdatum ${T().date}, letzte abgeschlossene Periode ${E.kpis(T()).lastClosed}.
 Regeln: Antworte auf Deutsch, knapp und konkret. Nutze für jede Zahl die Werkzeuge; erfinde keine Werte. Wenn sich die Frage auf ein anderes Unternehmen bezieht, nutze dessen Kürzel. Ist unklar, welches Unternehmen gemeint ist, frage nach. Du führst keine Buchungen aus und gibst nichts frei – du analysierst und empfiehlst. Schließe jede Antwort mit drei Zeilen ab: „Datenbasis: …“, „Zeitraum: …“, „Berechnung: …“. Formatierung: kurze Absätze, Aufzählungen mit „- “, Tabellen nur als einfache Markdown-Tabellen.`;
 function md(s) {
   const lines = esc(s).split("\n"); let out = "", inList = false, tbl = [];
@@ -209,7 +209,7 @@ STORIES.push(
     { t: "Gutschrift", d: "Umsatz und Umsatzsteuer werden gemindert.", user: "u2", cmd: "creditReturn", p: c => ({ retNo: c.rt }) },
     { t: "Rückzahlung", d: "Geld geht über den Zahlungsdienstleister zurück.", user: "u2", cmd: "refundReturn", p: c => ({ retNo: c.rt }) }
   ], outro: "Die Retourenquote in den Live-Kennzahlen wird aus echten Vorgängen berechnet." },
-  { id: "migration", tenant: "elevon", cross: [], short: "Migration und Cutover", title: "Übernahme Liftservice Nord: Datenmigration und Cutover", situation: "Elevon übernimmt die Liftservice Nord GmbH mit 42 Kunden, 61 Anlagen, 26 offenen Posten und einem Ersatzteillager.", problem: "Die Altdaten haben Dubletten, fehlende Postleitzahlen und verwaiste Sätze. Nichts darf ungeprüft in die Bücher.", value: "NEXORA Migrate lädt direkt in die operative Plattform: Testlauf ohne Risiko, Regeln statt Handarbeit, Vier-Augen-Freigabe, abgestimmte Summen und ein Cutover, dessen Status sich aus den echten Daten ergibt.", steps: [
+  { id: "migration", tenant: "elevon", cross: [], short: "Migration und Cutover", title: "Übernahme Liftservice Nord: Datenmigration und Cutover", situation: "Elevon übernimmt die Liftservice Nord GmbH mit 42 Kunden, 61 Anlagen, 26 offenen Posten und einem Ersatzteillager.", problem: "Die Altdaten haben Dubletten, fehlende Postleitzahlen und verwaiste Sätze. Nichts darf ungeprüft in die Bücher.", value: "STEGARC Migrate lädt direkt in die operative Plattform: Testlauf ohne Risiko, Regeln statt Handarbeit, Vier-Augen-Freigabe, abgestimmte Summen und ein Cutover, dessen Status sich aus den echten Daten ergibt.", steps: [
     { t: "Testmigration ohne Regeln", d: "Auf einer Kopie – zeigt alle Datenqualitätsprobleme.", user: "u2", cmd: "migrationTest", p: () => ({ rules: { dedupe: false, mapCountry: false, fillZip: false, excludeUnmapped: false } }) },
     { t: "Testmigration mit Regeln", d: "Dubletten zusammenführen, Länder abbilden, PLZ ergänzen, Verwaiste auf die Klärungsliste.", user: "u2", cmd: "migrationTest", p: () => ({ rules: { dedupe: true, mapCountry: true, fillZip: true, excludeUnmapped: true } }) },
     { t: "Freigabe anfordern", d: "Der CFO fordert die Produktivmigration an.", user: "u2", cmd: "migrationRequestApproval", p: () => ({}) },
@@ -272,7 +272,7 @@ BK.owner = null;
 function ownerId() { return BK.owner; }
 async function resolveOwner() {
   if (BK.user) { try { const id = await BK.user.id(); if (id) { BK.owner = id; return; } } catch (e) {} }
-  try { let o = localStorage.getItem("nexora-owner"); if (!o) { o = "local-" + Math.random().toString(36).slice(2, 12); localStorage.setItem("nexora-owner", o); } BK.owner = o; } catch (e) { BK.owner = BK.owner || "local-session"; }
+  try { let o = localStorage.getItem("stegarc-owner"); if (!o) { o = "local-" + Math.random().toString(36).slice(2, 12); localStorage.setItem("stegarc-owner", o); } BK.owner = o; } catch (e) { BK.owner = BK.owner || "local-session"; }
 }
 function myAccount(tid) { const o = ownerId(); return o ? W.tenants[tid].users.find(u => u.account && u.owner === o && u.active !== false) : null; }
 S.accAuto = {};
