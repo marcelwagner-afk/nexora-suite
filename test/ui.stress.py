@@ -10,7 +10,7 @@ ROUTES = ["pe", "pecos", "pe-fin", "pe-cons", "pe-cash", "pe-inv", "pe-vc", "pe-
 async def main():
   async with async_playwright() as p:
     b = await p.chromium.launch(); pg = await b.new_page(viewport={"width": 1440, "height": 900}); errs = []; pg.on("pageerror", lambda e: errs.append(str(e)))
-    await pg.set_content("<!doctype html><html><head><meta charset='utf-8'></head><body>" + (ROOT / "dist" / "nexora-suite.html").read_text() + "</body></html>"); await pg.wait_for_timeout(400)
+    await pg.set_content("<!doctype html><html><head><meta charset='utf-8'></head><body>" + (ROOT / "dist" / "stegarc-suite.html").read_text() + "</body></html>"); await pg.wait_for_timeout(400)
     await pg.evaluate("S.pe.principal='p1'; S.pe.company='PC01'")
     async def sweep(label):
       out = {}

@@ -1,4 +1,4 @@
-/* NEXORA PE Command Center (v0.9) – im bestehenden Design, nur Tokens aus base.css */
+/* STEGARC PE Command Center (v0.9) – im bestehenden Design, nur Tokens aus base.css */
 .pe-nav .pe-soon{margin-left:auto;font-size:10px;letter-spacing:.02em;border:1px solid var(--nav-line);border-radius:8px;padding:0 6px;color:var(--nav-fg)}
 .pe-prin{min-width:280px}.pe-prin select{max-width:420px}
 .pe-filters{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}.pe-filters .f{min-width:140px}.pe-cur{margin-left:auto}

@@ -1,28 +1,28 @@
-/* NEXORA Experience Layer – Konnektor-Schicht (v0.8). Reine Logik, kein DOM, in Node testbar.
-   Die NEXORA-Engine ist ein Konnektor unter mehreren. Alle anderen Konnektoren sind SIMULIERT:
+/* STEGARC Experience Layer – Konnektor-Schicht (v0.8). Reine Logik, kein DOM, in Node testbar.
+   Die STEGARC-Engine ist ein Konnektor unter mehreren. Alle anderen Konnektoren sind SIMULIERT:
    deterministisch aus dem Seed erzeugt, ohne Netzwerkzugriff, ohne echte Daten.
    Zustand je Unternehmen, an das Engine-Mandantenobjekt gebunden: Wird ein Mandant zurückgesetzt
    (neues Mandantenobjekt), beginnen auch seine Konnektoren wieder im Ausgangszustand. */
-(function (root, factory) { if (typeof module === "object" && module.exports) module.exports = factory(); else root.NexoraConnectors = factory(); })(typeof self !== "undefined" ? self : this, function () {
+(function (root, factory) { if (typeof module === "object" && module.exports) module.exports = factory(); else root.StegarcConnectors = factory(); })(typeof self !== "undefined" ? self : this, function () {
   const VERSION = "0.8.0";
   /* ---------- Konfiguration: Kosten (Beispielwerte, keine Herstellerpreise) ---------- */
   const COST_NOTE = "Beispielwerte, keine Herstellerpreise";
   const ROUTES = {
-    nexora: [{ id: "engine", label: "NEXORA-Engine (intern)", viaAgent: "nexora", costPerCall: 0, note: "Eigene Engine, kein Fremdsystem" }],
+    stegarc: [{ id: "engine", label: "STEGARC-Engine (intern)", viaAgent: "stegarc", costPerCall: 0, note: "Eigene Engine, kein Fremdsystem" }],
     sap: [
       { id: "joule-a2a", label: "Joule (A2A)", viaAgent: "joule", costPerCall: 0.04, note: "Agent-zu-Agent über den SAP-Assistenten" },
-      { id: "mcp-gateway", label: "MCP Gateway (kostenpflichtig)", viaAgent: "nexora", costPerCall: 0.12, note: "Werkzeugzugriff über ein lizenziertes Gateway" },
-      { id: "released-api", label: "Freigegebene Schnittstelle", viaAgent: "nexora", costPerCall: 0.01, note: "Von SAP freigegebene Schnittstelle (z. B. OData), Systembenutzer" }
+      { id: "mcp-gateway", label: "MCP Gateway (kostenpflichtig)", viaAgent: "stegarc", costPerCall: 0.12, note: "Werkzeugzugriff über ein lizenziertes Gateway" },
+      { id: "released-api", label: "Freigegebene Schnittstelle", viaAgent: "stegarc", costPerCall: 0.01, note: "Von SAP freigegebene Schnittstelle (z. B. OData), Systembenutzer" }
     ],
-    m365: [{ id: "copilot-a2a", label: "Copilot (A2A)", viaAgent: "copilot", costPerCall: 0.03, note: "Agent-zu-Agent über den Microsoft-Assistenten" }, { id: "graph", label: "Graph-Schnittstelle", viaAgent: "nexora", costPerCall: 0.002, note: "Freigegebene Schnittstelle" }],
-    servicenow: [{ id: "nowassist-a2a", label: "Now Assist (A2A)", viaAgent: "nowassist", costPerCall: 0.03, note: "Agent-zu-Agent über den ServiceNow-Assistenten" }, { id: "rest", label: "REST-Schnittstelle", viaAgent: "nexora", costPerCall: 0.005, note: "Freigegebene Schnittstelle" }],
-    workday: [{ id: "workday-agent-a2a", label: "Workday-Agent (A2A)", viaAgent: "workday-agent", costPerCall: 0.03, note: "Agent-zu-Agent über den Workday-Assistenten" }, { id: "integration", label: "Integrationsschnittstelle", viaAgent: "nexora", costPerCall: 0.005, note: "Freigegebene Schnittstelle" }],
-    layer: [{ id: "config", label: "NEXORA-Konfiguration", viaAgent: "nexora", costPerCall: 0, note: "Einstellungen des Experience Layers" }]
+    m365: [{ id: "copilot-a2a", label: "Copilot (A2A)", viaAgent: "copilot", costPerCall: 0.03, note: "Agent-zu-Agent über den Microsoft-Assistenten" }, { id: "graph", label: "Graph-Schnittstelle", viaAgent: "stegarc", costPerCall: 0.002, note: "Freigegebene Schnittstelle" }],
+    servicenow: [{ id: "nowassist-a2a", label: "Now Assist (A2A)", viaAgent: "nowassist", costPerCall: 0.03, note: "Agent-zu-Agent über den ServiceNow-Assistenten" }, { id: "rest", label: "REST-Schnittstelle", viaAgent: "stegarc", costPerCall: 0.005, note: "Freigegebene Schnittstelle" }],
+    workday: [{ id: "workday-agent-a2a", label: "Workday-Agent (A2A)", viaAgent: "workday-agent", costPerCall: 0.03, note: "Agent-zu-Agent über den Workday-Assistenten" }, { id: "integration", label: "Integrationsschnittstelle", viaAgent: "stegarc", costPerCall: 0.005, note: "Freigegebene Schnittstelle" }],
+    layer: [{ id: "config", label: "STEGARC-Konfiguration", viaAgent: "stegarc", costPerCall: 0, note: "Einstellungen des Experience Layers" }]
   };
   const SAP_POLICY_NOTE = "Direkter Zugriff eines Agenten auf SAP-Schnittstellen ist in dieser Demo nicht vorgesehen. Die Zugriffswege orientieren sich am Hinweis auf die SAP API Policy (v4/2026) – ausdrücklich ohne Rechtsbewertung.";
   const FOUR_EYES_LIMIT = 10000; // Beispielwert: systemübergreifende Freigaben darüber brauchen zwei Personen
   const CONNECTORS = {
-    nexora: { id: "nexora", name: "NEXORA-Engine", kind: "erp", simulated: false, capabilities: { tasks: true, search: true, actions: true, kpis: true } },
+    stegarc: { id: "stegarc", name: "STEGARC-Engine", kind: "erp", simulated: false, capabilities: { tasks: true, search: true, actions: true, kpis: true } },
     sap: { id: "sap", name: "SAP S/4HANA (simuliert)", kind: "erp", simulated: true, capabilities: { tasks: true, search: true, actions: true, kpis: true }, originalUi: "SAP Fiori" },
     m365: { id: "m365", name: "Microsoft 365 (simuliert)", kind: "collaboration", simulated: true, capabilities: { tasks: true, search: true, actions: true, kpis: false }, originalUi: "Outlook" },
     servicenow: { id: "servicenow", name: "ServiceNow (simuliert)", kind: "itsm", simulated: true, capabilities: { tasks: true, search: true, actions: true, kpis: true }, originalUi: "ServiceNow Service Portal" },
@@ -39,19 +39,19 @@
   };
   /* Prozesse und System of Record (Standard). Karten, Inbox, Suche und Dashboard lesen über diese Zuordnung. */
   const PROCESSES = {
-    bestellanforderung: { label: "Bestellanforderung", systems: ["sap", "nexora"], owner: "sap" },
-    rechnungsfreigabe: { label: "Rechnungsfreigabe", systems: ["sap", "nexora"], owner: "sap" },
+    bestellanforderung: { label: "Bestellanforderung", systems: ["sap", "stegarc"], owner: "sap" },
+    rechnungsfreigabe: { label: "Rechnungsfreigabe", systems: ["sap", "stegarc"], owner: "sap" },
     ticket_einkauf: { label: "IT- und Einkaufsanfrage", systems: ["servicenow"], owner: "servicenow" },
-    abwesenheit: { label: "Abwesenheit", systems: ["workday", "nexora"], owner: "workday" },
+    abwesenheit: { label: "Abwesenheit", systems: ["workday", "stegarc"], owner: "workday" },
     freigabebitte: { label: "Freigabebitte per Mail", systems: ["m365"], owner: "m365" },
-    onboarding: { label: "Onboarding", systems: ["workday", "nexora"], owner: "workday" },
-    auftrag: { label: "Aufträge, Fertigung, Finanzen", systems: ["nexora"], owner: "nexora" }
+    onboarding: { label: "Onboarding", systems: ["workday", "stegarc"], owner: "workday" },
+    auftrag: { label: "Aufträge, Fertigung, Finanzen", systems: ["stegarc"], owner: "stegarc" }
   };
 
   /* ---------- Agenten-Register (A2A-Stil) und Router ----------
-     Jeder Agent hat eine Agentenkarte: Name, System, Fähigkeiten, Zugriffsweg. Alle außer der NEXORA-Engine sind simuliert. */
+     Jeder Agent hat eine Agentenkarte: Name, System, Fähigkeiten, Zugriffsweg. Alle außer der STEGARC-Engine sind simuliert. */
   const AGENTS = [
-    { id: "nexora", name: "NEXORA-Engine", system: "nexora", route: "engine", simulated: false, skills: ["Kennzahlen und GuV", "Aufträge, Fertigung, Service", "Einkauf und Lager", "HR und Personalkosten", "Datenmigration", "Inbox über alle Systeme"], keywords: [] },
+    { id: "stegarc", name: "STEGARC-Engine", system: "stegarc", route: "engine", simulated: false, skills: ["Kennzahlen und GuV", "Aufträge, Fertigung, Service", "Einkauf und Lager", "HR und Personalkosten", "Datenmigration", "Inbox über alle Systeme"], keywords: [] },
     { id: "joule", name: "Joule (simuliert)", system: "sap", route: "joule-a2a", simulated: true, skills: ["Bestellanforderungen", "Kreditorenrechnungen", "Materialbestand je Werk"], keywords: ["sap", "s/4", "s4", "fiori", "banf", "bestellanforderung 1000", "kreditor", "eingangsrechnung", "rechnungsfreigabe", "werk 1000", "materialbestand"] },
     { id: "copilot", name: "Copilot (simuliert)", system: "m365", route: "copilot-a2a", simulated: true, skills: ["Mails und Freigabebitten", "Termine", "Dokumente"], keywords: ["microsoft", "m365", "outlook", "teams", "mail", "e-mail", "postfach", "termin", "kalender", "sharepoint", "dokument"] },
     { id: "nowassist", name: "Now Assist (simuliert)", system: "servicenow", route: "nowassist-a2a", simulated: true, skills: ["IT- und Einkaufsanfragen", "Störungen", "Katalog"], keywords: ["servicenow", "ticket", "ritm", "incident", "störung", "it-anfrage", "service portal", "lizenz"] },
@@ -65,31 +65,31 @@
     if (/\b(direkt\w*|direct)\b[^.?!]{0,40}\b(api|schnittstelle|tabelle|datenbank|odata|rfc|bapi)\b|\b(rfc|bapi|se16|hana-datenbank|tabelle (bkpf|bseg|ekko|ekpo|mara|lfa1|acdoca))\b/.test(q) && (/sap|s\/4|joule|bapi|rfc|se16|hana|acdoca|bkpf|bseg|ekko|ekpo|mara|lfa1/.test(q)))
       return { ok: false, code: "ROUTE_NOT_ALLOWED", system: "sap", agent: AGENTS[1], text: "Für diese Anfrage gibt es keinen zulässigen Weg. " + SAP_POLICY_NOTE + " Zulässig sind Joule (A2A), das MCP Gateway und freigegebene Schnittstellen." };
     const nc = NOT_CONNECTED.find(n => q.includes(n));
-    if (nc) return { ok: false, code: "NO_ROUTE", system: null, agent: null, text: `Für „${nc[0].toUpperCase() + nc.slice(1)}“ gibt es in dieser Demo keinen angebundenen Konnektor und damit keinen zulässigen Weg. Angebunden sind die NEXORA-Engine sowie simuliert SAP S/4HANA, Microsoft 365, ServiceNow und Workday.` };
+    if (nc) return { ok: false, code: "NO_ROUTE", system: null, agent: null, text: `Für „${nc[0].toUpperCase() + nc.slice(1)}“ gibt es in dieser Demo keinen angebundenen Konnektor und damit keinen zulässigen Weg. Angebunden sind die STEGARC-Engine sowie simuliert SAP S/4HANA, Microsoft 365, ServiceNow und Workday.` };
     let best = AGENTS[0], score = 0;
     for (const a of AGENTS.slice(1)) { const sc = a.keywords.reduce((n, k) => n + (q.includes(k) ? (k.length > 4 ? 2 : 1) : 0), 0); if (sc > score) { best = a; score = sc; } }
     const r = routeOf(best.system, best.route);
     const what = best.system === "sap" ? (/rechnung|kreditor/.test(q) ? "invoices" : /bestellanforderung|banf/.test(q) ? "prs" : "materials") : null;
-    return { ok: true, agent: best, system: best.system, route: r, cost: r.costPerCall, what, cmd: best.system === "nexora" ? null : `conn.${best.system}.query` };
+    return { ok: true, agent: best, system: best.system, route: r, cost: r.costPerCall, what, cmd: best.system === "stegarc" ? null : `conn.${best.system}.query` };
   }
 
   /* ---------- Ablösung: unterstützte Prozesse, Extrakt, Abstimmung, Fortschritt ---------- */
   const SUPPORTED_TRANSITION = { bestellanforderung: "sap-pr" };
   /* Extrakt offener Bestellanforderungen aus dem simulierten SAP (rein lesend) */
   function prExtract(w, tid) { return { requisitions: state(w, tid).sap.prs.filter(o => o.status === "zur Freigabe" || o.status === "1. Freigabe erteilt").map(o => ({ BANFN: o.no, TXZ01: o.text, MENGE: o.qty, MEINS: o.unit || "Stk", PREIS: o.price, KOSTL: o.costCenter && o.costCenter !== "–" ? o.costCenter : "", AFNAM: o.requester, FAELLIG: o.due, KATALOG: o.catalog || null })) }; }
-  /* Abstimmung im Parallelbetrieb: neue Vorgänge in NEXORA gegen Spiegelungen im Altsystem (Stückzahl und Summe) */
+  /* Abstimmung im Parallelbetrieb: neue Vorgänge in STEGARC gegen Spiegelungen im Altsystem (Stückzahl und Summe) */
   function reconcile(w, tid, process) {
     const s = state(w, tid), t = w.tenants[tid]; const st = s.transition[process] || {}; const base = st.reqBase == null ? t.reqs.length : st.reqBase;
     const nx = t.reqs.slice(base).filter(q => q.type === "indirekt" && !q.legacy); const mir = s.sap.prs.filter(o => o.mirrorOf && nx.some(q => q.no === o.mirrorOf));
     const sum = a => r2(a.reduce((x, y) => x + y, 0)); const nSum = sum(nx.map(q => q.net)), lSum = sum(mir.map(o => o.value));
     const missing = nx.filter(q => !mir.some(o => o.mirrorOf === q.no)).map(q => q.no);
-    return { nexora: { count: nx.length, sum: nSum }, legacy: { count: mir.length, sum: lSum }, diffCount: nx.length - mir.length, diffSum: r2(nSum - lSum), missing, qty: { nexora: nx.reduce((a, q) => a + q.qty, 0), legacy: mir.reduce((a, o) => a + o.qty, 0) } };
+    return { stegarc: { count: nx.length, sum: nSum }, legacy: { count: mir.length, sum: lSum }, diffCount: nx.length - mir.length, diffSum: r2(nSum - lSum), missing, qty: { stegarc: nx.reduce((a, q) => a + q.qty, 0), legacy: mir.reduce((a, o) => a + o.qty, 0) } };
   }
-  /* Anteil der Vorgänge eines Prozesses auf der NEXORA-Engine */
+  /* Anteil der Vorgänge eines Prozesses auf der STEGARC-Engine */
   function share(w, tid, process) {
     const s = state(w, tid), t = w.tenants[tid];
-    if (process === "bestellanforderung") { const nx = t.reqs.filter(q => q.type === "indirekt" && q.status !== "zurückgezogen").length; const sap = s.sap.prs.filter(o => o.status !== "gespiegelt" && o.status !== "übernommen nach NEXORA").length; return nx + sap ? nx / (nx + sap) : 0; }
-    return s.owners[process] === "nexora" ? 1 : 0;
+    if (process === "bestellanforderung") { const nx = t.reqs.filter(q => q.type === "indirekt" && q.status !== "zurückgezogen").length; const sap = s.sap.prs.filter(o => o.status !== "gespiegelt" && o.status !== "übernommen nach STEGARC").length; return nx + sap ? nx / (nx + sap) : 0; }
+    return s.owners[process] === "stegarc" ? 1 : 0;
   }
 
   /* ---------- Hilfen ---------- */
@@ -99,7 +99,7 @@
   const addDays = (iso, n) => { const d = new Date(iso + "T00:00:00Z"); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
   function fail(code, text) { const e = new Error(text); e.code = code; throw e; }
   const STATE = new WeakMap(); // Mandantenobjekt → Konnektor-Zustand
-  const PROVIDERS = { nexoraTasks: null };
+  const PROVIDERS = { stegarcTasks: null };
 
   /* ---------- Deterministische Seed-Daten der simulierten Systeme ---------- */
   function seedState(w, tid) {
@@ -157,18 +157,18 @@
       if (own("abwesenheit") && allow(["hr", "approve"])) for (const o of s.workday.absences.filter(x => x.status === "beantragt")) out.push({ process: "abwesenheit", sys, ref: "workday:abs:" + o.no, title: `${o.type}: ${o.worker}`, fields: [["Zeitraum", `${o.days} Tage ab ${o.from}`], ["Art", o.type]], amount: 0, due: o.from, status: o.status, actions: [{ label: "Genehmigen", cmd: "conn.workday.approveAbsence", p: { ref: "workday:abs:" + o.no }, perm: "hr", primary: true }, { label: "Ablehnen", cmd: "conn.workday.rejectAbsence", p: { ref: "workday:abs:" + o.no }, perm: "hr", confirm: true }] });
       if (own("onboarding") && allow("hr")) for (const o of s.workday.onboarding) for (const k of o.tasks.filter(x => !x.done)) out.push({ process: "onboarding", sys, ref: `workday:onb:${o.no}:${k.id}`, title: `Onboarding ${o.worker}: ${k.text}`, fields: [["Start", o.start], ["Aufgabe", k.text]].concat(k.cost ? [["Folge", "IT-Anfrage in ServiceNow"]] : []), amount: k.cost || 0, due: addDays(o.start, -5), status: "offen", actions: [{ label: "Erledigen", cmd: "conn.workday.completeOnboardingTask", p: { ref: `workday:onb:${o.no}:${k.id}` }, perm: "hr", primary: true }] });
     }
-    if (sys === "nexora") {
+    if (sys === "stegarc") {
       const t = w.tenants[tid];
-      if (own("bestellanforderung") && allow("approve")) { const { u } = who(w, tid, ctx); for (const q of (t.reqs || []).filter(x => x.status === "zur Freigabe" && x.requester !== u.id && (x.level !== "ceo" || u.role === "ceo"))) out.push(prCard("nexora", "nexora:req:" + q.no, { no: q.no, text: q.text, qty: q.qty, unit: q.unit, value: q.net, requester: q.requesterName, costCenter: q.costCenter || "–", due: q.due || q.date, status: q.status }, tid)); }
-      if (PROVIDERS.nexoraTasks) for (const k of PROVIDERS.nexoraTasks(tid, ctx && ctx.user)) { if (k.cmd === "approveRequisition") continue; out.push({ process: k.cmd === "approveAbsence" ? "abwesenheit" : "auftrag", sys: "nexora", ref: "nexora:task:" + k.id, title: k.title, fields: [["Details", k.sub || ""]], amount: 0, due: t.date, status: "offen", actions: [{ label: k.label, cmd: k.cmd, p: k.p, perm: null, primary: true }].concat(k.reject ? [{ label: "Ablehnen", cmd: k.cmd, p: k.reject, perm: null, confirm: true }] : []) }); }
-      else for (const m of t.inbox.filter(x => x.status === "offen")) out.push({ process: "auftrag", sys: "nexora", ref: "nexora:inbox:" + m.id, title: m.text, fields: [], amount: 0, due: t.date, status: "offen", actions: [{ label: "Prüfen und buchen", cmd: "processInbox", p: { id: m.id }, perm: "view", primary: true }] });
+      if (own("bestellanforderung") && allow("approve")) { const { u } = who(w, tid, ctx); for (const q of (t.reqs || []).filter(x => x.status === "zur Freigabe" && x.requester !== u.id && (x.level !== "ceo" || u.role === "ceo"))) out.push(prCard("stegarc", "stegarc:req:" + q.no, { no: q.no, text: q.text, qty: q.qty, unit: q.unit, value: q.net, requester: q.requesterName, costCenter: q.costCenter || "–", due: q.due || q.date, status: q.status }, tid)); }
+      if (PROVIDERS.stegarcTasks) for (const k of PROVIDERS.stegarcTasks(tid, ctx && ctx.user)) { if (k.cmd === "approveRequisition") continue; out.push({ process: k.cmd === "approveAbsence" ? "abwesenheit" : "auftrag", sys: "stegarc", ref: "stegarc:task:" + k.id, title: k.title, fields: [["Details", k.sub || ""]], amount: 0, due: t.date, status: "offen", actions: [{ label: k.label, cmd: k.cmd, p: k.p, perm: null, primary: true }].concat(k.reject ? [{ label: "Ablehnen", cmd: k.cmd, p: k.reject, perm: null, confirm: true }] : []) }); }
+      else for (const m of t.inbox.filter(x => x.status === "offen")) out.push({ process: "auftrag", sys: "stegarc", ref: "stegarc:inbox:" + m.id, title: m.text, fields: [], amount: 0, due: t.date, status: "offen", actions: [{ label: "Prüfen und buchen", cmd: "processInbox", p: { id: m.id }, perm: "view", primary: true }] });
     }
     // Vier-Augen: wer schon freigegeben hat, bekommt die zweite Freigabe nicht als Aufgabe angeboten
     const uid = ctx && ctx.user;
     return out.filter(k => !(uid && k.approvedBy && k.approvedBy.includes(uid))).map(k => Object.assign(k, { source: CONNECTORS[sys].name, simulated: CONNECTORS[sys].simulated, route: defaultRouteLabel(sys, k), deepLink: k.ref }));
   }
-  function defaultRouteLabel(sys, k) { if (sys === "nexora") return ROUTES.nexora[0].label; const a = k.actions.find(x => x.cmd && x.cmd.startsWith("conn.")); if (!a) return ROUTES[sys][0].label; const cmd = a.cmd.split(".")[2]; return ROUTES[sys].find(r => r.id === ALLOWED[sys][cmd][0]).label; }
-  function listTasks(w, tid, ctx) { const out = []; for (const sys of ["nexora", "sap", "m365", "servicenow", "workday"]) out.push(...tasksOf(w, tid, sys, ctx)); return out.sort((a, b) => (a.due || "").localeCompare(b.due || "") || b.amount - a.amount); }
+  function defaultRouteLabel(sys, k) { if (sys === "stegarc") return ROUTES.stegarc[0].label; const a = k.actions.find(x => x.cmd && x.cmd.startsWith("conn.")); if (!a) return ROUTES[sys][0].label; const cmd = a.cmd.split(".")[2]; return ROUTES[sys].find(r => r.id === ALLOWED[sys][cmd][0]).label; }
+  function listTasks(w, tid, ctx) { const out = []; for (const sys of ["stegarc", "sap", "m365", "servicenow", "workday"]) out.push(...tasksOf(w, tid, sys, ctx)); return out.sort((a, b) => (a.due || "").localeCompare(b.due || "") || b.amount - a.amount); }
 
   /* ---------- Suche und Objekte ---------- */
   function search(w, tid, q, ctx) {
@@ -184,12 +184,12 @@
     for (const o of s.servicenow.tickets) if (m(o.no, o.text, o.requestedFor)) out.push(hit("servicenow", "servicenow:ritm:" + o.no, o.kind + "-Ticket", `${o.no} ${o.text}`, `${o.status}${o.cost ? " · " + eur(o.cost) : ""}`));
     for (const o of s.workday.absences) if (m(o.worker, o.type)) out.push(hit("workday", "workday:abs:" + o.no, "Abwesenheit", `${o.type}: ${o.worker}`, `${o.days} Tage · ${o.status}`));
     for (const o of s.workday.onboarding) if (m(o.worker, "onboarding")) out.push(hit("workday", "workday:onb:" + o.no, "Onboarding", o.worker, `Start ${o.start}`));
-    for (const d of t.docs.slice(-400)) if (m(d.no, d.text)) out.push(hit("nexora", "nexora:doc:" + d.no, "Beleg", `${d.no} ${d.text}`, d.date));
-    for (const so of t.salesOrders || []) if (m(so.no, so.customer)) out.push(hit("nexora", "nexora:so:" + so.no, "Kundenauftrag", so.no, `${so.status} · ${eur(so.net)}`));
-    for (const po of t.purchaseOrders || []) if (m(po.no, po.supplier)) out.push(hit("nexora", "nexora:po:" + po.no, "Bestellung", po.no, `${po.status} · ${eur(po.net)}`));
-    for (const q2 of t.reqs || []) if (m(q2.no, q2.text)) out.push(hit("nexora", "nexora:req:" + q2.no, "Bestellanforderung", `${q2.no} ${q2.text}`, `${q2.status} · ${eur(q2.net)}`));
-    for (const c of (t.master.customers || []).slice(0, 300)) if (m(c.id, c.name)) out.push(hit("nexora", "nexora:cust:" + c.id, "Kunde", c.name, c.city || ""));
-    for (const x of (t.master.materials || t.master.articles || []).slice(0, 300)) if (m(x.id, x.name)) out.push(hit("nexora", "nexora:mat:" + x.id, t.master.materials ? "Material" : "Artikel", x.name, x.id));
+    for (const d of t.docs.slice(-400)) if (m(d.no, d.text)) out.push(hit("stegarc", "stegarc:doc:" + d.no, "Beleg", `${d.no} ${d.text}`, d.date));
+    for (const so of t.salesOrders || []) if (m(so.no, so.customer)) out.push(hit("stegarc", "stegarc:so:" + so.no, "Kundenauftrag", so.no, `${so.status} · ${eur(so.net)}`));
+    for (const po of t.purchaseOrders || []) if (m(po.no, po.supplier)) out.push(hit("stegarc", "stegarc:po:" + po.no, "Bestellung", po.no, `${po.status} · ${eur(po.net)}`));
+    for (const q2 of t.reqs || []) if (m(q2.no, q2.text)) out.push(hit("stegarc", "stegarc:req:" + q2.no, "Bestellanforderung", `${q2.no} ${q2.text}`, `${q2.status} · ${eur(q2.net)}`));
+    for (const c of (t.master.customers || []).slice(0, 300)) if (m(c.id, c.name)) out.push(hit("stegarc", "stegarc:cust:" + c.id, "Kunde", c.name, c.city || ""));
+    for (const x of (t.master.materials || t.master.articles || []).slice(0, 300)) if (m(x.id, x.name)) out.push(hit("stegarc", "stegarc:mat:" + x.id, t.master.materials ? "Material" : "Artikel", x.name, x.id));
     return out.slice(0, 60);
   }
   function parseRef(ref) { const [sys, kind, ...rest] = String(ref).split(":"); return { sys, kind, id: rest.join(":") }; }
@@ -204,7 +204,7 @@
     if (sys === "servicenow" && kind === "ritm") { const o = s.servicenow.tickets.find(x => x.no === id); if (o) return f(`${o.kind}-Ticket ${o.no}`, [["Anfrage", o.text], ["Für", o.requestedFor], ["Kosten", eur(o.cost)], ["Status", o.status], ["Freigaben", o.approvals.map(a => a.name).join(", ") || "–"]].concat(o.source ? [["Ursprung", o.source]] : []), o.history, o); }
     if (sys === "workday" && kind === "abs") { const o = s.workday.absences.find(x => x.no === id); if (o) return f(`${o.type}: ${o.worker}`, [["Ab", o.from], ["Tage", o.days], ["Status", o.status]], o.history, o); }
     if (sys === "workday" && kind === "onb") { const o = s.workday.onboarding.find(x => x.no === id.split(":")[0]); if (o) return f(`Onboarding ${o.worker}`, [["Start", o.start]].concat(o.tasks.map(k => [k.text, k.done ? "erledigt" : "offen"])), o.history, o); }
-    if (sys === "nexora") { const tt = { so: () => t.salesOrders.find(x => x.no === id), po: () => t.purchaseOrders.find(x => x.no === id), req: () => (t.reqs || []).find(x => x.no === id), doc: () => t.docs.find(x => x.no === id), cust: () => t.master.customers.find(x => x.id === id), mat: () => (t.master.materials || t.master.articles || []).find(x => x.id === id) }[kind]; const o = tt && tt(); if (o) return f(`${kind.toUpperCase()} ${id}`, Object.entries(o).filter(([k, v]) => ["string", "number"].includes(typeof v)).slice(0, 10), [], o); }
+    if (sys === "stegarc") { const tt = { so: () => t.salesOrders.find(x => x.no === id), po: () => t.purchaseOrders.find(x => x.no === id), req: () => (t.reqs || []).find(x => x.no === id), doc: () => t.docs.find(x => x.no === id), cust: () => t.master.customers.find(x => x.id === id), mat: () => (t.master.materials || t.master.articles || []).find(x => x.id === id) }[kind]; const o = tt && tt(); if (o) return f(`${kind.toUpperCase()} ${id}`, Object.entries(o).filter(([k, v]) => ["string", "number"].includes(typeof v)).slice(0, 10), [], o); }
     return null;
   }
 
@@ -218,18 +218,18 @@
     sap: {
       approvePR(w, tid, p, ctx, s, route) { need(w, tid, ctx, "approve"); if (s.owners.bestellanforderung !== "sap") fail("READ_ONLY", "Bestellanforderungen werden nicht mehr in SAP geführt – das Altsystem ist für diesen Prozess nur noch lesend."); const o = findBy(s.sap.prs, parseRef(p.ref).id, "Bestellanforderung"); if (o.status !== "zur Freigabe") fail("STATUS", `Status „${o.status}“.`);
         const done = approve4(w, tid, ctx, o, o.value, o.no); if (!done) return { text: `1. Freigabe für Bestellanforderung ${o.no} erteilt – zweite Person nötig (über ${eur(FOUR_EYES_LIMIT)})` };
-        o.status = "freigegeben"; o.history.push(["freigegeben", w.tenants[tid].date]); return { text: `Bestellanforderung ${o.no} in SAP freigegeben (${route.label})`, follow: o.catalog ? [{ cmd: "createRequisition", p: Object.assign({ catalogId: o.catalog, qty: o.qty }, o.costCenter && o.costCenter !== "–" ? { costCenter: o.costCenter } : {}), why: `Bestellung und Wareneingang laufen in der NEXORA-Engine (Bezug SAP ${o.no})` }] : [] }; },
+        o.status = "freigegeben"; o.history.push(["freigegeben", w.tenants[tid].date]); return { text: `Bestellanforderung ${o.no} in SAP freigegeben (${route.label})`, follow: o.catalog ? [{ cmd: "createRequisition", p: Object.assign({ catalogId: o.catalog, qty: o.qty }, o.costCenter && o.costCenter !== "–" ? { costCenter: o.costCenter } : {}), why: `Bestellung und Wareneingang laufen in der STEGARC-Engine (Bezug SAP ${o.no})` }] : [] }; },
       rejectPR(w, tid, p, ctx, s) { need(w, tid, ctx, "approve"); const o = findBy(s.sap.prs, parseRef(p.ref).id, "Bestellanforderung"); if (o.status !== "zur Freigabe" && o.status !== "1. Freigabe erteilt") fail("STATUS", `Status „${o.status}“.`); o.status = "abgelehnt"; o.history.push(["abgelehnt", w.tenants[tid].date]); return { text: `Bestellanforderung ${o.no} abgelehnt` }; },
       approveInvoice(w, tid, p, ctx, s, route) { need(w, tid, ctx, "approve"); const o = findBy(s.sap.invoices, parseRef(p.ref).id, "Rechnung"); if (!["zur Freigabe", "1. Freigabe erteilt"].includes(o.status)) fail("STATUS", `Status „${o.status}“.`);
         const done = approve4(w, tid, ctx, o, o.amount, "die Rechnung " + o.no); if (!done) return { text: `1. Freigabe für Rechnung ${o.no} (${eur(o.amount)}) erteilt – Vier-Augen-Prinzip, zweite Person nötig` };
         o.status = "freigegeben"; o.history.push(["zur Zahlung freigegeben", w.tenants[tid].date]); return { text: `Rechnung ${o.no} über ${eur(o.amount)} in SAP zur Zahlung freigegeben (${route.label})` }; },
       rejectInvoice(w, tid, p, ctx, s) { need(w, tid, ctx, "approve"); const o = findBy(s.sap.invoices, parseRef(p.ref).id, "Rechnung"); if (o.status === "freigegeben") fail("STATUS", "Bereits freigegeben."); o.status = "abgelehnt"; o.history.push(["abgelehnt", w.tenants[tid].date]); return { text: `Rechnung ${o.no} abgelehnt und an den Lieferanten zurück` }; },
-      createPR(w, tid, p, ctx, s, route) { need(w, tid, ctx, "view"); if (s.owners.bestellanforderung !== "sap") fail("READ_ONLY", "Bestellanforderungen werden in der NEXORA-Engine geführt."); const text = String(p.text || "").trim(); if (text.length < 3 || !(p.price > 0)) fail("INPUT", "Bedarf und Preis fehlen.");
+      createPR(w, tid, p, ctx, s, route) { need(w, tid, ctx, "view"); if (s.owners.bestellanforderung !== "sap") fail("READ_ONLY", "Bestellanforderungen werden in der STEGARC-Engine geführt."); const text = String(p.text || "").trim(); if (text.length < 3 || !(p.price > 0)) fail("INPUT", "Bedarf und Preis fehlen.");
         const no = String(10004711 + s.sap.prs.length); const qty = p.qty > 0 ? p.qty : 1; const { u } = who(w, tid, ctx); const o = { no, text, qty, unit: "Stk", price: p.price, value: r2(qty * p.price), requester: p.requester || u.name, costCenter: p.costCenter || "–", created: w.tenants[tid].date, due: addDays(w.tenants[tid].date, 2), status: "zur Freigabe", approvals: [], catalog: p.catalogId || null, source: p.sourceRef || null, history: [["angelegt über " + route.label, w.tenants[tid].date]] }; s.sap.prs.push(o);
         return { text: `Bestellanforderung ${no} in SAP angelegt (${route.label})${p.sourceRef ? " aus " + p.sourceRef : ""}`, objects: ["sap:pr:" + no] }; },
-      mirrorPR(w, tid, p, ctx, s) { need(w, tid, ctx, "view"); if (!s.transition.bestellanforderung || s.transition.bestellanforderung.phase !== "parallel") fail("STATUS", "Spiegeln nur im Parallelbetrieb."); const no = String(10004711 + s.sap.prs.length); s.sap.prs.push({ no, text: p.text, qty: p.qty, unit: "Stk", price: p.price, value: r2(p.qty * p.price), requester: p.requester, costCenter: p.costCenter || "–", created: w.tenants[tid].date, due: w.tenants[tid].date, status: "gespiegelt", approvals: [], mirrorOf: p.reqNo, history: [["gespiegelt aus NEXORA " + p.reqNo, w.tenants[tid].date]] }); return { text: `Parallelbetrieb: ${p.reqNo} nach SAP gespiegelt (${no})` }; },
+      mirrorPR(w, tid, p, ctx, s) { need(w, tid, ctx, "view"); if (!s.transition.bestellanforderung || s.transition.bestellanforderung.phase !== "parallel") fail("STATUS", "Spiegeln nur im Parallelbetrieb."); const no = String(10004711 + s.sap.prs.length); s.sap.prs.push({ no, text: p.text, qty: p.qty, unit: "Stk", price: p.price, value: r2(p.qty * p.price), requester: p.requester, costCenter: p.costCenter || "–", created: w.tenants[tid].date, due: w.tenants[tid].date, status: "gespiegelt", approvals: [], mirrorOf: p.reqNo, history: [["gespiegelt aus STEGARC " + p.reqNo, w.tenants[tid].date]] }); return { text: `Parallelbetrieb: ${p.reqNo} nach SAP gespiegelt (${no})` }; },
       markMigrated(w, tid, p, ctx, s) { need(w, tid, ctx, "approve"); const st = s.transition.bestellanforderung; if (!st || st.phase !== "parallel") fail("STATUS", "Kennzeichnen nur im Parallelbetrieb."); const map = p.map || {}; let n = 0;
-        for (const o of s.sap.prs) if (map[o.no] && o.status !== "übernommen nach NEXORA") { o.prevStatus = o.status; o.status = "übernommen nach NEXORA"; o.migratedTo = map[o.no]; o.history.push(["übernommen nach NEXORA " + map[o.no] + " – nur noch lesend", w.tenants[tid].date]); n++; }
+        for (const o of s.sap.prs) if (map[o.no] && o.status !== "übernommen nach STEGARC") { o.prevStatus = o.status; o.status = "übernommen nach STEGARC"; o.migratedTo = map[o.no]; o.history.push(["übernommen nach STEGARC " + map[o.no] + " – nur noch lesend", w.tenants[tid].date]); n++; }
         return { text: `${n} Bestellanforderung(en) in SAP als übernommen gekennzeichnet – Altsystem für diesen Prozess nur noch lesend` }; },
       query(w, tid, p, ctx, s, route) { need(w, tid, ctx, "view"); const what = p.what || "materials"; const data = what === "invoices" ? s.sap.invoices.map(o => ({ no: o.no, lieferant: o.supplier, betrag: o.amount, status: o.status })) : what === "prs" ? s.sap.prs.map(o => ({ no: o.no, bedarf: o.text, wert: o.value, status: o.status })) : s.sap.materials.map(o => ({ material: o.name, werk: o.plant, verfuegbar: o.available - o.reserved })); return { text: `SAP-Abfrage ${what} über ${route.label}`, result: data, read: true }; }
     },
@@ -242,7 +242,7 @@
       approveRITM(w, tid, p, ctx, s, route) { need(w, tid, ctx, "approve"); const o = findBy(s.servicenow.tickets, parseRef(p.ref).id, "Ticket"); if (!["zur Freigabe", "1. Freigabe erteilt"].includes(o.status)) fail("STATUS", `Status „${o.status}“.`);
         const done = approve4(w, tid, ctx, o, o.cost, "das Ticket " + o.no); if (!done) return { text: `1. Freigabe für ${o.no} erteilt – zweite Person nötig` };
         o.status = "freigegeben"; o.history.push(["freigegeben", w.tenants[tid].date]); const owner = s.owners.bestellanforderung; const qty = 1;
-        const follow = o.cost > 0 ? [owner === "sap" ? { cmd: "conn.sap.createPR", p: { text: o.text, qty, price: o.cost, costCenter: o.costCenter || null, catalogId: o.catalog || null, requester: o.requestedFor, sourceRef: "ServiceNow " + o.no, route: "joule-a2a" }, why: "Bestellanforderung im System of Record (SAP, über Joule)" } : { cmd: "createRequisition", p: o.catalog ? { catalogId: o.catalog, qty, costCenter: o.costCenter || undefined } : { category: o.kind === "Software" ? "IT" : "IT", text: o.text, price: o.cost, costCenter: o.costCenter || undefined }, why: "Bestellanforderung im System of Record (NEXORA-Engine)" }] : [];
+        const follow = o.cost > 0 ? [owner === "sap" ? { cmd: "conn.sap.createPR", p: { text: o.text, qty, price: o.cost, costCenter: o.costCenter || null, catalogId: o.catalog || null, requester: o.requestedFor, sourceRef: "ServiceNow " + o.no, route: "joule-a2a" }, why: "Bestellanforderung im System of Record (SAP, über Joule)" } : { cmd: "createRequisition", p: o.catalog ? { catalogId: o.catalog, qty, costCenter: o.costCenter || undefined } : { category: o.kind === "Software" ? "IT" : "IT", text: o.text, price: o.cost, costCenter: o.costCenter || undefined }, why: "Bestellanforderung im System of Record (STEGARC-Engine)" }] : [];
         return { text: `${o.no} in ServiceNow freigegeben (${route.label})`, follow }; },
       rejectRITM(w, tid, p, ctx, s) { need(w, tid, ctx, "approve"); const o = findBy(s.servicenow.tickets, parseRef(p.ref).id, "Ticket"); o.status = "abgelehnt"; o.history.push(["abgelehnt", w.tenants[tid].date]); return { text: `${o.no} abgelehnt` }; },
       createRITM(w, tid, p, ctx, s, route) { need(w, tid, ctx, "view"); const no = "RITM00" + (14021 + s.servicenow.tickets.filter(x => x.no.startsWith("RITM")).length); const o = { no, kind: p.kind || "Einkauf", text: p.text, requestedFor: p.requestedFor, cost: r2(p.cost || 0), catalog: p.catalogId || null, costCenter: p.costCenter || null, status: "zur Freigabe", approvals: [], created: w.tenants[tid].date, due: addDays(w.tenants[tid].date, 1), source: p.sourceRef || null, history: [["angelegt über " + route.label, w.tenants[tid].date]] }; s.servicenow.tickets.push(o); return { text: `ServiceNow-Ticket ${no} angelegt: ${o.text}`, objects: ["servicenow:ritm:" + no] }; },
@@ -263,16 +263,16 @@
         const go = (phase, text) => { st.log.push({ phase, date, by: u.name, text }); st.phase = phase; return { text }; };
         if (p.step === "parallel") { if (st.phase !== "überlagert" && st.phase !== "zurückgestellt") fail("STATUS", `Phase „${st.phase}“.`); if (!SUPPORTED_TRANSITION[p.process]) fail("PROCESS", `${pr.label} ist in dieser Demo nicht umstellbar.`);
           const t = w.tenants[tid]; const mp = t.migProjects && t.migProjects[SUPPORTED_TRANSITION[p.process]]; if (!mp || !mp.done || !mp.done.requisitions) fail("ORDER", "Zuerst die Datenübernahme abschließen (Testlauf, Freigabe, Produktivübernahme).");
-          st.until = addDays(date, p.days || 14); st.reqBase = t.reqs.length; st.migrated = (mp.done.requisitions.reqs || []).slice(); s.owners[p.process] = "nexora"; return go("parallel", `${pr.label}: Parallelbetrieb bis ${st.until} – neue Vorgänge in der NEXORA-Engine, Spiegelung ins Altsystem`); }
-        if (p.step === "cutover") { if (st.phase !== "parallel") fail("STATUS", "Umschalten nur aus dem Parallelbetrieb."); const rc = reconcile(w, tid, p.process); if (rc.diffCount !== 0 || rc.diffSum !== 0) fail("RECON", `Abstimmung zeigt Differenzen (${rc.diffCount} Vorgänge, ${eur(rc.diffSum)}) – Umschalten nicht möglich.`); st.recon = rc; return go("abgelöst", `${pr.label} abgelöst: System of Record ist die NEXORA-Engine, das Altsystem bleibt lesend (Historie)`); }
+          st.until = addDays(date, p.days || 14); st.reqBase = t.reqs.length; st.migrated = (mp.done.requisitions.reqs || []).slice(); s.owners[p.process] = "stegarc"; return go("parallel", `${pr.label}: Parallelbetrieb bis ${st.until} – neue Vorgänge in der STEGARC-Engine, Spiegelung ins Altsystem`); }
+        if (p.step === "cutover") { if (st.phase !== "parallel") fail("STATUS", "Umschalten nur aus dem Parallelbetrieb."); const rc = reconcile(w, tid, p.process); if (rc.diffCount !== 0 || rc.diffSum !== 0) fail("RECON", `Abstimmung zeigt Differenzen (${rc.diffCount} Vorgänge, ${eur(rc.diffSum)}) – Umschalten nicht möglich.`); st.recon = rc; return go("abgelöst", `${pr.label} abgelöst: System of Record ist die STEGARC-Engine, das Altsystem bleibt lesend (Historie)`); }
         if (p.step === "rollback") { if (st.phase !== "parallel") fail("STATUS", "Ein Rückweg ist nur bis zum Abschluss des Parallelbetriebs möglich."); const t = w.tenants[tid]; s.owners[p.process] = PROCESSES[p.process].owner;
-          // Altsystem führt wieder: übernommene Originale reaktivieren (Status aus NEXORA übernehmen), Spiegelungen werden echte Vorgänge
+          // Altsystem führt wieder: übernommene Originale reaktivieren (Status aus STEGARC übernehmen), Spiegelungen werden echte Vorgänge
           const byNo = no => t.reqs.find(q => q.no === no); const withdraw = [];
-          for (const o of s.sap.prs) { if (o.status === "übernommen nach NEXORA") { const q = byNo(o.migratedTo); o.status = q && q.status !== "zur Freigabe" ? q.status : o.prevStatus; o.history.push(["Rückweg: wieder im Altsystem führend", date]); delete o.prevStatus; delete o.migratedTo; if (q && q.status === "zur Freigabe") withdraw.push(q.no); }
+          for (const o of s.sap.prs) { if (o.status === "übernommen nach STEGARC") { const q = byNo(o.migratedTo); o.status = q && q.status !== "zur Freigabe" ? q.status : o.prevStatus; o.history.push(["Rückweg: wieder im Altsystem führend", date]); delete o.prevStatus; delete o.migratedTo; if (q && q.status === "zur Freigabe") withdraw.push(q.no); }
             else if (o.status === "gespiegelt") { const q = byNo(o.mirrorOf); o.status = q && q.status !== "zur Freigabe" ? q.status : "zur Freigabe"; o.history.push(["Rückweg: Spiegelung wird führender Vorgang", date]); if (q && q.status === "zur Freigabe") withdraw.push(q.no); } }
           st.reqBase = null; st.migrated = [];
           const r = go("zurückgestellt", `${pr.label}: Rückweg – System of Record wieder ${CONNECTORS[PROCESSES[p.process].owner].name}`);
-          return Object.assign(r, { follow: [{ cmd: "withdrawRequisitions", p: { reqNos: withdraw, project: SUPPORTED_TRANSITION[p.process], reason: "Rückweg der Ablösung" }, why: "offene Vorgänge in NEXORA zurückziehen" }] }); }
+          return Object.assign(r, { follow: [{ cmd: "withdrawRequisitions", p: { reqNos: withdraw, project: SUPPORTED_TRANSITION[p.process], reason: "Rückweg der Ablösung" }, why: "offene Vorgänge in STEGARC zurückziehen" }] }); }
         fail("STEP", "Unbekannter Schritt."); }
     }
   };
@@ -285,7 +285,7 @@
       const fn = CMD[sys] && Object.prototype.hasOwnProperty.call(CMD[sys], cmd) ? CMD[sys][cmd] : null; if (!fn) fail("CMD", `Befehl ${sys}.${cmd} unbekannt.`);
       const route = resolveRoute(sys, cmd, params.route); const { u, role } = who(w, tid, ctx);
       const res = fn(w, tid, params, ctx || {}, s, route) || {};
-      const entry = { seq: ++s.seq, date: t.date, period: t.date.slice(0, 7), user: u.id, userName: u.name, role: role.name, sys, system: CONNECTORS[sys] ? CONNECTORS[sys].name : "NEXORA-Konfiguration", route: route.label, routeId: route.id, agent: route.viaAgent, cmd, ref: params.ref || null, cost: route.costPerCall, ok: true, text: res.text, via: params.via || (ctx && ctx.via) || "Mensch" };
+      const entry = { seq: ++s.seq, date: t.date, period: t.date.slice(0, 7), user: u.id, userName: u.name, role: role.name, sys, system: CONNECTORS[sys] ? CONNECTORS[sys].name : "STEGARC-Konfiguration", route: route.label, routeId: route.id, agent: route.viaAgent, cmd, ref: params.ref || null, cost: route.costPerCall, ok: true, text: res.text, via: params.via || (ctx && ctx.via) || "Mensch" };
       s.ledger.push(entry);
       return { ok: true, cmd: "conn." + sys + "." + cmd, sys, text: res.text, cost: route.costPerCall, route: route.label, agent: route.viaAgent, objects: res.objects || [], follow: res.follow || [], result: res.result, user: u.name, docs: [] };
     } catch (e) {

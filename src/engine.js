@@ -1,8 +1,8 @@
-/* NEXORA Business Engine v0.3 – reine Geschäftslogik, kein DOM.
-   Läuft im Browser (window.NexoraEngine) und in Node (require) für automatisierte Tests.
+/* STEGARC Business Engine v0.3 – reine Geschäftslogik, kein DOM.
+   Läuft im Browser (window.StegarcEngine) und in Node (require) für automatisierte Tests.
    Grundsätze: doppelte Buchführung, Buchung nur aus Geschäftsvorfällen, Perioden, Idempotenz,
    reproduzierbarer Seed je Mandant, unternehmensübergreifende Vorgänge nur über Nachrichten. */
-(function (root, factory) { if (typeof module === "object" && module.exports) module.exports = factory(); else root.NexoraEngine = factory(); })(this, function () {
+(function (root, factory) { if (typeof module === "object" && module.exports) module.exports = factory(); else root.StegarcEngine = factory(); })(this, function () {
 "use strict";
 const VERSION = "0.4.0";
 const START_DATE = "2026-11-02";

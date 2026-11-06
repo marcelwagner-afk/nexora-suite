@@ -5,20 +5,20 @@ ROOT=pathlib.Path(__file__).resolve().parent.parent
 SP=str(ROOT/"test-results")+"/"; os.makedirs(SP, exist_ok=True)
 
 async def markt(p):
-  """Marktposition auf der NEXORA-Produktseite: öffentliche und interne Fassung, Interaktion, Mobil, Hell/Dunkel."""
+  """Marktposition auf der STEGARC-Produktseite: öffentliche und interne Fassung, Interaktion, Mobil, Hell/Dunkel."""
   import threading, http.server, functools, socketserver
   H = functools.partial(http.server.SimpleHTTPRequestHandler, directory=str(ROOT / "dist"))
   class Q(http.server.SimpleHTTPRequestHandler):
     def log_message(self, *a): pass
   srv = socketserver.TCPServer(("127.0.0.1", 0), functools.partial(Q, directory=str(ROOT / "dist"))); port = srv.server_address[1]
-  threading.Thread(target=srv.serve_forever, daemon=True).start(); base = f"http://127.0.0.1:{port}/nexora.html"
+  threading.Thread(target=srv.serve_forever, daemon=True).start(); base = f"http://127.0.0.1:{port}/stegarc.html"
   b = await p.chromium.launch(); errs = []
   try:
     pg = await b.new_page(viewport={"width": 1440, "height": 900}); pg.on("pageerror", lambda e: errs.append(str(e)))
     await pg.goto(base + "#markt"); await pg.wait_for_timeout(400)
     pts = await pg.evaluate("document.querySelectorAll('#mkChart .pt').length"); rows = await pg.evaluate("document.querySelectorAll('#mkMatBody tr').length")
     txt = await pg.inner_text("#markt"); print("Markt öffentlich:", pts, "Punkte,", rows, "Zeilen")
-    assert pts == 14 and rows == 9, (pts, rows); assert "NEXORA heute" not in txt; assert "Roadmap" in txt; assert "Prompt" not in txt and "Umbau" not in txt and "Phase" not in txt
+    assert pts == 14 and rows == 9, (pts, rows); assert "STEGARC heute" not in txt; assert "Roadmap" in txt; assert "Prompt" not in txt and "Umbau" not in txt and "Phase" not in txt
     assert not await pg.evaluate("!!document.getElementById('mkArrow')")
     await pg.click("#mkChart .pt[aria-label='Gemini Enterprise']"); await pg.wait_for_timeout(200)
     assert await pg.evaluate("document.querySelector('#mkMatBody tr[data-id=google]').classList.contains('hl')"), "Google-Zeile markiert"
@@ -31,9 +31,9 @@ async def markt(p):
     await d.goto(base + "#markt"); await d.wait_for_timeout(400); await d.add_style_tag(content=".ts-top{position:static!important}"); el = await d.query_selector("#markt"); await el.screenshot(path=SP + "ts_markt_dunkel.png")
     m = await b.new_page(viewport={"width": 400, "height": 860}); m.on("pageerror", lambda e: errs.append(str(e)))
     await m.goto(base + "#markt"); await m.wait_for_timeout(400); sw = await m.evaluate("document.documentElement.scrollWidth"); print("Markt mobil scrollWidth", sw); assert sw == 400, sw
-    st = await m.evaluate("document.querySelectorAll('#stories .story').length"); assert st > 0, "Storys auf der NEXORA-Produktseite"
+    st = await m.evaluate("document.querySelectorAll('#stories .story').length"); assert st > 0, "Storys auf der STEGARC-Produktseite"; assert await m.evaluate("document.querySelectorAll('video').length === 0 && !document.getElementById('filme')"), "Filme auf der Produktseite ausgeblendet"
     su = await b.new_page(viewport={"width": 1440, "height": 900}); su.on("pageerror", lambda e: errs.append(str(e))); await su.goto(f"http://127.0.0.1:{port}/index.html"); await su.wait_for_timeout(400)
-    href = await su.evaluate("[...document.querySelectorAll('nav.side a')].filter(a=>a.textContent.trim() === 'Marktposition').map(a=>a.getAttribute('href'))[0]"); print("Suite-Link Marktposition:", href); assert href and href.endswith("nexora.html#markt"), href
+    href = await su.evaluate("[...document.querySelectorAll('nav.side a')].filter(a=>a.textContent.trim() === 'Marktposition').map(a=>a.getAttribute('href'))[0]"); print("Suite-Link Marktposition:", href); assert href and href.endswith("stegarc.html#markt"), href
   finally:
     await b.close(); srv.shutdown()
   assert not errs, errs
@@ -42,7 +42,7 @@ async def markt(p):
 async def layer(p):
   """Experience Layer: Inbox in drei Rollen, Aufgaben aus mindestens vier Systemen, je System eine Freigabe."""
   b = await p.chromium.launch(); pg = await b.new_page(viewport={"width": 1440, "height": 900}); errs = []; pg.on("pageerror", lambda e: errs.append(str(e)))
-  html = "<!doctype html><html><head><meta charset='utf-8'></head><body>" + open(ROOT / "dist" / "nexora-suite.html").read() + "</body></html>"
+  html = "<!doctype html><html><head><meta charset='utf-8'></head><body>" + open(ROOT / "dist" / "stegarc-suite.html").read() + "</body></html>"
   await pg.set_content(html); await pg.wait_for_timeout(400)
   await pg.evaluate("ACT.resetAllBtn(); S.mode='free'; ACT.tenant({id:'elevon'}); S.users.elevon='u3'; act('createQuote',{customerId:'C-RHEIN',qty:4,discountPct:7}); ACT.setLayer({v:'layer'})"); await pg.wait_for_timeout(200)
   seen = set()
@@ -57,7 +57,7 @@ async def layer(p):
     await pg.click(f".ly-card[data-sys='{sys}'] button.btn.pri"); await pg.wait_for_timeout(120)
     if await pg.evaluate("!!document.querySelector('[data-act=confirmOk]')"): await pg.click("[data-act=confirmOk]"); await pg.wait_for_timeout(120)
     ok = await pg.evaluate("S.last && S.last.ok"); n1 = await pg.evaluate("document.querySelectorAll('.ly-card').length"); print("Freigabe", sys, "als", uid, ok, n0, "→", n1); assert ok, (sys, await pg.evaluate("S.last && S.last.text"))
-  for uid, sys in (("u2", "sap"), ("u2", "servicenow"), ("u2", "m365"), ("u8", "workday"), ("u2", "nexora")): await approve(uid, sys)
+  for uid, sys in (("u2", "sap"), ("u2", "servicenow"), ("u2", "m365"), ("u8", "workday"), ("u2", "stegarc")): await approve(uid, sys)
   led = await pg.evaluate("C.ledger(W,'elevon').map(x=>x.sys+':'+x.route)"); print("Protokoll:", led); assert len(led) >= 4
   await pg.evaluate("S.sel.sysF=null; ACT.setUser({id:'u2'}); openPalette(); S.pal='Monitor'; renderLayer()"); await pg.wait_for_timeout(100)
   assert await pg.evaluate("document.querySelectorAll('#layer .pal-item').length") > 0, "Suche"; await pg.screenshot(path=SP + "layer_search.png")
@@ -96,7 +96,7 @@ async def layer(p):
   assert await pg.evaluate("document.querySelectorAll('.ag-card').length") == 5; await pg.screenshot(path=SP + "layer_agents.png", full_page=True)
   # Phase 5: Protokoll – Summe = Kostenzähler, CSV mit allen Spalten, Filter, Seite Mitbestimmung & Datenschutz
   await pg.evaluate("location.hash='audit'"); await pg.wait_for_timeout(150)
-  au = await pg.evaluate("""(() => { const rows = auditRows(); const sum = Math.round(rows.reduce((a, r) => a + (r.cost || 0), 0) * 1000) / 1000; const c = document.querySelector('.cost-ctr'); return { n: rows.length, sum, month: +c.dataset.month, day: +c.dataset.day, ledger: C.ledger(W, 'elevon').length, eng: rows.filter(r => r.system === 'NEXORA-Engine').length, rej: rows.filter(r => !r.ok).length }; })()""")
+  au = await pg.evaluate("""(() => { const rows = auditRows(); const sum = Math.round(rows.reduce((a, r) => a + (r.cost || 0), 0) * 1000) / 1000; const c = document.querySelector('.cost-ctr'); return { n: rows.length, sum, month: +c.dataset.month, day: +c.dataset.day, ledger: C.ledger(W, 'elevon').length, eng: rows.filter(r => r.system === 'STEGARC-Engine').length, rej: rows.filter(r => !r.ok).length }; })()""")
   print("Protokoll:", au); assert au["n"] >= au["ledger"] and abs(au["sum"] - au["month"]) < 1e-9 and au["eng"] >= 1 and au["rej"] >= 1
   csv = await pg.evaluate("auditCsv(auditRows())"); head = csv.lstrip("\ufeff").split("\r\n")[0].split(";")
   print("CSV-Spalten:", head); assert len(head) == 13 and all(h in head for h in ["Datum", "Nutzer", "Rolle", "System", "Zugriffsweg", "Agent", "Kosten (EUR, Beispielwert)", "Ergebnis"]) and len(csv.strip().split("\r\n")) == au["n"] + 1
@@ -105,7 +105,7 @@ async def layer(p):
   await pg.screenshot(path=SP + "layer_audit.png"); await pg.evaluate("ACT.auditReset()")
   await pg.evaluate("location.hash='privacy'"); await pg.wait_for_timeout(120)
   assert await pg.evaluate("document.querySelectorAll('.priv-mx tbody tr').length") >= 5; await pg.screenshot(path=SP + "layer_privacy.png", full_page=True)
-  # Phase 7: Ablöse-Cockpit – Bestellanforderung SAP → NEXORA über die Oberfläche, CFO-Inbox vorher = nachher
+  # Phase 7: Ablöse-Cockpit – Bestellanforderung SAP → STEGARC über die Oberfläche, CFO-Inbox vorher = nachher
   shape = "JSON.stringify(layerTasks().filter(k => k.process === 'bestellanforderung').map(k => JSON.stringify([k.fields, k.status, k.actions.map(a => a.label)])).sort())"
   await pg.evaluate("ACT.setUser({id:'u2'}); location.hash='tasks'"); await pg.wait_for_timeout(100); before = await pg.evaluate(shape); srcb = await pg.evaluate("[...new Set(layerTasks().filter(k => k.process === 'bestellanforderung').map(k => k.sys))]")
   await pg.evaluate("location.hash='transition'"); await pg.wait_for_timeout(120); await pg.screenshot(path=SP + "layer_transition_0.png", full_page=True)
@@ -117,7 +117,7 @@ async def layer(p):
     await pg.screenshot(path=SP + "layer_transition_errors.png", full_page=True); await pg.check("[data-on=trRule][data-k=fillCostCenter]"); await pg.wait_for_timeout(80); await click("trTest", "u10")
     assert await pg.evaluate("T().migProjects['sap-pr'].tests.requisitions.errors") == 0
   for actn, uid in (("trReq", "u10"), ("trAppr", "u2"), ("trRun", "u10"), ("trParallel", "u2")): await click(actn, uid)
-  await click("trSample", "u3"); rc = await pg.evaluate("C.reconcile(W,'elevon','bestellanforderung')"); print("Abstimmung:", rc["nexora"], rc["legacy"], rc["diffCount"], rc["diffSum"]); assert rc["diffCount"] == 0 and rc["diffSum"] == 0 and rc["nexora"]["count"] == 1
+  await click("trSample", "u3"); rc = await pg.evaluate("C.reconcile(W,'elevon','bestellanforderung')"); print("Abstimmung:", rc["stegarc"], rc["legacy"], rc["diffCount"], rc["diffSum"]); assert rc["diffCount"] == 0 and rc["diffSum"] == 0 and rc["stegarc"]["count"] == 1
   await pg.evaluate("ACT.setUser({id:'u2'})"); await pg.wait_for_timeout(60); await pg.screenshot(path=SP + "layer_transition_parallel.png", full_page=True)
   await click("trCutover", "u2")
   await pg.evaluate("ACT.setUser({id:'u2'}); location.hash='tasks'"); await pg.wait_for_timeout(100); after = await pg.evaluate(shape + ".replace(/x/g,'x')")
@@ -127,7 +127,7 @@ async def layer(p):
   fixcc = lambda arr: sorted(x.replace('["Kostenstelle","–"]', '["Kostenstelle","KS4130"]') for x in _j.loads(arr))  # per Regel ergänzte Kostenstelle
   print("CFO-Inbox Bestellanforderungen:", srcb, "→", srca, "gleich:", fixcc(before) == fixcc(aft_nosample))
   if fixcc(before) != fixcc(aft_nosample): print(_j.loads(before), _j.loads(aft_nosample))
-  assert srcb == ["sap"] and srca == ["nexora"] and fixcc(before) == fixcc(aft_nosample)
+  assert srcb == ["sap"] and srca == ["stegarc"] and fixcc(before) == fixcc(aft_nosample)
   steps = await pg.evaluate("auditRows().filter(r => /migration|transition|markMigrated|mirrorPR/.test(r.cmd)).map(r => r.cmd)"); print("Protokoll der Ablösung:", steps); assert len(steps) >= 7
   await pg.evaluate("location.hash='transition'"); await pg.wait_for_timeout(120); await pg.screenshot(path=SP + "layer_transition_done.png", full_page=True)
   assert await pg.evaluate("document.querySelector('[data-proc=bestellanforderung]').innerText.includes('abgelöst')")
@@ -158,7 +158,7 @@ async def layer(p):
 async def pe(p):
   """PE Command Center: Kennzahlen, Filter, Drill-down, Mandantentrennung über die Oberfläche, Verwaltung, schmale Breite."""
   b = await p.chromium.launch(); pg = await b.new_page(viewport={"width": 1440, "height": 900}); errs = []; pg.on("pageerror", lambda e: errs.append(str(e)))
-  html = "<!doctype html><html><head><meta charset='utf-8'></head><body>" + open(ROOT / "dist" / "nexora-suite.html").read() + "</body></html>"
+  html = "<!doctype html><html><head><meta charset='utf-8'></head><body>" + open(ROOT / "dist" / "stegarc-suite.html").read() + "</body></html>"
   await pg.set_content(html); await pg.wait_for_timeout(400)
   await pg.evaluate("S.live=false; S.pe.principal='p1'; S.pe.log=[]; PEW=null; location.hash='pe'"); await pg.wait_for_timeout(300)
   st = await pg.evaluate("({ kpis: document.querySelectorAll('.pe-kpi').length, funds: document.querySelectorAll('.pe-tbl tbody tr').length, hm: document.querySelectorAll('.pe-hm tbody tr').length, ins: document.querySelectorAll('.pe-in').length, nav: document.querySelectorAll('.pe-nav a').length, demo: !!document.querySelector('.pe-demo'), rev: document.querySelector('[data-kpi=revenue] b').innerText })")
@@ -177,17 +177,17 @@ async def pe(p):
   # Verwaltung: Plattform legt Organisation an, Administrator legt Fonds und Unternehmen an
   await pg.evaluate("S.pe.principal='p0'; location.hash='peadmin'; render()"); await pg.wait_for_timeout(120); await pg.fill("#peOrgName", "Alpenblick Partners"); await pg.click("[data-act=peCreateOrg]"); await pg.wait_for_timeout(150)
   await pg.fill("#peFundName", "Alpenblick Fund I"); await pg.click("[data-act=peAddFund]"); await pg.wait_for_timeout(120); await pg.fill("#peCoName", "Gipfelwerk GmbH"); await pg.click("[data-act=peAddCo]"); await pg.wait_for_timeout(150)
-  ad = await pg.evaluate("({ p: S.pe.principal, cos: NexoraPE.companies(peWorld(), peP(), {}).map(c => c.name + ':' + c.onboarding), log: S.pe.log.length })"); print("Verwaltung:", ad); assert ad["cos"] == ["Gipfelwerk GmbH:Nicht gestartet"] and ad["log"] == 3
+  ad = await pg.evaluate("({ p: S.pe.principal, cos: StegarcPE.companies(peWorld(), peP(), {}).map(c => c.name + ':' + c.onboarding), log: S.pe.log.length })"); print("Verwaltung:", ad); assert ad["cos"] == ["Gipfelwerk GmbH:Nicht gestartet"] and ad["log"] == 3
   await pg.screenshot(path=SP + "pe_admin.png", full_page=True); await pg.evaluate("ACT.peResetAdmin(); S.pe.principal='p1'; peSave()")
   # PE-Phase 3: Financial Intelligence, Cash & Liquidity, AI Financial Advisor
   await pg.set_viewport_size({"width": 1440, "height": 900}); await pg.evaluate("S.pe.principal='p1'; S.pe.filter={period:'LTM'}; location.hash='pe-fin'; render()"); await pg.wait_for_timeout(200)
-  e0 = await pg.evaluate("NexoraPE.portfolioKpis(peWorld(), peP(), {basis:'ifrs'}).ebitda")
-  await pg.click("[data-act=peAdj][data-ok='1'] >> nth=0"); await pg.wait_for_timeout(150); e1 = await pg.evaluate("NexoraPE.portfolioKpis(peWorld(), peP(), {basis:'ifrs'}).ebitda"); print("IFRS-16-Freigabe: EBITDA Konzernsicht", round(e0/1e6,1), "→", round(e1/1e6,1)); assert e1 > e0
+  e0 = await pg.evaluate("StegarcPE.portfolioKpis(peWorld(), peP(), {basis:'ifrs'}).ebitda")
+  await pg.click("[data-act=peAdj][data-ok='1'] >> nth=0"); await pg.wait_for_timeout(150); e1 = await pg.evaluate("StegarcPE.portfolioKpis(peWorld(), peP(), {basis:'ifrs'}).ebitda"); print("IFRS-16-Freigabe: EBITDA Konzernsicht", round(e0/1e6,1), "→", round(e1/1e6,1)); assert e1 > e0
   for t in ("cmp", "ana", "fc"): await pg.evaluate(f"ACT.peFinTab({{t:'{t}'}})"); await pg.wait_for_timeout(120)
   assert await pg.evaluate("document.querySelectorAll('.pe-chart').length") == 2; await pg.screenshot(path=SP + "pe_forecast.png", full_page=True)
   await pg.evaluate("location.hash='pe-cash'"); await pg.wait_for_timeout(200); lq = await pg.evaluate("[...document.querySelectorAll('.pe-tbl tbody tr')][0].innerText"); print("Liquidität, erste Zeile:", lq.replace("\n", " ")[:90]); assert "Velatis" in lq; await pg.screenshot(path=SP + "pe_cash.png", full_page=True)
   await pg.evaluate("S.pe.chat=[]; S.pe.aiMode='rules'; location.hash='pe-ai'"); await pg.wait_for_timeout(120)
-  for q in await pg.evaluate("NexoraPE.EXAMPLES"): await pg.evaluate(f"peAsk({repr(q)})"); await pg.wait_for_timeout(60)
+  for q in await pg.evaluate("StegarcPE.EXAMPLES"): await pg.evaluate(f"peAsk({repr(q)})"); await pg.wait_for_timeout(60)
   na = await pg.evaluate("({ n: document.querySelectorAll('.pe-ans').length, ev: document.querySelectorAll('.pe-ans .pe-ev').length, unmatched: [...document.querySelectorAll('.pe-ans b')].filter(b => b.innerText === 'Frage nicht zugeordnet').length })"); print("Advisor (Regeln):", na); assert na["n"] == 8 and na["ev"] == 8 and na["unmatched"] == 0
   await pg.screenshot(path=SP + "pe_advisor.png", full_page=True)
   await pg.evaluate("""BK.sample = async (turns, o) => { const t = o.tools.find(x => x.name === 'pe_analyse'); const r = t.execute({ frage: 'Welche Unternehmen bekommen in den nächsten sechs Monaten Liquiditätsprobleme?' }); const d = o.tools.find(x => x.name === 'pe_fonds').execute({ fund: 'F1' }); return { text: r.title + ': ' + r.rows.map(x => x.Unternehmen).join(', ') + ' · Belege: Kasse ' + r.rows[0]['Kasse heute'] + ' · Zeitraum: ' + r.period }; }; S.pe.aiMode='llm'; S.pe.chat=[]""")
@@ -197,17 +197,17 @@ async def pe(p):
   await pg.evaluate("BK.sample = null; S.pe.aiMode=null; S.pe.principal='p1'; S.pe.log=[]; PEW=null; peSave()")
   # PE-Phase 4: ERP Integration Hub – Mapping-Fehler beheben und neu synchronisieren
   await pg.evaluate("S.pe.principal='p1'; S.pe.log=[]; PEW=null; location.hash='pe-hub'; render()"); await pg.wait_for_timeout(200)
-  h0 = await pg.evaluate("NexoraPE.hubMonitor(peWorld(), peP(), {}).error"); await pg.click("tr[data-id=PC25]"); await pg.wait_for_timeout(150)
+  h0 = await pg.evaluate("StegarcPE.hubMonitor(peWorld(), peP(), {}).error"); await pg.click("tr[data-id=PC25]"); await pg.wait_for_timeout(150)
   for acc, cat in (("4730", "REV"), ("6640", "OPEX_OTHER"), ("6805", "OPEX_OTHER")):
     await pg.select_option(f"#map-{acc}", cat); await pg.click(f"[data-act=peMap][data-acc='{acc}']"); await pg.wait_for_timeout(120)
   await pg.click("[data-act=peSync][data-mode=voll]"); await pg.wait_for_timeout(200)
-  hs = await pg.evaluate("(() => { const d = NexoraPE.hubDetail(peWorld(), peP(), 'PC25'); return { health: d.health, diff: d.reconDiff, last: d.runs[0].status, by: d.runs[0].by, err: NexoraPE.hubMonitor(peWorld(), peP(), {}).error }; })()"); print("Integration Hub:", h0, "Fehler →", hs); assert hs["health"] == "ok" and hs["diff"] == 0 and hs["err"] == h0 - 1 and hs["by"] == "Dr. Katharina Brandt"
+  hs = await pg.evaluate("(() => { const d = StegarcPE.hubDetail(peWorld(), peP(), 'PC25'); return { health: d.health, diff: d.reconDiff, last: d.runs[0].status, by: d.runs[0].by, err: StegarcPE.hubMonitor(peWorld(), peP(), {}).error }; })()"); print("Integration Hub:", h0, "Fehler →", hs); assert hs["health"] == "ok" and hs["diff"] == 0 and hs["err"] == h0 - 1 and hs["by"] == "Dr. Katharina Brandt"
   await pg.screenshot(path=SP + "pe_hub.png", full_page=True)
   await pg.evaluate("S.pe.principal='p2'; render()"); await pg.click("tr[data-id=PC01]"); await pg.wait_for_timeout(120); assert await pg.evaluate("document.querySelectorAll('[data-act=peSync]').length") == 0, "Fund Manager ohne Lauf-Schaltflächen"
   await pg.evaluate("S.pe.principal='p1'; S.pe.log=[]; PEW=null; S.pe.hub=null; peSave()")
   # PE-Phase 5: Konsolidierung (IC-Klärung), Exit-Simulation, Value Creation, Risiko, Onboarding bis zur Aktivierung
   await pg.evaluate("S.pe.principal='p1'; S.pe.log=[]; PEW=null; location.hash='pe-cons'; render()"); await pg.wait_for_timeout(200)
-  await pg.click("[data-act=peIcResolve]"); await pg.wait_for_timeout(150); ic = await pg.evaluate("NexoraPE.consolidate(peWorld(), peP(), 'HOLD-1').ic.diffPL"); print("Konsolidierung IC-Differenz nach Klärung:", ic); assert ic == 0
+  await pg.click("[data-act=peIcResolve]"); await pg.wait_for_timeout(150); ic = await pg.evaluate("StegarcPE.consolidate(peWorld(), peP(), 'HOLD-1').ic.diffPL"); print("Konsolidierung IC-Differenz nach Klärung:", ic); assert ic == 0
   await pg.screenshot(path=SP + "pe_consolidation.png", full_page=True)
   await pg.evaluate("location.hash='pe-inv'"); await pg.wait_for_timeout(200); await pg.click("[data-act=peExitPreset][data-k=up]"); await pg.wait_for_timeout(150)
   ex = await pg.evaluate("[...document.querySelectorAll('.pe-exit .pe-kpi b')].map(b => b.innerText)"); print("Exit-Simulation (Aufwärts):", ex); assert len(ex) == 6; await pg.screenshot(path=SP + "pe_investment.png", full_page=True)
@@ -217,7 +217,7 @@ async def pe(p):
   await pg.evaluate("""(() => { const A = peP(); for (const [a, c] of [["4730","REV"],["6640","OPEX_OTHER"],["6805","OPEX_OTHER"]]) peCmd("mapAccount", { companyId: "PC25", account: a, category: c }); peCmd("syncRun", { companyId: "PC25", mode: "voll" }); })()""")
   await pg.evaluate("location.hash='pe-onb'"); await pg.wait_for_timeout(200); await pg.click("[data-act=peOnbDsa]"); await pg.wait_for_timeout(120); await pg.click("[data-act=peOnbReq]"); await pg.wait_for_timeout(120)
   await pg.select_option("[data-on=pePrin]", "p11"); await pg.wait_for_timeout(100)
-  n0 = await pg.evaluate("NexoraPE.portfolioKpis(peWorld(), peP(), {}).companies"); await pg.click("[data-act=peOnbAct]"); await pg.wait_for_timeout(150); n1 = await pg.evaluate("NexoraPE.portfolioKpis(peWorld(), peP(), {}).companies"); print("Onboarding aktiviert: Unternehmen im Reporting", n0, "→", n1); assert n1 == n0 + 1
+  n0 = await pg.evaluate("StegarcPE.portfolioKpis(peWorld(), peP(), {}).companies"); await pg.click("[data-act=peOnbAct]"); await pg.wait_for_timeout(150); n1 = await pg.evaluate("StegarcPE.portfolioKpis(peWorld(), peP(), {}).companies"); print("Onboarding aktiviert: Unternehmen im Reporting", n0, "→", n1); assert n1 == n0 + 1
   await pg.screenshot(path=SP + "pe_onboarding.png", full_page=True)
   await pg.evaluate("S.pe.principal='p1'; S.pe.log=[]; PEW=null; peSave()")
   # Modell B: Engine-Mandanten im PE-Portfolio, offene Periode live aus der Engine
@@ -233,10 +233,10 @@ async def pe(p):
   # PE-Phase 6: ERP-Transformation – Kandidat öffnen, Annahme ändern, Rechnung folgt
   await pg.evaluate("location.hash='pe-trans'; render()"); await pg.wait_for_timeout(200)
   tt = await pg.evaluate("document.querySelector('#page').innerText"); assert "Beispielwerte, keine Herstellerpreise" in tt and "Roadmap" in tt and "Castell" in tt, tt[:300]
-  top = await pg.evaluate("NexoraPE.transformation(peWorld(), peP(), S.pe.filter, S.pe.ta).candidates[0].id"); await pg.click(f"tr[data-act=peTaOpen][data-id={top}]"); await pg.wait_for_selector(f"[data-ta={top}]", timeout=3000)
-  d0 = await pg.evaluate(f"NexoraPE.transformation(peWorld(), peP(), S.pe.filter, S.pe.ta).rows.find(r => r.id === '{top}').scenarios.D.oneTime")
+  top = await pg.evaluate("StegarcPE.transformation(peWorld(), peP(), S.pe.filter, S.pe.ta).candidates[0].id"); await pg.click(f"tr[data-act=peTaOpen][data-id={top}]"); await pg.wait_for_selector(f"[data-ta={top}]", timeout=3000)
+  d0 = await pg.evaluate(f"StegarcPE.transformation(peWorld(), peP(), S.pe.filter, S.pe.ta).rows.find(r => r.id === '{top}').scenarios.D.oneTime")
   await pg.evaluate("const el=document.querySelector('[data-on=peTaIn][data-k=parallelMonths]'); el.value='12'; el.dispatchEvent(new Event('change', {bubbles:true}))"); await pg.wait_for_timeout(150)
-  d1 = await pg.evaluate(f"NexoraPE.transformation(peWorld(), peP(), S.pe.filter, S.pe.ta).rows.find(r => r.id === '{top}').scenarios.D.oneTime"); print("ERP-Transformation", top, "Einmalkosten D", round(d0), "→", round(d1), "bei 12 Monaten Parallelbetrieb"); assert d1 > d0
+  d1 = await pg.evaluate(f"StegarcPE.transformation(peWorld(), peP(), S.pe.filter, S.pe.ta).rows.find(r => r.id === '{top}').scenarios.D.oneTime"); print("ERP-Transformation", top, "Einmalkosten D", round(d0), "→", round(d1), "bei 12 Monaten Parallelbetrieb"); assert d1 > d0
   await pg.screenshot(path=SP + "pe_transformation.png", full_page=True); await pg.click("[data-act=peTaReset]"); await pg.wait_for_timeout(100)
   await pg.set_viewport_size({"width": 400, "height": 820}); await pg.evaluate("location.hash='pe'; render()"); await pg.wait_for_timeout(200); sw = await pg.evaluate("document.documentElement.scrollWidth"); print("PE bei 400 px, Seitenbreite:", sw); assert sw <= 400
   await pg.evaluate("location.hash='pe-trans'; render()"); await pg.wait_for_timeout(200); sw = await pg.evaluate("document.documentElement.scrollWidth"); print("ERP-Transformation bei 400 px:", sw); assert sw <= 400
@@ -247,19 +247,24 @@ async def pe(p):
   u = lambda: pg.evaluate("parseInt((document.querySelector('.ix-node[data-ix=app]').innerText.match(/Auslastung (\\d+)/) || [0, -1])[1])")
   u0 = await u(); await pg.click("[data-act=ixBurst]"); await pg.wait_for_timeout(200); u1 = await u(); cls = await pg.evaluate("document.querySelector('.ix-node[data-ix=app]').className"); print("Infrastruktur Auslastung Anwendung", u0, "→", u1, "% nach simulierter Lastspitze,", cls); assert u1 > u0 and ("ix-warn" in cls or "ix-crit" in cls)
   e0 = await pg.evaluate("IX_EV.elevon.engine.length"); await pg.evaluate("(() => { for (const a of W.tenants.elevon.master.assets) { if (E.dispatch(W, 'elevon', 'createServiceTicket', { assetId: a.id, text: 'Infra' }, { auto: true }).ok) break; } render(); })()"); await pg.wait_for_timeout(150); e1 = await pg.evaluate("IX_EV.elevon.engine.length"); assert e1 == e0 + 1, (e0, e1)
-  for pr in ["abwesenheit", "onboarding"]: await pg.evaluate(f"(() => {{ const r = C.dispatch(W, 'elevon', 'layer', 'setOwner', {{ process: '{pr}', owner: 'nexora' }}); if (!r.ok) throw new Error(r.text); render(); }})()")
+  for pr in ["abwesenheit", "onboarding"]: await pg.evaluate(f"(() => {{ const r = C.dispatch(W, 'elevon', 'layer', 'setOwner', {{ process: '{pr}', owner: 'stegarc' }}); if (!r.ok) throw new Error(r.text); render(); }})()")
   await pg.wait_for_timeout(150); wd = await pg.evaluate("(() => { const n = document.querySelector('.ix-node[data-ix=ext-workday]'); return [n.className, n.innerText]; })()"); print("Workday nach Ablösung:", wd[0], "|", wd[1].replace("\n", " ")[:80]); assert "ix-na" in wd[0] and "nur lesend" in wd[1]
   await pg.screenshot(path=SP + "infra_suite.png", full_page=True); await pg.evaluate("E.resetTenant(W, 'elevon'); render()")
   await pg.evaluate("S.pe.principal='p1'; location.hash='pe-infra'; render()"); await pg.wait_for_timeout(200); n = await pg.evaluate("document.querySelectorAll('tr[data-act=peOpenInfra]').length"); assert n == 25, n
   await pg.click("tr[data-act=peOpenInfra][data-id=PC20]"); await pg.wait_for_selector("[data-ix-co=PC20]", timeout=3000); sf = await pg.evaluate("(() => { const n = document.querySelector('.ix-node[data-ix=sftp]'); return [n.className, n.innerText]; })()"); print("PE Aurelis SFTP:", sf[0], "|", sf[1].replace("\n", " ")[:90]); assert "ix-crit" in sf[0] and "Zugang abgelaufen" in sf[1]
   await pg.screenshot(path=SP + "infra_pe.png", full_page=True)
   # Filme: Knopf unter der Überschrift, Spieler als eigene Ebene – übersteht Neuzeichnen, Esc schließt
+  # Standard: Filme ausgeblendet (bis die STEGARC-Fassungen produziert sind) – kein Knopf, kein Spieler
+  for r in ["home", "pe", "infra", "pe-infra", "systems"]:
+    await pg.evaluate(f"location.hash='{r}'; render()"); await pg.wait_for_timeout(80); assert await pg.evaluate("!document.querySelector('.vid-chip') && FILMS_ON === false"), "Film sichtbar auf " + r
+  # Mechanik bleibt geprüft: Schalter an
+  await pg.evaluate("FILMS_ON = true")
   vids = {}
   for r in ["pe", "infra", "pe-infra", "systems"]:
     await pg.evaluate(f"location.hash='{r}'; render()"); await pg.wait_for_timeout(120); vids[r] = await pg.evaluate("(document.querySelector('.page-head .vid-chip') || {dataset: {}}).dataset.v")
   print("Filme je Seite:", vids); assert vids == {"pe": "pe-command-center", "infra": "it-infrastruktur", "pe-infra": "it-infrastruktur", "systems": "experience-layer"}
   await pg.evaluate("location.hash='pe'; render()"); await pg.wait_for_timeout(100); await pg.click(".vid-chip"); await pg.wait_for_selector("#vidOverlay video", timeout=3000)
-  await pg.evaluate("render()"); await pg.wait_for_timeout(100); assert await pg.evaluate("!!document.querySelector('#vidOverlay video') && document.querySelector('#vidOverlay source').getAttribute('src').endsWith('nexora-pe-command-center.mp4')")
+  await pg.evaluate("render()"); await pg.wait_for_timeout(100); assert await pg.evaluate("!!document.querySelector('#vidOverlay video') && document.querySelector('#vidOverlay source').getAttribute('src').endsWith('stegarc-pe-command-center.mp4')")
   await pg.keyboard.press("Escape"); assert await pg.evaluate("!document.querySelector('#vidOverlay')")
   await pg.set_viewport_size({"width": 400, "height": 820})
   await pg.screenshot(path=SP + "pe_mobile.png"); await b.close(); assert not errs, errs; print("PE Command Center ok")
@@ -269,7 +274,7 @@ async def main():
     b=await p.chromium.launch()
     pg=await b.new_page(viewport={"width":1600,"height":950})
     errs=[]; pg.on("pageerror",lambda e:errs.append(str(e)))
-    html="<!doctype html><html><head><meta charset='utf-8'></head><body>"+open(ROOT/"dist"/"nexora-suite.html").read()+"</body></html>"
+    html="<!doctype html><html><head><meta charset='utf-8'></head><body>"+open(ROOT/"dist"/"stegarc-suite.html").read()+"</body></html>"
     await pg.set_content(html); await pg.wait_for_timeout(400)
     assert await pg.evaluate("S.layer") == "layer", "Standard ab v0.8: Experience Layer"; await pg.screenshot(path=SP+"layer_start.png")
     await pg.evaluate("ACT.setLayer({v:'suite'})"); await pg.wait_for_timeout(150)  # bisherige Prüfungen in der Suite-Ansicht wie v0.7
@@ -287,7 +292,7 @@ async def main():
       if sid == "oneday":
         od = await pg.evaluate("({ led: C.ledger(W,'elevon').map(x => x.sys).filter(x => x !== 'layer'), dash: C.state(W,'elevon').dash['user:u2'], cards: document.querySelectorAll('#aiBody .ly-card').length })"); print("oneday:", od); assert {"sap", "m365", "servicenow", "workday"} <= set(od["led"]) and od["dash"] and od["cards"] > 0
       if sid == "replace":
-        rp = await pg.evaluate("({ own: C.owners(W,'elevon').bestellanforderung, phase: C.state(W,'elevon').transition.bestellanforderung.phase, recon: C.state(W,'elevon').transition.bestellanforderung.recon })"); print("replace:", rp); assert rp["own"] == "nexora" and rp["phase"] == "abgelöst" and rp["recon"]["diffCount"] == 0 and rp["recon"]["nexora"]["count"] == 1
+        rp = await pg.evaluate("({ own: C.owners(W,'elevon').bestellanforderung, phase: C.state(W,'elevon').transition.bestellanforderung.phase, recon: C.state(W,'elevon').transition.bestellanforderung.recon })"); print("replace:", rp); assert rp["own"] == "stegarc" and rp["phase"] == "abgelöst" and rp["recon"]["diffCount"] == 0 and rp["recon"]["stegarc"]["count"] == 1
       if sid in ("crosssys", "oneday", "replace"): await pg.evaluate("S.layer = 'suite'; render()")
       if sid in ("service","omni","migration","design","p2p","hire","crosssys","oneday","replace"): await pg.screenshot(path=SP+"s_"+sid+".png")
       if sid=="industrial": await pg.screenshot(path=SP+"s_ind.png")

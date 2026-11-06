@@ -73,7 +73,7 @@ function peAiTools(p) { const w = peWorld(); const run = f => { try { return f()
     { name: "pe_fonds", description: "Fondskennzahlen (Paid-in, NAV, DPI, RVPI, TVPI, MOIC, Gross/Net IRR) eines Fonds (F1, F2, F3) – nur mit Fondsberechtigung.", inputSchema: { type: "object", properties: { fund: { type: "string" } }, required: ["fund"] }, execute: i => slim(run(() => { const m = PE.fundMetrics(w, p, String(i.fund)); delete m.lpFlows; return m; })) },
     { name: "pe_kennzahl_definitionen", description: "Formeln und Ebenen aller Kennzahlen.", execute: () => PE.KPI_DEFS }
   ]; }
-const PE_AI_RULES = p => `Du bist der AI Financial Advisor im NEXORA PE Command Center (NEXORA AI). Angemeldet: ${p.name}, Rolle ${p.label}. Alle Unternehmen und Zahlen sind synthetische Demodaten.
+const PE_AI_RULES = p => `Du bist der AI Financial Advisor im STEGARC PE Command Center (STEGARC). Angemeldet: ${p.name}, Rolle ${p.label}. Alle Unternehmen und Zahlen sind synthetische Demodaten.
 Regeln: Antworte auf Deutsch, knapp. Verwende ausschließlich Zahlen aus den Werkzeugen; rechne nichts selbst nach und erfinde keine Werte. Fehlt eine Information oder verweigert ein Werkzeug den Zugriff, sage das ausdrücklich als Datenlücke bzw. fehlende Berechtigung. Unterscheide Management-Aggregation (100 %, nicht konsolidiert) und Fondskennzahlen.
 Gliedere jede Antwort: kurze Antwort, dann „Belege:“ (Kennzahlen mit Werten), „Zeitraum:“, „Quelle:“, „Methode:“, „Sicherheit:“, „Empfehlung:“. Du führst nichts aus.`;
 async function peAsk(q) {

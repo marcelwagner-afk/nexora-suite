@@ -1,14 +1,14 @@
 {
   "$comment": "Statische Vorführdatei im Stil einer A2A-Agentenkarte. Kein laufender Agent; alle Fremdsysteme der Demo sind simuliert.",
-  "name": "NEXORA Experience Layer (Demo)",
-  "description": "Herstellerneutraler Assistent über NEXORA-Engine und simulierte Demo-Konnektoren (SAP S/4HANA, Microsoft 365, ServiceNow, Workday). Liest Aufgaben, sucht systemübergreifend, erklärt Kosten und schlägt Aktionen vor. Bucht nichts selbst.",
-  "url": "https://marcelwagner-afk.github.io/nexora-suite/",
+  "name": "STEGARC Experience Layer (Demo)",
+  "description": "Herstellerneutraler Assistent über STEGARC-Engine und simulierte Demo-Konnektoren (SAP S/4HANA, Microsoft 365, ServiceNow, Workday). Liest Aufgaben, sucht systemübergreifend, erklärt Kosten und schlägt Aktionen vor. Bucht nichts selbst.",
+  "url": "https://marcelwagner-afk.github.io/stegarc-suite/",
   "version": "0.8.0",
   "provider": {
     "organization": "Marcel Wagner",
-    "url": "https://github.com/marcelwagner-afk/nexora-suite"
+    "url": "https://github.com/marcelwagner-afk/stegarc-suite"
   },
-  "brand": "NEXORA AI",
+  "brand": "STEGARC",
   "capabilities": {
     "streaming": false,
     "pushNotifications": false,
@@ -25,7 +25,7 @@
     {
       "id": "aufgaben_alle",
       "name": "aufgaben alle",
-      "description": "Offene Aufgaben der angemeldeten Person aus allen Systemen (NEXORA-Engine live; SAP S/4HANA, Microsoft 365, ServiceNow, Workday als simulierte Demo-Konnektoren). Liefert je Aufgabe eine Kartenbeschreibung mit ref, System, Zugriffsweg, Feldern und möglichen Aktionen. Optional nach System filtern (nexora, sap, m365, servicenow, workday).",
+      "description": "Offene Aufgaben der angemeldeten Person aus allen Systemen (STEGARC-Engine live; SAP S/4HANA, Microsoft 365, ServiceNow, Workday als simulierte Demo-Konnektoren). Liefert je Aufgabe eine Kartenbeschreibung mit ref, System, Zugriffsweg, Feldern und möglichen Aktionen. Optional nach System filtern (stegarc, sap, m365, servicenow, workday).",
       "tags": [
         "experience-layer",
         "read-only"
@@ -85,9 +85,9 @@
     {
       "id": "engine-analysen",
       "name": "Engine-Analysen",
-      "description": "Kennzahlen, GuV, Projekte, Nachschub, offene Posten, Prozesse, Fertigung, Migration, Einkauf und Konstruktion aus der NEXORA-Engine.",
+      "description": "Kennzahlen, GuV, Projekte, Nachschub, offene Posten, Prozesse, Fertigung, Migration, Einkauf und Konstruktion aus der STEGARC-Engine.",
       "tags": [
-        "nexora-engine",
+        "stegarc-engine",
         "read-only"
       ],
       "examples": [
@@ -95,16 +95,16 @@
       ]
     }
   ],
-  "x-nexora": {
+  "x-stegarc": {
     "simulated": true,
     "costNote": "Beispielwerte, keine Herstellerpreise",
     "sapNote": "Direkter Zugriff eines Agenten auf SAP-Schnittstellen ist in dieser Demo nicht vorgesehen. Die Zugriffswege orientieren sich am Hinweis auf die SAP API Policy (v4/2026) – ausdrücklich ohne Rechtsbewertung.",
     "actions": "nur nach Klick und Bestätigung eines Menschen, mit Rechteprüfung",
     "delegates": [
       {
-        "id": "nexora",
-        "name": "NEXORA-Engine",
-        "system": "NEXORA-Engine",
+        "id": "stegarc",
+        "name": "STEGARC-Engine",
+        "system": "STEGARC-Engine",
         "route": "engine",
         "simulated": false,
         "skills": [

@@ -7,15 +7,15 @@ Beispielwerte aus offenen Annahmen – keine Herstellerangaben, kein Sizing-Werk
 | Ort | Inhalt | Live-Quelle |
 |---|---|---|
 | Suite → **IT-Infrastruktur** (Suite- und Experience-Layer-Navigation) | Architektur des aktuellen Mandanten (Elevon, NovaMart, Aventra): Nutzer, Zugang, Anwendung, KI-Dienst, Daten, Integration mit SAP, Microsoft 365, ServiceNow, Workday (simuliert), Betrieb | Engine-Befehle und Konnektor-Aufrufe der letzten Minute in diesem Browser; System of Record je Prozess aus dem Ablöse-Cockpit |
-| PE → **IT-Infrastruktur** | Portfolio: Betriebsmodelle, Sizing je Unternehmen, Summen, Ziel NEXORA, Was-wäre-wenn | Integrationsstatus aus dem ERP Integration Hub; Engine-Mandanten (Nordlicht) aus der Suite |
-| PE → Unternehmensseite → Reiter **IT-Infrastruktur** | Architektur des ERP des Unternehmens, Ist / Ziel NEXORA / Was-wäre-wenn mit Zukauf | wie oben |
+| PE → **IT-Infrastruktur** | Portfolio: Betriebsmodelle, Sizing je Unternehmen, Summen, Ziel STEGARC, Was-wäre-wenn | Integrationsstatus aus dem ERP Integration Hub; Engine-Mandanten (Nordlicht) aus der Suite |
+| PE → Unternehmensseite → Reiter **IT-Infrastruktur** | Architektur des ERP des Unternehmens, Ist / Ziel STEGARC / Was-wäre-wenn mit Zukauf | wie oben |
 
 ## Was sich live ändert
 
 - **Auslastung** jeder dimensionierten Komponente = Grundlast aus dem Sizing + Ereignisse der letzten Minute ÷ Kapazität (Deckel 99 %). Ab 70 % „hoch“, ab 90 % „kritisch“.
 - **Echte Aktivität:** Jeder Engine-Befehl (Buchung, Auftrag, Service …) und jeder Konnektor-Aufruf zählt. Die Seite aktualisiert sich alle 1,5 Sekunden, solange sie offen ist.
 - **„Lastspitze simulieren“** erzeugt nur Anfragen für diese Anzeige (keine Buchungen) und klingt nach einer Minute ab.
-- **Ablösung:** Wird ein Prozess im Ablöse-Cockpit auf NEXORA umgestellt, verliert das Altsystem ihn sofort; ohne Prozesse wird es „nur lesend“.
+- **Ablösung:** Wird ein Prozess im Ablöse-Cockpit auf STEGARC umgestellt, verliert das Altsystem ihn sofort; ohne Prozesse wird es „nur lesend“.
 - **Integration (PE):** Abgelaufener Zugang oder Fehllauf im Hub färbt die Integrationskomponente rot, Warnungen gelb.
 - **Mandantengröße** (Demo Control Center, S/M/L) ändert Nutzer und Belegvolumen und damit das Sizing.
 
@@ -27,7 +27,7 @@ Eingaben: Nutzer, Belege je Monat, Positionen je Beleg, Schnittstellen, Gesellsc
 
 Ergebnisse je System mit Formel: gleichzeitige Nutzer, Spitzenlast, Anwendung (Knoten, vCPU, RAM), Datenbank (vCPU, RAM, In-Memory), Datenbestand heute und in N Jahren, Speicher inkl. Sicherung, Netz, IOPS, Grundlast. SaaS und Dienstleister: keine eigene Rechenleistung, nur Datenvolumen und Netz.
 
-- **Ziel NEXORA (Szenario D):** gleiche Nutzer und Volumen, Altdaten der letzten 24 Monate, Schnittstellen halbiert. Die NEXORA-Werte (u. a. 25 gleichzeitige Nutzer je vCPU) sind Annahmen der Zielarchitektur, nicht gemessen.
+- **Ziel STEGARC (Szenario D):** gleiche Nutzer und Volumen, Altdaten der letzten 24 Monate, Schnittstellen halbiert. Die STEGARC-Werte (u. a. 25 gleichzeitige Nutzer je vCPU) sind Annahmen der Zielarchitektur, nicht gemessen.
 - **Was-wäre-wenn:** Faktoren für Nutzer und Belegvolumen, Zukauf (Nutzer, Belege), Prognosezeitraum.
 
 ## Tests

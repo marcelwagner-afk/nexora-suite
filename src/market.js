@@ -7,8 +7,8 @@ const MARKET = {
   criteria: ["Herstellerneutral", "Aktionen & Masken im Dialog", "Systemübergreifend suchen", "Offene Protokolle (MCP, A2A)", "Läuft in Teams / Copilot", "SAP lizenzkonform", "Kosten pro Aufruf sichtbar"],
   lastColumn: "Reife laut Quellen",
   points: [
-    { id: "nexnow", n: "NEXORA heute (eigene Engine)", x: .08, y: .82, c: "nex0", ga: 1, a: "start", dy: -18, internal: true },
-    { id: "nexgoal", n: "NEXORA · Zielbild", x: .90, y: .82, c: "nex", ga: 0, a: "end", dy: -18 },
+    { id: "nexnow", n: "STEGARC heute (eigene Engine)", x: .08, y: .82, c: "nex0", ga: 1, a: "start", dy: -18, internal: true },
+    { id: "nexgoal", n: "STEGARC · Zielbild", x: .90, y: .82, c: "nex", ga: 0, a: "end", dy: -18 },
     { id: "sap", n: "SAP Joule Work", x: .16, y: .62, c: "suite", ga: 0, a: "start" },
     { id: "oracle", n: "Oracle Fusion Agents", x: .05, y: .50, c: "suite", ga: 1, a: "start" },
     { id: "ms", n: "Microsoft 365 Copilot", x: .44, y: .66, c: "ai", ga: 1, a: "start" },
@@ -32,13 +32,13 @@ const MARKET = {
     ["workday", "Workday", "Workday Everywhere", "", [[1, "Workday-Daten"], [2, "Self-Service-Agent"], [1, ""], [2, "Agent System of Record"], [3, "Copilot, Teams, Slack, Gemini"], [0, ""], [2, "Flex Credits"]], "verfügbar per Tenant-Aktivierung"],
     ["glean", "Glean", "Work AI", "", [[3, ""], [0, ""], [3, "250+ Konnektoren"], [3, "MCP Gateway"], [0, ""], [0, ""], [0, ""]], "über 300 Mio. $ ARR (Mai 2026)"],
     ["intranet", "Intranet-Suiten", "Staffbase · Simpplr · LumApps/Beekeeper", "", [[3, ""], [1, "Aktionen nur über Konnektoren"], [2, ""], [0, ""], [0, ""], [1, ""], [0, ""]], "Gartner MQ 2025: 17 Anbieter"],
-    ["nexnow", "NEXORA heute", "Demo v0.7 · eigene Business-Engine", "now", [[1, "nur eigene Engine"], [2, "Claude liest, Aktionen in Masken"], [1, "nur eigene Mandanten"], [2, "Engine-Werkzeuge mit Schema"], [1, "eigene Seite"], [0, "kein SAP-Zugriff"], [1, ""]], "klickbare Demo, 47 Akzeptanztests", { internal: true }],
-    ["nexgoal", "NEXORA", "Zielbild nach dem Umbau", "goal", [[3, "Konnektoren für jedes System, Ablösung je Prozess"], [3, "Aktionskarten mit Freigabe"], [3, "eine Suche, eine Inbox"], [3, "MCP-Werkzeuge, A2A-Agenten"], [3, "Einbettungsmodus"], [3, "Integrationsweg je Zugriff"], [3, "Kostenzähler je Aufruf"]], "Umbau in neun Phasen, siehe Prompt",
-      { publicName: "NEXORA · Roadmap", publicSub: "geplante Fähigkeiten", publicMaturity: "Roadmap, in Umsetzung", planned: true }]
+    ["nexnow", "STEGARC heute", "Demo v0.7 · eigene Business-Engine", "now", [[1, "nur eigene Engine"], [2, "Claude liest, Aktionen in Masken"], [1, "nur eigene Mandanten"], [2, "Engine-Werkzeuge mit Schema"], [1, "eigene Seite"], [0, "kein SAP-Zugriff"], [1, ""]], "klickbare Demo, 47 Akzeptanztests", { internal: true }],
+    ["nexgoal", "STEGARC", "Zielbild nach dem Umbau", "goal", [[3, "Konnektoren für jedes System, Ablösung je Prozess"], [3, "Aktionskarten mit Freigabe"], [3, "eine Suche, eine Inbox"], [3, "MCP-Werkzeuge, A2A-Agenten"], [3, "Einbettungsmodus"], [3, "Integrationsweg je Zugriff"], [3, "Kostenzähler je Aufruf"]], "Umbau in neun Phasen, siehe Prompt",
+      { publicName: "STEGARC · Roadmap", publicSub: "geplante Fähigkeiten", publicMaturity: "Roadmap, in Umsetzung", planned: true }]
   ],
   texts: {
-    matIntro: { internal: "Bewertet nach den Befunden der Recherche. Wo die Quellen nichts Belastbares hergeben, steht ein Strich statt einer Vermutung. Die Zeile „NEXORA heute“ zeigt ehrlich den Stand der Demo v0.7, die Zeile darunter das Zielbild nach dem Umbau.", public: "Bewertet nach den Befunden der Recherche. Wo die Quellen nichts Belastbares hergeben, steht ein Strich statt einer Vermutung. Die Zeile „NEXORA · Roadmap“ zeigt geplante Fähigkeiten, nicht den heutigen Stand." },
-    wsIntro: { internal: "Abgeleitet aus den Befunden, nicht selbst belegt. Jede Stelle ist im Umbau-Prompt als eigene Phase umgesetzt.", public: "Abgeleitet aus den Befunden, nicht selbst belegt. Diese vier Punkte bilden die Roadmap von NEXORA." },
+    matIntro: { internal: "Bewertet nach den Befunden der Recherche. Wo die Quellen nichts Belastbares hergeben, steht ein Strich statt einer Vermutung. Die Zeile „STEGARC heute“ zeigt ehrlich den Stand der Demo v0.7, die Zeile darunter das Zielbild nach dem Umbau.", public: "Bewertet nach den Befunden der Recherche. Wo die Quellen nichts Belastbares hergeben, steht ein Strich statt einer Vermutung. Die Zeile „STEGARC · Roadmap“ zeigt geplante Fähigkeiten, nicht den heutigen Stand." },
+    wsIntro: { internal: "Abgeleitet aus den Befunden, nicht selbst belegt. Jede Stelle ist im Umbau-Prompt als eigene Phase umgesetzt.", public: "Abgeleitet aus den Befunden, nicht selbst belegt. Diese vier Punkte bilden die Roadmap von STEGARC." },
     pathNote: { internal: "Balken illustrativ. Grundlage in der Suite: Migrations- und Cutover-Modul mit Testlauf, Vier-Augen-Freigabe und Abstimmung gibt es bereits in der Demo v0.7. Der Umbau-Prompt setzt diesen Weg als eigene Phase um.", public: "Balken illustrativ. Grundlage in der Suite: Migrations- und Cutover-Modul mit Testlauf, Vier-Augen-Freigabe und Abstimmung gibt es bereits in der Demo v0.7. Die Ablösung erfolgt Prozess für Prozess mit Parallelbetrieb und Abstimmung." },
     arrow: "Umbau: die eigene Engine wird ein Konnektor unter vielen"
   },
