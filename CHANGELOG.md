@@ -6,7 +6,7 @@
 - **Übersetzung zur Build-Zeit:** Der Quelltext bleibt deutsch. `tools/i18n.py` zerlegt JS, Template-Literale und HTML und ersetzt sichtbare Texte über `i18n/<sprache>.json` (Schlüssel = deutscher Text, Platzhalter `{0}` für `${…}`). Keine neuen Abhängigkeiten. Neue Texte ohne Übersetzung bleiben deutsch; der Build meldet die Abdeckung.
 - **Ausgaben:** `index.html` (Pages) und das Artifact enthalten alle Sprachen in einem Dokument, ausgeführt wird nur die gewählte (`?lang=`, sonst zuletzt gewählt, sonst Deutsch). Produktseite `stegarc.<sprache>.html` mit `hreflang`, Prototyp `prototyp.<sprache>.html`, Einzeldateien `dist/stegarc-suite.<sprache>.html`.
 - **Assistent:** Beispielfragen in der Landessprache werden vor der regelbasierten Auswertung zurückübersetzt; mit Claude antwortet der Assistent in der gewählten Sprache.
-- **Filme:** Untertitel DE/ES/PT/PL als WebVTT (`media/stegarc-*.<sprache>.vtt`), in der Seitensprache vorausgewählt. Vertonte Landesfassungen werden automatisch genutzt, sobald `media/stegarc-*.<sprache>.mp4` vorliegt.
+- **Filme:** Untertitel DE/ES/PT/PL als WebVTT (`media/stegarc-*.<sprache>.vtt`, in der Suite zusätzlich eingebettet, weil das Artifact keine .vtt-Dateien ausliefert), in der Seitensprache vorausgewählt. Vertonte Landesfassungen werden automatisch genutzt, sobald `media/stegarc-*.<sprache>.mp4` vorliegt.
 - **Tests:** `test/i18n.py` – Wörterbücher vollständig und platzhaltertreu, jede Sprache ohne Skriptfehler in zehn Ansichten, Umschalter DE → EN → DE, Produktseite und Prototyp je Sprache (mobil ohne Querscrollen).
 
 ## v0.10.1 – STEGARC-Filme (2026-11)

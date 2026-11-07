@@ -14,6 +14,8 @@ css=(d/'base.css').read_text()+'\n'+(d/'extra.css').read_text()+'\n'+(d/'layer.c
 HEAD = ('<title>STEGARC Suite</title>\n<meta name="claude:viewport-fit-sides" content="cover">\n<link rel="preconnect" href="https://fonts.googleapis.com">\n'
         '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap">\n'
         '<style>\n' + css + '\n</style>\n<div id="root"></div>\n<div id="layer"></div>\n')
+VTT = {p.name[:-4]: p.read_text(encoding='utf-8') for p in sorted((d.parent/'media').glob('*.vtt'))}
+HEAD += '<script>window.STEGARC_VTT = ' + json.dumps(VTT, ensure_ascii=False).replace('</', '<\\/') + ';</script>\n'
 SAMPLES = "const SAMPLES = " + json.dumps({k: (d.parent/'samples'/(k + '.dxf')).read_text() for k in ('MR-1200', 'SK-200')}) + ";"
 PART1 = ("engine.js", "dxf.js", "connectors.js", "pe.js", "infra.js")
 PART2 = ("icons.js", "app.js", "app_ext.js", None, "app_v6.js", "app_v7.js", "app_v8.js", "app_pe.js", "app_pe3.js", "app_pe4.js", "app_pe5.js", "app_pe6.js", "app_infra.js", "app_lang.js", "app_media.js", "app_boot.js")
