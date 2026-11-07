@@ -1,0 +1,1047 @@
+<!doctype html><html lang="pt"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"></head><body style="margin:0"><title>Protótipo STEGARC</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: dunkle Navigationsleiste links, helle Arbeitsfläche mit weichen Karten; Startseite zweispaltig mit Assistent rechts; Telefon: Navigation als dunkle Leiste oben */
+:root{
+  --bg:#f7f6fc; --surface:#ffffff; --sunk:#f1effa; --line:#e7e4f2; --line-strong:#d3cfe6;
+  --fg:#16142b; --fg-2:#4e4b66; --fg-3:#85829c;
+  --accent:#6a45f0; --accent-2:#8b6cff; --accent-ink:#ffffff; --accent-soft:#efeafe; --accent-line:#cfc2fb;
+  --nav-bg:#17153a; --nav-bg-2:#211d52; --nav-fg:#c9c6e6; --nav-fg-strong:#ffffff; --nav-on:#3a2f8f; --nav-line:#2c2860;
+  --good:#16834a; --good-soft:#e3f5ea; --warn:#b26a00; --warn-soft:#fdf1dc; --crit:#c62a3a; --crit-soft:#fde6e8;
+  --demo:#6a45f0; --demo-soft:#efeafe;
+  --shadow:0 1px 2px rgba(35,28,90,.04),0 4px 16px rgba(35,28,90,.06);
+  --f-display:"Plus Jakarta Sans","Segoe UI",system-ui,sans-serif;
+  --f-body:"Plus Jakarta Sans","Segoe UI",system-ui,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,"SFMono-Regular",Consolas,monospace;
+  --r:14px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#100f22; --surface:#191733; --sunk:#221f42; --line:#2b2850; --line-strong:#3c3870;
+  --fg:#ecebf8; --fg-2:#b4b1d0; --fg-3:#8784a8;
+  --accent:#9b80ff; --accent-2:#b6a2ff; --accent-ink:#140f33; --accent-soft:#2a2358; --accent-line:#4b3fa0;
+  --nav-bg:#0b0a1c; --nav-bg-2:#14123a; --nav-fg:#b6b3d8; --nav-fg-strong:#ffffff; --nav-on:#2f2775; --nav-line:#221f4a;
+  --good:#5fd38f; --good-soft:#163527; --warn:#f0b05a; --warn-soft:#3a2c14; --crit:#ff8a94; --crit-soft:#3d1a22;
+  --demo:#b6a2ff; --demo-soft:#2a2358; --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 16px rgba(0,0,0,.25); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#100f22; --surface:#191733; --sunk:#221f42; --line:#2b2850; --line-strong:#3c3870;
+  --fg:#ecebf8; --fg-2:#b4b1d0; --fg-3:#8784a8;
+  --accent:#9b80ff; --accent-2:#b6a2ff; --accent-ink:#140f33; --accent-soft:#2a2358; --accent-line:#4b3fa0;
+  --nav-bg:#0b0a1c; --nav-bg-2:#14123a; --nav-fg:#b6b3d8; --nav-fg-strong:#ffffff; --nav-on:#2f2775; --nav-line:#221f4a;
+  --good:#5fd38f; --good-soft:#163527; --warn:#f0b05a; --warn-soft:#3a2c14; --crit:#ff8a94; --crit-soft:#3d1a22;
+  --demo:#b6a2ff; --demo-soft:#2a2358; --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 16px rgba(0,0,0,.25); color-scheme:dark}
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:14px;line-height:1.5}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--nav-bg)}
+*{box-sizing:border-box}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.num,.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.num{font-size:.92em}
+h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:-.005em}
+h1{font-size:26px;font-weight:800} h2{font-size:18px;font-weight:750} h3{font-size:15px;font-weight:700}
+p{margin:0}
+.muted{color:var(--fg-2)} .faint{color:var(--fg-3)} .small{font-size:12.5px}
+.eyebrow{font-size:11.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--fg-3);font-weight:700}
+.ic{flex:none}
+
+/* Shell */
+.app{display:grid;grid-template-columns:248px minmax(0,1fr);height:100%}
+.app.with-ai{grid-template-columns:248px minmax(0,1fr) 380px}
+.side{background:linear-gradient(180deg,var(--nav-bg) 0%,var(--nav-bg-2) 100%);color:var(--nav-fg);display:flex;flex-direction:column;gap:2px;padding:18px 12px 12px;overflow:auto}
+.brand{display:flex;align-items:center;gap:10px;padding:2px 10px 22px;color:var(--nav-fg-strong);text-decoration:none}
+.brand b{font-family:var(--f-display);font-size:19px;font-weight:800;letter-spacing:.01em;display:block;line-height:1.1}
+.brand small{display:block;font-size:10.5px;color:var(--nav-fg);font-weight:500}
+.nav a,.nav button.nv{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:10px;color:var(--nav-fg);text-decoration:none;font-weight:550;border:none;background:none;width:100%;text-align:left;cursor:pointer}
+.nav a:hover,.nav button.nv:hover{background:rgba(255,255,255,.06);color:var(--nav-fg-strong)}
+.nav a.on{background:linear-gradient(90deg,var(--nav-on),rgba(106,69,240,.55));color:var(--nav-fg-strong)}
+.nav a .cnt{margin-left:auto;font-size:11px;background:var(--accent-2);color:#fff;border-radius:10px;padding:0 7px;font-weight:700}
+.nav-sep{height:1px;background:var(--nav-line);margin:12px 10px}
+.nav-label{padding:4px 14px 8px;font-size:12px;color:var(--nav-fg);font-weight:600}
+.app-ic{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;color:#fff;flex:none}
+.app-ic.m{background:linear-gradient(135deg,#7b5cff,#5434d6)} .app-ic.t{background:linear-gradient(135deg,#1f9c8b,#13685f)} .app-ic.i{background:linear-gradient(135deg,#9a5cf0,#5c2db8)}
+.nav a.appl{padding:7px 10px;gap:12px;color:var(--nav-fg-strong)}
+.tenant{margin-top:auto;display:flex;align-items:center;gap:10px;padding:12px;border-radius:12px;border:none;background:rgba(255,255,255,.05);color:var(--nav-fg-strong);cursor:pointer;text-align:left;width:100%}
+.tenant:hover{background:rgba(255,255,255,.09)}
+.tenant .av{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.1);display:grid;place-items:center;flex:none}
+.tenant small{display:block;color:var(--nav-fg);font-size:11.5px}
+.main{display:flex;flex-direction:column;min-width:0;overflow:auto}
+.top{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(8px);display:grid;grid-template-columns:minmax(0,1fr) minmax(0,560px) minmax(0,1fr);align-items:center;gap:12px;padding:12px max(24px,env(safe-area-inset-right,0px)) 12px 24px}
+.top .right{display:flex;align-items:center;justify-content:flex-end;gap:6px}
+.search{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--accent-line);border-radius:12px;padding:9px 14px;color:var(--fg-2);cursor:pointer;text-align:left;box-shadow:var(--shadow);min-width:0;width:100%}
+.search .ic{color:var(--accent)}
+.search span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.search kbd{margin-left:auto;font-family:var(--f-mono);font-size:11px;background:var(--sunk);border-radius:6px;padding:2px 7px;color:var(--fg-2)}
+.round{width:40px;height:40px;border-radius:50%;border:none;background:transparent;display:grid;place-items:center;cursor:pointer;color:var(--fg);position:relative}
+.round:hover{background:var(--sunk)}
+.round .dot{position:absolute;top:8px;right:9px;width:9px;height:9px;border-radius:50%;background:var(--accent);border:2px solid var(--bg)}
+.avatar{display:flex;align-items:center;gap:6px;border:none;background:none;cursor:pointer;padding:2px;border-radius:24px;color:var(--fg)}
+.avatar .face{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#ffb38a,#e0668f);color:#fff;font-weight:700;display:grid;place-items:center;font-size:13.5px}
+.avatar .face.u1{background:linear-gradient(135deg,#8b6cff,#4a2fd0)} .avatar .face.u2{background:linear-gradient(135deg,#3cc3a8,#1d7d6d)}
+.page{padding:8px 24px 32px;display:flex;flex-direction:column;gap:20px;max-width:1320px;width:100%}
+.page-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;padding-top:12px}
+
+/* Elements */
+.btn{text-decoration:none;display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line-strong);background:var(--surface);border-radius:10px;padding:8px 14px;font-weight:600;cursor:pointer;white-space:nowrap;color:var(--fg)}
+.btn:hover{border-color:var(--accent-line);background:var(--accent-soft)}
+.btn.pri{background:linear-gradient(135deg,var(--accent-2),var(--accent));border-color:transparent;color:#fff;box-shadow:0 4px 12px rgba(106,69,240,.25)}
+:root[data-theme="dark"] .btn.pri{color:var(--accent-ink)}
+.btn.pri:hover{filter:brightness(1.06);background:linear-gradient(135deg,var(--accent-2),var(--accent))}
+.btn.ghost{border-color:transparent;background:transparent;color:var(--accent)}
+.btn.ghost:hover{background:var(--accent-soft)}
+.btn.sm{padding:5px 10px;font-size:12.5px;border-radius:8px}
+.btn.danger{color:var(--crit);border-color:var(--crit)}
+.btn.danger:hover{background:var(--crit-soft)}
+.btn[disabled]{opacity:.45;cursor:not-allowed;filter:none;box-shadow:none}
+.icon-btn{border:1px solid var(--line);background:var(--surface);border-radius:10px;width:34px;height:34px;display:grid;place-items:center;cursor:pointer;color:var(--fg-2)}
+.icon-btn:hover{color:var(--fg);border-color:var(--accent-line)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow)}
+.card-pad{padding:18px}
+.card-h{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px 18px;border-bottom:1px solid var(--line)}
+.grid{display:grid;gap:16px}
+.g2{grid-template-columns:repeat(2,minmax(0,1fr))} .g3{grid-template-columns:repeat(3,minmax(0,1fr))} .g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.kpi{padding:16px 18px;display:flex;flex-direction:column;gap:2px}
+.kpi .v{font-family:var(--f-display);font-size:24px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:650;border-radius:8px;padding:3px 9px;white-space:nowrap}
+.pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.p-good{background:var(--good-soft);color:var(--good)} .p-warn{background:var(--warn-soft);color:var(--warn)} .p-crit{background:var(--crit-soft);color:var(--crit)} .p-neu{background:var(--sunk);color:var(--fg-2)} .p-acc{background:var(--accent-soft);color:var(--accent)} .p-demo{background:var(--demo-soft);color:var(--demo)}
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;font-size:12px;color:var(--fg-3);font-weight:600;padding:10px 14px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:12px 14px;border-bottom:1px solid var(--line);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr.click{cursor:pointer} tr.click:hover td{background:var(--sunk)}
+td.r,th.r{text-align:right}
+.bar{height:8px;background:var(--sunk);border-radius:6px;overflow:hidden;display:flex}
+.bar i{display:block;height:100%}
+.bar.acc i{background:linear-gradient(90deg,var(--accent-2),var(--accent))}
+.list{display:flex;flex-direction:column}
+.li{display:flex;align-items:flex-start;gap:12px;padding:12px 18px;border-bottom:1px solid var(--line)}
+.li:last-child{border-bottom:none}
+.li .grow{flex:1;min-width:0}
+.sev{width:3px;align-self:stretch;border-radius:2px;flex:none}
+.input,select.input,textarea.input{width:100%;background:var(--surface);border:1px solid var(--line-strong);border-radius:10px;padding:8px 11px}
+textarea.input{resize:vertical;min-height:72px}
+label.f{display:flex;flex-direction:column;gap:6px;font-weight:600;font-size:13px}
+.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.between{justify-content:space-between}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line-strong);border-radius:20px;padding:3px 11px;font-size:12.5px;background:var(--surface)}
+.chip.src{border-style:dashed;color:var(--fg-2)}
+.note{border-radius:10px;padding:11px 13px;font-size:13px;display:flex;gap:10px;align-items:flex-start}
+.note.demo{background:var(--demo-soft);color:var(--fg)}
+.note.warn{background:var(--warn-soft)} .note.crit{background:var(--crit-soft)} .note.good{background:var(--good-soft)} .note.acc{background:var(--accent-soft)}
+.empty{padding:28px 16px;text-align:center;color:var(--fg-3)}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);overflow-x:auto}
+.tab{padding:9px 13px;border:none;background:none;cursor:pointer;color:var(--fg-2);font-weight:600;border-bottom:2px solid transparent;white-space:nowrap}
+.tab.on{color:var(--accent);border-bottom-color:var(--accent)}
+.seg{display:inline-flex;gap:8px;flex-wrap:wrap}
+.seg button{border:1px solid var(--line);background:var(--surface);border-radius:20px;padding:5px 12px;cursor:pointer;font-weight:600;color:var(--fg-2);display:inline-flex;gap:8px;align-items:center}
+.seg button b{font-size:11.5px;background:var(--sunk);border-radius:10px;padding:0 7px;font-weight:700}
+.seg button.on{background:var(--accent-soft);border-color:var(--accent-line);color:var(--accent)}
+.seg button.on b{background:var(--surface)}
+
+/* Startseite */
+.home{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:20px;align-items:start}
+.home-main{display:flex;flex-direction:column;gap:18px;min-width:0}
+.home-side{display:flex;flex-direction:column;gap:18px;position:sticky;top:76px}
+.hero{position:relative;padding:22px 2px 8px;display:flex;flex-direction:column;gap:16px;isolation:isolate}
+.hero-wave{position:absolute;right:-8px;top:-56px;width:min(520px,70%);height:210px;z-index:-1;pointer-events:none;-webkit-mask-image:linear-gradient(180deg,#000 55%,transparent);mask-image:linear-gradient(180deg,#000 55%,transparent)}
+.hero h1{font-size:36px;font-weight:800;letter-spacing:-.01em}
+.hero .sub{font-size:16px;color:var(--fg-2)}
+.ask{display:flex;gap:8px;background:var(--surface);border:1.5px solid var(--accent-line);border-radius:16px;padding:7px 7px 7px 16px;align-items:center;box-shadow:0 6px 24px rgba(106,69,240,.10)}
+.ask .ic{color:var(--accent)}
+.ask input{flex:1;border:none;background:transparent;outline:none;padding:10px 0;min-width:0;font-size:15.5px}
+.ask.big{max-width:880px;width:100%;align-self:center}
+.send{width:48px;height:38px;border:none;border-radius:12px;background:linear-gradient(135deg,var(--accent-2),var(--accent));color:#fff;display:grid;place-items:center;cursor:pointer;flex:none}
+.quick{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.quick button{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--surface);border-radius:20px;padding:7px 15px;cursor:pointer;font-weight:550;box-shadow:var(--shadow);color:var(--fg)}
+.quick button .ic{color:var(--accent)}
+.quick button:hover{border-color:var(--accent-line)}
+.sugg{border:1px solid var(--line);background:var(--surface);border-radius:20px;padding:5px 12px;font-size:13px;cursor:pointer;color:var(--fg-2)}
+.sugg:hover{border-color:var(--accent);color:var(--fg)}
+.stat{display:flex;align-items:center;gap:14px;padding:16px 18px}
+.stat{position:relative;min-height:84px}.stat > .ic{color:var(--accent)}
+.stat .d{position:absolute;top:12px;right:14px}
+.stat .v{font-family:var(--f-display);font-size:21px;font-weight:800;line-height:1.1}
+.stat .l{font-size:12.5px;color:var(--fg-2)}
+.stat .d{font-size:12px;font-weight:700;white-space:nowrap}
+.promo{display:grid;grid-template-columns:minmax(0,240px) minmax(0,1fr) minmax(0,220px);gap:22px;align-items:center;padding:18px 22px;background:linear-gradient(120deg,var(--accent-soft) 0%,var(--surface) 48%)}
+.promo .art{display:grid;place-items:center}
+.promo h2{font-size:22px;font-weight:800}
+.promo .kick{font-size:13px;font-weight:700;color:var(--accent)}
+.checks{display:flex;flex-direction:column;gap:9px;border-left:1px solid var(--line);padding-left:20px}
+.checks span{display:flex;gap:10px;align-items:center;font-size:13.5px}
+.checks .ic{color:var(--good)}
+.ms{display:flex;gap:10px;align-items:center}
+.ms .ic{color:var(--fg-3)}
+.dots{border:none;background:none;cursor:pointer;color:var(--fg-3);padding:4px 6px;border-radius:6px}
+.dots:hover{background:var(--sunk);color:var(--fg)}
+.proj-ic{width:38px;height:38px;border-radius:10px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;flex:none}
+.aic{padding:18px;display:flex;flex-direction:column;gap:14px}
+.aic-h{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.aic-h h2{display:flex;gap:10px;align-items:center}
+.aic-h h2 .ic{color:var(--accent)}
+.model{border:1px solid var(--line);background:var(--sunk);border-radius:8px;padding:4px 8px;font-size:12.5px;font-weight:600}
+.aic .hi{font-family:var(--f-display);font-size:21px;font-weight:800}
+.qcard{display:flex;gap:14px;align-items:center;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:11px 14px;cursor:pointer;box-shadow:var(--shadow);color:var(--fg);width:100%}
+.qcard .ic{color:var(--accent)}
+.qcard:hover{border-color:var(--accent-line)}
+.composer{border:1px solid var(--line-strong);border-radius:12px;padding:10px 10px 8px 12px;display:flex;flex-direction:column;gap:8px;background:var(--surface)}
+.composer input{border:none;outline:none;background:transparent;padding:4px 2px;font-style:italic}
+.composer .tools{display:flex;align-items:center;gap:4px}
+.composer .tools .tb{width:30px;height:30px;border-radius:50%;border:1px solid var(--line);background:none;display:grid;place-items:center;cursor:pointer;color:var(--fg-2)}
+.composer .send{margin-left:auto;width:38px;height:34px;border-radius:10px}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.tile{display:flex;flex-direction:column;align-items:center;gap:8px;padding:18px 8px;border:1px solid var(--line);border-radius:12px;background:var(--surface);cursor:pointer;font-weight:650;color:var(--fg)}
+.tile .ic{color:var(--fg)}
+.tile:hover,.tile.on{background:var(--accent-soft);border-color:var(--accent-line)}
+.tile.on .ic{color:var(--accent)}
+.home-chat{display:flex;flex-direction:column;gap:12px;max-height:420px;overflow:auto}
+
+/* Wizard */
+.steps{display:flex;gap:0;overflow-x:auto;padding-bottom:2px}
+.step{flex:1;min-width:104px;display:flex;flex-direction:column;gap:6px;padding:0 6px 0 0;cursor:pointer;background:none;border:none;text-align:left}
+.step .ln{height:5px;border-radius:3px;background:var(--line)}
+.step.done .ln{background:var(--accent)} .step.cur .ln{background:var(--accent-2);opacity:.6}
+.step .t{font-size:12px;color:var(--fg-3);font-weight:600}
+.step.cur .t,.step.done .t{color:var(--fg)}
+.step[disabled]{cursor:default}
+.what{font-size:13px;color:var(--fg-2);background:var(--accent-soft);border-radius:10px;padding:9px 13px}
+.map-grid{display:grid;grid-template-columns:220px minmax(0,1fr);gap:16px}
+.srcf{display:flex;flex-direction:column;gap:6px}
+.srcf .chip{cursor:grab;justify-content:space-between;border-radius:8px}
+.maprow{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1.2fr) auto;gap:10px;align-items:center;padding:10px 14px;border-bottom:1px solid var(--line)}
+.maprow.drop{background:var(--accent-soft)}
+.maprow.sugg-row .input{border-style:dashed;border-color:var(--accent-line)}
+.maprow:last-child{border-bottom:none}
+.why{font-size:12px;color:var(--fg-3)}
+.prog{height:10px;background:var(--sunk);border-radius:6px;overflow:hidden}
+.prog i{display:block;height:100%;background:linear-gradient(90deg,var(--accent-2),var(--accent));transition:width .15s}
+
+/* Gantt */
+.gantt{display:flex;flex-direction:column;gap:0;min-width:640px}
+.g-row{display:grid;grid-template-columns:220px minmax(0,1fr) 70px;gap:10px;align-items:center;padding:7px 14px;border-bottom:1px solid var(--line)}
+.g-track{position:relative;height:20px;background:repeating-linear-gradient(90deg,transparent 0,transparent calc(10% - 1px),var(--line) calc(10% - 1px),var(--line) 10%)}
+.g-bar{position:absolute;top:3px;height:14px;border-radius:5px;background:var(--line-strong)}
+.g-bar.crit{background:linear-gradient(90deg,var(--accent-2),var(--accent))}
+.g-bar.delay{background:var(--warn)}
+.g-win{position:absolute;top:-4px;bottom:-4px;border-left:2px dashed var(--crit)}
+
+/* Assistent */
+.ai{border-left:1px solid var(--line);background:var(--surface);display:flex;flex-direction:column;min-width:0;height:100%}
+.ai-h{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--line)}
+.ai-h .ic{color:var(--accent)}
+.ai-body{flex:1;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:14px}
+.msg{display:flex;flex-direction:column;gap:8px;max-width:100%}
+.msg.u{align-self:flex-end;background:var(--accent-soft);border-radius:12px 12px 3px 12px;padding:8px 12px;max-width:88%}
+.msg.a{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px}
+.msg.a table td,.msg.a table th{padding:6px 8px;font-size:12.5px}
+.ai-f{padding:12px;border-top:1px solid var(--line)}
+.page-ai{max-width:860px}
+.page-ai .ai-body{min-height:360px}
+
+/* Dialoge */
+.scrim{position:fixed;inset:0;background:rgba(18,14,50,.35);z-index:40;display:flex;align-items:flex-start;justify-content:center;padding:max(64px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) 16px max(16px,env(safe-area-inset-left,0px))}
+.dlg{background:var(--surface);border:1px solid var(--line);border-radius:16px;width:100%;max-width:560px;max-height:80vh;overflow:auto;box-shadow:0 24px 60px rgba(20,14,70,.25)}
+.menu-pop{position:fixed;top:calc(64px + env(safe-area-inset-top,0px));right:max(20px,env(safe-area-inset-right,0px));z-index:45;background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:0 18px 48px rgba(20,14,70,.2);width:300px;max-width:calc(100% - 32px);padding:8px}
+.pal-item{display:flex;align-items:center;gap:10px;padding:10px 16px;cursor:pointer;border:none;background:none;width:100%;text-align:left;border-radius:8px;color:var(--fg)}
+.pal-item:hover,.pal-item.on{background:var(--sunk)}
+.pal-item .ic{color:var(--accent)}
+.toast{position:fixed;right:max(20px,env(safe-area-inset-right,0px));bottom:max(20px,env(safe-area-inset-bottom,0px));background:var(--nav-bg);color:#fff;border-radius:10px;padding:11px 15px;z-index:50;font-weight:600;max-width:360px;box-shadow:0 10px 30px rgba(20,14,70,.3)}
+
+/* Anmeldung */
+.login{min-height:100%;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.login-l{background:radial-gradient(120% 80% at 90% 10%,rgba(139,108,255,.45),transparent 60%),linear-gradient(160deg,var(--nav-bg),var(--nav-bg-2));color:#fff;padding:48px;display:flex;flex-direction:column;justify-content:space-between;gap:32px}
+.login-l h1{font-size:36px;max-width:15ch;line-height:1.12}
+.login-r{display:grid;place-items:center;padding:32px max(16px,env(safe-area-inset-right,0px)) 32px max(16px,env(safe-area-inset-left,0px))}
+.login-box{width:100%;max-width:370px;display:flex;flex-direction:column;gap:14px}
+
+.bpmn-wrap{overflow-x:auto;background:var(--bg);border-radius:10px;border:1px solid var(--line)}
+.bpmn-wrap svg text{font-family:var(--f-body)}
+
+@media (max-width:1280px){.home{grid-template-columns:minmax(0,1fr)} .home-side{position:static;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr)} .promo{grid-template-columns:minmax(0,200px) minmax(0,1fr)} .checks{grid-column:1/-1;border-left:none;padding-left:0;flex-direction:row;flex-wrap:wrap;gap:8px 18px}}
+@media (max-width:1100px){.app.with-ai{grid-template-columns:248px minmax(0,1fr)} .app.with-ai .ai{position:fixed;right:0;top:0;bottom:0;width:min(400px,100%);z-index:30;box-shadow:-8px 0 24px rgba(0,0,0,.15);padding-top:env(safe-area-inset-top,0px)} .g4{grid-template-columns:repeat(2,minmax(0,1fr))} .top{grid-template-columns:minmax(0,1fr) auto} .top .spacer{display:none}}
+@media (max-width:820px){
+  .app,.app.with-ai{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr)}
+  .side{flex-direction:row;align-items:center;padding:8px max(16px,env(safe-area-inset-right,0px)) 8px max(16px,env(safe-area-inset-left,0px));overflow-x:auto;gap:2px}
+  .brand{padding:0 8px 0 0} .brand span{display:none}
+  .nav-sep,.nav-label,.tenant,.nav a.appl{display:none}
+  .nav a,.nav button.nv{white-space:nowrap;padding:7px 11px;width:auto}
+  .top{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+  .page{padding:8px max(16px,env(safe-area-inset-right,0px)) 24px max(16px,env(safe-area-inset-left,0px))}
+  .g2,.g3,.g4{grid-template-columns:minmax(0,1fr)}
+  .home-side{grid-template-columns:minmax(0,1fr)}
+  .promo{grid-template-columns:minmax(0,1fr)} .promo .art{display:none}
+  .hero h1{font-size:26px} .hero-wave{display:none}
+  .map-grid{grid-template-columns:minmax(0,1fr)}
+  .maprow{grid-template-columns:minmax(0,1fr)}
+  .login{grid-template-columns:minmax(0,1fr)} .login-l{padding:28px 20px}
+  .search kbd{display:none}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div id="root"></div>
+<div id="layer"></div>
+
+<script>
+/* ============ Synthetische Demo-Daten ============ */
+const USERS=[
+ {id:0,name:"Marcel W.",role:"Direção do programa",canApprove:false,init:"MW"},
+ {id:1,name:"Julia K.",role:"Responsável de dados financeiros",canApprove:true,init:"JK"},
+ {id:2,name:"Tobias R.",role:"Utilizador de negócio vendas",canApprove:false,init:"TR"}
+];
+const S={
+ logged:false,user:0,ai:false,theme:null,toast:null,
+ audit:[],
+ projects:[
+  {id:"p1",name:"S/4HANA Conversion – Fábrica Sul",product:"Transform",phase:"Realização",golive:"01.03.2027",health:"warn",budget:1840000,spent:1215000,progress:58,
+   milestones:[["Blueprint aceite","15.07.2026","done"],["Teste de integração 1","20.11.2026","run"],["Migração de teste 3","11.12.2026","plan"],["UAT concluído","29.01.2027","plan"],["Go-live","01.03.2027","plan"]],
+   risks:[["Dados mestre de materiais: 2.400 registos com erros na migração de teste 3","crit","Dados"],["Key user de compras apenas 50 % disponível em dezembro","warn","Recursos"],["Interface de gestão de armazém ainda sem aprovação de teste","warn","Integração"]],
+   decisions:[["Redefinir as classes de avaliação ou transferir 1:1?","offen","Comité de direção 26.11."],["Arquivar dados antigos > 5 anos em vez de migrar","entschieden","14.10.2026"]]},
+  {id:"p2",name:"Migração de clientes Dynamics → S/4HANA",product:"Migrate",phase:"Migração de teste",golive:"15.01.2027",health:"good",budget:240000,spent:96000,progress:40,
+   milestones:[["Ligações configuradas","02.10.2026","done"],["Mapeamento aprovado","13.11.2026","run"],["Execução produtiva","15.01.2027","plan"]],
+   risks:[["1.032 clientes sem NIF IVA","warn","Qualidade dos dados"]],decisions:[["Carregar NIF IVA em falta como aviso","offen","Responsável de dados"]]},
+  {id:"p3",name:"Consolidação de CRM HubSpot → Salesforce",product:"Migrate",phase:"Planeamento",golive:"Q2 2027",health:"neu",budget:120000,spent:8000,progress:8,
+   milestones:[["Âmbito definido","30.11.2026","run"]],risks:[],decisions:[]}
+ ],
+ jobs:[
+  {id:"j1",name:"Dados mestre de materiais",src:"SAP ECC 6.0",tgt:"SAP S/4HANA",project:"p1",run:"Migração de teste 3",total:48200,ok:45800,err:2400,warn:310,cov:92,status:"Teste com erros",health:"crit",
+   errGroups:[["Unidade de medida KAR sem código ISO no destino",1380,"Mapeamento: completar tabela de valores de unidades de medida"],["A fábrica 1200 não tem atribuição de destino",620,"Definir atribuição de fábrica WERKS 1200"],["Classe de avaliação inválida no destino",400,"Atribuição de valores BKLAS para 3 valores"]],
+   missing:[["Código ISO de unidades de medida (KAR, BTL, PAK)","Falta atribuição de valores para 3 valores"],["Atribuição de fábrica WERKS 1200","sem fábrica de destino"],["Classe de avaliação BKLAS 7920, 7930, 7940","Falta atribuição de valores"]]},
+  {id:"j2",name:"Fornecedores",src:"SAP ECC 6.0",tgt:"SAP S/4HANA",project:"p1",run:"Migração de teste 3",total:6310,ok:6298,err:12,warn:40,cov:100,status:"Teste aprovado",health:"good",errGroups:[["IBAN da conta bancária inválido",12,"Corrigir dados de origem"]],missing:[]},
+  {id:"j3",name:"Instalações",src:"SAP ECC 6.0",tgt:"SAP S/4HANA",project:"p1",run:"–",total:9120,ok:0,err:0,warn:0,cov:64,status:"Mapeamento pendente",health:"warn",errGroups:[],
+   missing:[["Classe de ativos → novas classes","9 campos sem atribuição"],["Área de depreciação 20","sem atribuição de destino"],["Centro de custo (estrutura antiga)","Falta atribuição de valores"]]},
+  {id:"j4",name:"Clientes",src:"Microsoft Dynamics 365",tgt:"SAP S/4HANA",project:"p2",run:"–",total:12480,ok:0,err:0,warn:0,cov:0,status:"Não iniciado",health:"neu",errGroups:[],missing:[]}
+ ],
+ approvals:[
+  {id:"A-104",type:"Versão de mapeamento 7",obj:"Fornecedores ECC → S/4",requester:0,status:"freigegeben",by:1,at:"28.10.2026 14:12"}
+ ],
+ tests:[
+  {id:"TC-101",title:"Criar encomenda de compra",link:"Processo P2P",type:"Integração",status:"bestanden",defect:null},
+  {id:"TC-102",title:"Registar entrada de mercadorias para a encomenda de compra",link:"Processo P2P",type:"Integração",status:"fehlgeschlagen",defect:"D-17"},
+  {id:"TC-103",title:"Verificação de faturas 3-way match",link:"Processo P2P",type:"UAT",status:"blockiert",defect:"D-17"},
+  {id:"TC-201",title:"Clientes totalmente migrados (quantidade, limite de crédito)",link:"Migração de clientes",type:"Migração",status:"offen",defect:null},
+  {id:"TC-202",title:"Unidades de medida dos dados mestre de materiais corretas",link:"Migração de dados mestre de materiais",type:"Migração",status:"fehlgeschlagen",defect:"D-21"},
+  {id:"TC-203",title:"Dados bancários de fornecedores plausíveis",link:"Migração de fornecedores",type:"Migração",status:"bestanden",defect:null},
+  {id:"TC-301",title:"Fecho mensal de centros de custo",link:"Requisito FI-12",type:"Regressão",status:"offen",defect:null},
+  {id:"TC-302",title:"Permissão de compras: apenas fábrica própria",link:"Requisito SEC-4",type:"Regressão",status:"bestanden",defect:null}
+ ],
+ defects:[
+  {id:"D-17",title:"Entrada de mercadorias: tipo de movimento 101 regista no armazém errado",sev:"hoch",status:"em curso",cause:"Customizing"},
+  {id:"D-21",title:"Unidade de medida KAR em falta no destino",sev:"kritisch",status:"offen",cause:"Migration/Mapping"},
+  {id:"D-23",title:"Formulário de encomenda de compra: logótipo desfocado",sev:"niedrig",status:"offen",cause:"Formulários"},
+  {id:"D-24",title:"Fábrica 1200 sem atribuição",sev:"hoch",status:"offen",cause:"Migration/Mapping"}
+ ],
+ testTab:"faelle",
+ cut:{delay:0,window:40,decision:null,acts:[
+  {id:"c1",name:"Bloquear sistema legado",dur:2,deps:[],owner:"Base"},
+  {id:"c2",name:"Cópia de segurança do sistema legado",dur:3,deps:["c1"],owner:"Base"},
+  {id:"c3",name:"Migrar dados mestre",dur:8,deps:["c2"],owner:"Migração de dados",mig:true},
+  {id:"c4",name:"Migrar dados de movimento",dur:10,deps:["c3"],owner:"Migração de dados",mig:true},
+  {id:"c5",name:"Carregar itens em aberto",dur:4,deps:["c3"],owner:"Finanças"},
+  {id:"c6",name:"Reconciliação financeira",dur:4,deps:["c4","c5"],owner:"Finanças"},
+  {id:"c7",name:"Ativar permissões",dur:3,deps:["c2"],owner:"Security"},
+  {id:"c8",name:"Comutar interfaces",dur:5,deps:["c7"],owner:"Integração"},
+  {id:"c9",name:"Smoke test das áreas de negócio",dur:6,deps:["c6","c8"],owner:"Utilizador-chave"},
+  {id:"c10",name:"Decisão go/no-go",dur:1,deps:["c9"],owner:"Comité de direção"},
+  {id:"c11",name:"Disponibilização aos utilizadores",dur:1,deps:["c10"],owner:"Direção do programa"}
+ ]},
+ proc:{steps:[
+  {id:"s1",kind:"start",name:"Surge a necessidade"},
+  {id:"s2",kind:"task",name:"Requisição de compra"},
+  {id:"s3",kind:"task",name:"Criar encomenda de compra"},
+  {id:"s4",kind:"task",name:"Receção de mercadorias"},
+  {id:"s5",kind:"task",name:"Verificação de faturas"},
+  {id:"s6",kind:"end",name:"Pagamento iniciado"}
+ ],version:3,proposal:null,history:[["v3","Entrada de mercadorias adicionada","21.10.2026"],["v2","Verificação de faturas como passo próprio","02.10.2026"],["v1","Primeira versão gerada a partir de texto","18.09.2026"]]},
+ an:{growth:0},
+ chat:[],
+ wiz:null,
+ setTab:"mandant",
+ projSel:"p1"
+};
+const SUITE_URL=/github\.io$/.test(location.hostname)?"index.html?lang=pt":"https://claude.ai/artifact/Q47g6waQPsEyxXtKd6JgBe"; /* Hauptseite: STEGARC Enterprise Suite */
+const REV=[812,798,845,861,879,902,870,915,938,951,967,990]; /* Umsatz 2026 in T€ (synthetisch) */
+const MONTHS=["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
+
+/* ============ Helfer ============ */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const n=v=>Number(v).toLocaleString("pt-PT");
+const eur=v=>Number(v).toLocaleString("pt-PT",{style:"currency",currency:"EUR",maximumFractionDigits:0});
+const pct=(a,b)=>b?Math.round(a/b*1000)/10:0;
+const me=()=>USERS[S.user];
+const now=()=>{const d=new Date();return d.toLocaleDateString("pt-PT")+" "+d.toLocaleTimeString("pt-PT",{hour:"2-digit",minute:"2-digit"})};
+function audit(t){S.audit.unshift({at:now(),who:me().name,t})}
+function toast(t){S.toast=t;renderLayer();clearTimeout(toast._t);toast._t=setTimeout(()=>{S.toast=null;renderLayer()},3200)}
+const pill=(cls,t)=>`<span class="pill ${cls}">${esc(t)}</span>`;
+const hCls={good:"p-good",warn:"p-warn",crit:"p-crit",neu:"p-neu"};
+const hTxt={good:"dentro do plano",warn:"Observar",crit:"Crítico",neu:"Planeamento"};
+const stCls={"bestanden":"p-good","fehlgeschlagen":"p-crit","blockiert":"p-warn","offen":"p-neu"};
+const IC={
+ start:'<path d="M3.5 11L12 4l8.5 7"/><path d="M5.5 9.5V20h4.5v-5.5h4V20h4.5V9.5"/>',
+ proj:'<path d="M3 7.5A2.5 2.5 0 015.5 5h3.6l2 2h7.4A2.5 2.5 0 0121 9.5v7a2.5 2.5 0 01-2.5 2.5h-13A2.5 2.5 0 013 16.5z"/>',
+ mig:'<path d="M8 4v15M8 19l-3-3M8 19l3-3M16 20V5M16 5l-3 3M16 5l3 3"/>',
+ proc:'<circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="12" cy="18" r="2.5"/><path d="M8.5 6h7M7.2 8.2l3.6 7.6M16.8 8.2l-3.6 7.6"/>',
+ test:'<rect x="5" y="4.5" width="14" height="16.5" rx="2"/><path d="M9 4.5V3h6v1.5M9 13l2 2 4-4.5"/>',
+ cut:'<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
+ an:'<rect x="3.5" y="3.5" width="17" height="17" rx="2.5"/><path d="M8 16.5v-4M12 16.5v-9M16 16.5v-6"/>',
+ ai:'<path d="M11 3.5l1.7 4.8 4.8 1.7-4.8 1.7L11 16.5l-1.7-4.8L4.5 10l4.8-1.7z"/><path d="M18 14.5l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z"/>',
+ bell:'<path d="M6 16.5V11a6 6 0 0112 0v5.5l1.5 1.5h-15z"/><path d="M10 20.5a2.2 2.2 0 004 0"/>',
+ help:'<circle cx="12" cy="12" r="8.5"/><path d="M9.6 9.5a2.5 2.5 0 014.9.6c0 1.8-2.5 2.1-2.5 3.9"/><path d="M12 17h.01"/>',
+ cal:'<rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
+ send:'<path d="M4.5 12.5L20 4.5l-5 15.5-3-6.5z"/><path d="M12 13.5l8-9"/>',
+ plus:'<path d="M12 5v14M5 12h14"/>',
+ sliders:'<path d="M4 7.5h9M17.5 7.5H20M4 16.5h3M11.5 16.5H20"/><circle cx="15.5" cy="7.5" r="2"/><circle cx="9.5" cy="16.5" r="2"/>',
+ db:'<ellipse cx="12" cy="6" rx="7" ry="2.6"/><path d="M5 6v12c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6V6M5 12c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6"/>',
+ layers:'<path d="M12 3.5l8.5 4.5L12 12.5 3.5 8z"/><path d="M3.5 12L12 16.5 20.5 12M3.5 16L12 20.5 20.5 16"/>',
+ checkc:'<circle cx="12" cy="12" r="8.5"/><path d="M8 12.2l2.8 2.8 5.2-5.6"/>',
+ flag:'<path d="M5.5 21V4"/><path d="M5.5 4.5h12l-2.5 4 2.5 4h-12"/>',
+ shield:'<path d="M12 3l7 3v5c0 4.6-3 8-7 10-4-2-7-5.4-7-10V6z"/><path d="M12 8.5v4.5M12 16h.01"/>',
+ doc:'<path d="M6.5 3h8l4 4v14h-12z"/><path d="M14.5 3v4h4M9.5 12h5M9.5 16h5"/>',
+ pie:'<circle cx="12" cy="12" r="8.5"/><path d="M12 3.5V12h8.5"/>',
+ bars:'<path d="M5 20v-6M10 20V9M15 20v-8M20 20V5"/>',
+ cube:'<path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9"/>',
+ check:'<path d="M5 12.5l4.5 4.5L19 7"/>',
+ building:'<rect x="5" y="3" width="14" height="18" rx="1.5"/><path d="M9 7h2M13 7h2M9 11h2M13 11h2M9 15h2M13 15h2"/>',
+ chev:'<path d="M7 10l5 5 5-5"/>',
+ search:'<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/>',
+ moon:'<path d="M19.5 14.5A8 8 0 019.5 4.5a7.5 7.5 0 1010 10z"/>',
+ x:'<path d="M6 6l12 12M18 6L6 18"/>',
+ appr:'<path d="M12 3l7 3v5c0 4.6-3 8-7 10-4-2-7-5.4-7-10V6z"/><path d="M9 12l2 2 4-4.5"/>',
+ set:'<circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/>',
+ arrowr:'<path d="M5 12h14M13 6l6 6-6 6"/>',
+ rocket:'<path d="M14 4c3 0 6 3 6 6l-7.5 7.5-6-6z"/><path d="M6.5 11.5L4 11l3-4h4M12.5 17.5l.5 2.5 4-3v-4"/><circle cx="15" cy="9" r="1.5"/>',
+ gauge:'<path d="M4 16a8 8 0 1116 0"/><path d="M12 16l4-5"/>',
+ dots:'<circle cx="5.5" cy="12" r="1.3" fill="currentColor"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/><circle cx="18.5" cy="12" r="1.3" fill="currentColor"/>'
+};
+const ic=(k,s=18)=>`<svg class="ic" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[k]}</svg>`;
+const LOGO=(s=34)=>`<svg width="${s}" height="${s}" viewBox="0 0 40 40" aria-hidden="true"><defs><linearGradient id="lg-n" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#4f7bff"/><stop offset=".55" stop-color="#7b5cff"/><stop offset="1" stop-color="#c06bff"/></linearGradient></defs><path d="M31 11.5C28.8 8.6 25 7.5 20.5 7.5 14.4 7.5 10 10.3 10 14.4s4 5.9 10.3 6.9c6.3 1 10.2 2.8 10.2 7S26 34 19.7 34C15 34 11.3 32.8 9 30" fill="none" stroke="url(#lg-n)" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const ROUTES=["start","projekte","migration","tests","cutover","prozesse","analytics","freigaben","assistent","einstellungen"];
+function route(){const h=location.hash.slice(1);return ROUTES.includes(h)?h:"start"}
+function go(r){if(location.hash.slice(1)===r)render();else location.hash=r}
+
+/* ============ Cutover-Berechnung (deterministisch) ============ */
+function cutCalc(){
+ const acts=S.cut.acts, res={};
+ const durOf=a=>a.dur+(a.id==="c4"?S.cut.delay:0);
+ acts.forEach(a=>{const st=Math.max(0,...a.deps.map(d=>res[d].end));res[a.id]={st,end:st+durOf(a),dur:durOf(a)}});
+ const total=Math.max(...acts.map(a=>res[a.id].end));
+ const crit=new Set();let cur=acts.find(a=>res[a.id].end===total);
+ while(cur){crit.add(cur.id);if(!cur.deps.length)break;const st=res[cur.id].st;cur=acts.find(a=>cur.deps.includes(a.id)&&res[a.id].end===st)}
+ return{res,total,crit,buffer:S.cut.window-total};
+}
+
+/* ============ Migrations-Assistent: Zustand ============ */
+const SRC_FIELDS=["AccountNumber","Nome","Address1_Line1","Address1_PostalCode","Address1_City","Address1_Country","VATNumber","CreditLimit","PaymentTermsCode","EMailAddress1"];
+function newWiz(intent){
+ return{step:1,intent:intent||"Quero migrar os nossos dados de clientes do Microsoft Dynamics para o SAP S/4HANA.",parsed:null,
+  src:"Microsoft Dynamics 365",tgt:"SAP S/4HANA",conn:{src:null,tgt:null},objs:{Kunden:true,Kontakte:false},
+  analyzed:false,dedupe:false,vatWarn:false,
+  map:[
+   {tgt:"BusinessPartner",label:"N.º de parceiro de negócio",req:true,sug:"AccountNumber",conf:99,why:"Chave única, 100 % preenchida",src:null,state:"sug"},
+   {tgt:"OrganizationBPName1",label:"Nome 1",req:true,sug:"Nome",conf:98,why:"Semelhança de nome, 100 % preenchido",src:null,state:"sug"},
+   {tgt:"StreetName",label:"Rua",req:false,sug:"Address1_Line1",conf:91,why:"Campo de morada, formato correto",src:null,state:"sug"},
+   {tgt:"PostalCode",label:"Código postal",req:true,sug:"Address1_PostalCode",conf:96,why:"88 valores com formato errado (ver análise)",src:null,state:"sug"},
+   {tgt:"CityName",label:"Local",req:true,sug:"Address1_City",conf:97,why:"Semelhança de nome",src:null,state:"sug"},
+   {tgt:"Country",label:"País (ISO)",req:true,sug:"Address1_Country",conf:84,why:"Valores em texto simples, conversão para código ISO necessária",src:null,state:"sug"},
+   {tgt:"TaxNumber",label:"USt-ID",req:false,sug:"VATNumber",conf:95,why:"8,3 % vazio",src:null,state:"sug"},
+   {tgt:"CreditLimitAmount",label:"Limite de crédito",req:false,sug:"CreditLimit",conf:93,why:"Montante em EUR, verificação de totais possível",src:null,state:"sug"},
+   {tgt:"PaymentTerms",label:"Condição de pagamento",req:true,sug:"PaymentTermsCode",conf:72,why:"Os códigos divergem: 3 valores precisam de atribuição",src:null,state:"sug"},
+   {tgt:"EmailAddress",label:"E-mail",req:false,sug:"EMailAddress1",conf:97,why:"Formato verificado",src:null,state:"sug"},
+   {tgt:"BusinessPartnerGrouping",label:"Agrupamento",req:true,sug:null,conf:0,why:"Sem campo de origem, constante necessária",src:null,state:"open"}
+  ],
+  test:{state:"idle",pct:0,res:null},approval:null,prod:{state:"idle",pct:0,res:null}};
+}
+function covOf(w){const req=w.map.filter(m=>m.req);return Math.round(req.filter(m=>m.state==="ok").length/req.length*100)}
+function runResult(w,full){
+ const total=12480, dup=214, plz=88, vat=1032;
+ const expected=w.dedupe?total-dup:total;
+ const err=(w.dedupe?0:dup)+(w.vatWarn?0:vat)+plz;
+ const warn=w.vatWarn?vat:0;
+ const ok=expected-err;
+ const srcSum=48213500, failSum=Math.round(err*3870);
+ return{total,expected,err,warn,ok,srcSum,tgtSum:srcSum-failSum,
+  groups:[!w.dedupe&&["Duplicados (mesmo NIF IVA e nome)",dup,"Ativar a fusão na análise"],!w.vatWarn&&["Falta NIF IVA, o destino exige-o para clientes da UE",vat,"Carregar como aviso ou completar dados de origem"],["Código postal com formato errado",plz,"Corrigir dados de origem (lista exportável)"]].filter(Boolean),full};
+}
+
+/* ============ Rendering: Shell ============ */
+function render(){
+ const r=$("#root");
+ if(!S.logged){r.innerHTML=viewLogin();return}
+ const rt=route();
+ const pend=S.approvals.filter(a=>a.status==="offen").length;
+ const side=S.ai&&!["assistent","start"].includes(rt);
+ const nv=([id,label,icon])=>`<a href="#${id}" class="${rt===id?"on":""}" ${rt===id?'aria-current="page"':""}>${ic(icon,20)}<span>${label}</span></a>`;
+ const u=me();
+ r.innerHTML=`<div class="app ${side?"with-ai":""}">
+  <nav class="side nav" aria-label="Navegação principal">
+   <a class="brand" href="#start" aria-label="Página inicial STEGARC">${LOGO(34)}<span><b>STEGARC</b><small>Demo</small></span></a>
+   <a class="suite" href="${SUITE_URL}" target="_blank" rel="noopener" style="margin-bottom:8px;border:1px solid var(--nav-line);color:var(--nav-fg-strong)">${ic("arrowr",18)}<span>Para a Enterprise Suite</span></a>
+   ${[["start","Home","start"],["projekte","Projetos","proj"],["migration","Migrações","mig"],["prozesse","Processos","proc"],["tests","Testes","test"],["cutover","Cutover","cut"],["analytics","Análises","an"]].map(nv).join("")}
+   <div class="nav-sep"></div>
+   ${nv(["assistent","Assistente de IA","ai"])}
+   <div class="nav-sep"></div>
+   <div class="nav-label">Apps &amp; módulos</div>
+   <a class="appl" href="#migration"><span class="app-ic m">${ic("layers",16)}</span>STEGARC Migrate</a>
+   <a class="appl" href="#projekte"><span class="app-ic t">${ic("layers",16)}</span>STEGARC Transform</a>
+   <a class="appl" href="#analytics"><span class="app-ic i">${ic("an",16)}</span>STEGARC Intelligence</a>
+   <button class="tenant" data-act="goSettings" aria-label="Entidade e definições"><span class="av">${ic("building",18)}</span><span style="flex:1;min-width:0"><b style="font-weight:600">Muster Industrie GmbH</b><small>Professional · Demo</small></span>${ic("chev",16)}</button>
+  </nav>
+  <div class="main">
+   <header class="top">
+    <span class="spacer"></span>
+    <button class="search" data-act="palette">${ic("ai",18)}<span>O que pretende alcançar hoje?</span><kbd>⌘ K</kbd></button>
+    <div class="right">
+     <button class="round" data-act="goFreigaben" title="Aprovações" aria-label="Aprovações${pend?", "+pend+" offen":""}">${ic("bell",21)}${pend?'<span class="dot"></span>':""}</button>
+     <button class="round" data-act="help" title="Ajuda" aria-label="Ajuda">${ic("help",21)}</button>
+     <button class="avatar" data-act="userMenu" aria-label="Menu do utilizador: ${esc(u.name)}"><span class="face u${u.id}">${u.init}</span>${ic("chev",16)}</button>
+    </div>
+   </header>
+   <main class="page" id="page">${VIEWS[rt]()}</main>
+  </div>
+  ${side?`<aside class="ai" aria-label="Assistente de IA">${aiPanel(false)}</aside>`:""}
+ </div>`;
+ afterRender(rt);
+}
+function renderLayer(){
+ const L=$("#layer");let h="";
+ if(S.menu){const u=me();h+=`<div style="position:fixed;inset:0;z-index:44" data-act="closeMenu"></div><div class="menu-pop" role="menu">
+  <div style="padding:8px 10px 10px;border-bottom:1px solid var(--line);margin-bottom:6px"><b>${esc(u.name)}</b><div class="small muted">${esc(u.role)}</div></div>
+  <div class="eyebrow" style="padding:4px 10px">Mudar de utilizador (demo)</div>
+  ${USERS.map(x=>`<button class="pal-item" role="menuitem" data-act="setUser" data-id="${x.id}"><span class="avatar"><span class="face u${x.id}" style="width:28px;height:28px;font-size:11px">${x.init}</span></span><span style="flex:1"><span style="display:block;font-weight:600">${esc(x.name)}</span><span class="small muted">${esc(x.role)}${x.canApprove?" · pode aprovar":""}</span></span>${x.id===u.id?ic("check",16):""}</button>`).join("")}
+  <div style="border-top:1px solid var(--line);margin-top:6px;padding-top:6px">
+   <button class="pal-item" role="menuitem" data-act="theme">${ic("moon",17)}Alternar claro / escuro</button>
+   <button class="pal-item" role="menuitem" data-act="goSettings">${ic("set",17)}Definições</button>
+   <a class="pal-item" role="menuitem" href="${SUITE_URL}" target="_blank" rel="noopener" style="text-decoration:none">${ic("start",17)}Para a Enterprise Suite (página principal)</a>
+   <button class="pal-item" role="menuitem" data-act="logout">${ic("arrowr",17)}Terminar sessão</button>
+  </div></div>`}
+ if(S.modal)h+=`<div class="scrim" data-act="closeModal"><div class="dlg" role="dialog" aria-modal="true" onclick="event.stopPropagation()">${S.modal()}</div></div>`;
+ if(S.toast)h+=`<div class="toast" role="status">${esc(S.toast)}</div>`;
+ L.innerHTML=h;
+ const f=L.querySelector("[autofocus]");if(f)f.focus();
+}
+
+/* ============ Login ============ */
+function viewLogin(){return`<div class="login">
+ <div class="login-l">
+  <div class="row" style="gap:12px">${LOGO(38)}<div><b style="font-size:20px;font-family:var(--f-display);font-weight:800">STEGARC</b><div class="small" style="opacity:.75">Intelligent Enterprise Platform</div></div></div>
+  <div style="display:flex;flex-direction:column;gap:14px"><h1>Migração e transformação, utilizáveis sem formação.</h1>
+  <p style="max-width:42ch;opacity:.85;font-size:15px">Descreva o que pretende alcançar. O STEGARC planeia, verifica e mostra-lhe cada passo antes de acontecer algo em produção.</p></div>
+  <div style="display:flex;flex-direction:column;gap:10px;align-items:flex-start"><a class="btn sm" href="${SUITE_URL}" target="_blank" rel="noopener">← Para a STEGARC Enterprise Suite</a><p class="small" style="opacity:.7">Protótipo v0.2 · Todos os dados sintéticos · Engine = engine de teste</p></div>
+ </div>
+ <div class="login-r"><form class="login-box" data-form="login">
+  <h2 style="font-size:24px">Iniciar sessão</h2>
+  <button type="button" class="btn pri" style="justify-content:center;padding:11px" data-act="login">Iniciar sessão com SSO da empresa</button>
+  <div class="row faint small" style="justify-content:center">oder</div>
+  <label class="f">E-mail<input class="input" id="loginMail" type="email" value="marcel.w@muster-industrie.example"></label>
+  <label class="f">Palavra-passe<input class="input" id="loginPw" type="password" value="demo-passwort"></label>
+  <button class="btn" type="submit" style="justify-content:center">Iniciar sessão</button>
+  <div class="note demo small">Demo: cada início de sessão leva à entidade „Muster Industrie GmbH“. Nada é guardado nem transmitido.</div>
+ </form></div></div>`}
+
+/* ============ Start ============ */
+function greet(){const h=new Date().getHours();return h<11?"Bom dia":h<18?"Boa tarde":"Boa noite"}
+const parseDe=s=>{const m=/^(\d{2})\.(\d{2})\.(\d{4})$/.exec(s);return m?new Date(+m[3],+m[2]-1,+m[1]):null};
+const PSUB={p1:"Modernização do ERP",p2:"Dynamics → S/4HANA",p3:"HubSpot → Salesforce"};
+const PIC={p1:"layers",p2:"db",p3:"cube"};
+function ring(p){const r=13,c=2*Math.PI*r;return`<svg width="36" height="36" viewBox="0 0 36 36" aria-hidden="true"><circle cx="18" cy="18" r="${r}" fill="none" stroke="var(--sunk)" stroke-width="4"/><circle cx="18" cy="18" r="${r}" fill="none" stroke="var(--accent)" stroke-width="4" stroke-linecap="round" stroke-dasharray="${c*p/100} ${c}" transform="rotate(-90 18 18)"/></svg>`}
+function promoArt(){return`<svg width="230" height="150" viewBox="0 0 230 150" role="img" aria-label="Os dados passam de uma base de dados para a cloud"><defs>
+ <linearGradient id="pt" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style="stop-color:var(--surface)"/><stop offset="1" style="stop-color:var(--accent-soft)"/></linearGradient>
+ <linearGradient id="pl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--accent-line)"/><stop offset="1" style="stop-color:var(--accent-soft)"/></linearGradient>
+ <linearGradient id="pr" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--accent-2);stop-opacity:.55"/><stop offset="1" style="stop-color:var(--accent-line);stop-opacity:.5"/></linearGradient></defs>
+ <ellipse cx="115" cy="132" rx="104" ry="12" style="fill:var(--accent);opacity:.08"/>
+ <g><polygon points="60,26 102,50 60,74 18,50" fill="url(#pt)" style="stroke:var(--accent-line)"/><polygon points="18,50 60,74 60,116 18,92" fill="url(#pl)"/><polygon points="60,74 102,50 102,92 60,116" fill="url(#pr)"/>
+  <g style="stroke:var(--accent)" fill="none" stroke-width="2"><ellipse cx="60" cy="42" rx="12" ry="4"/><path d="M48 42v14c0 2.2 5.4 4 12 4s12-1.8 12-4V42M48 49c0 2.2 5.4 4 12 4s12-1.8 12-4"/></g></g>
+ <g><polygon points="170,26 212,50 170,74 128,50" fill="url(#pt)" style="stroke:var(--accent-line)"/><polygon points="128,50 170,74 170,116 128,92" fill="url(#pl)"/><polygon points="170,74 212,50 212,92 170,116" fill="url(#pr)"/>
+  <path d="M157 58a7 7 0 01.6-13.9 10 10 0 0119.3 2.4A6 6 0 01182 58z" style="fill:var(--accent-2);opacity:.85"/></g>
+ <path d="M101 72h22" style="stroke:var(--accent)" stroke-width="3" stroke-linecap="round"/><path d="M117 66l7 6-7 6" fill="none" style="stroke:var(--accent)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>`}
+function waveArt(){return`<svg class="hero-wave" viewBox="0 0 520 220" preserveAspectRatio="none" aria-hidden="true"><defs>
+ <linearGradient id="wv1" x1="0" y1="0" x2="1" y2="0"><stop offset="0" style="stop-color:var(--accent-2);stop-opacity:0"/><stop offset=".6" style="stop-color:var(--accent-2);stop-opacity:.28"/><stop offset="1" style="stop-color:var(--accent);stop-opacity:.35"/></linearGradient>
+ <linearGradient id="wv2" x1="0" y1="0" x2="1" y2="0"><stop offset="0" style="stop-color:var(--accent-line);stop-opacity:0"/><stop offset="1" style="stop-color:var(--accent-line);stop-opacity:.55"/></linearGradient></defs>
+ <path d="M0 200 C120 190 190 120 290 110 S430 30 520 20 V220 H0Z" fill="url(#wv2)"/>
+ <path d="M60 220 C170 200 250 150 330 90 S450 0 520 60 V220Z" fill="url(#wv1)"/>
+</svg>`}
+function viewStart(){
+ const u=me();
+ const tot=S.jobs.reduce((a,j)=>a+j.total,0),ok=S.jobs.reduce((a,j)=>a+j.ok,0);
+ const openTests=S.tests.filter(t=>t.status!=="bestanden").length;
+ const today=new Date();today.setHours(0,0,0,0);
+ const nextGo=S.projects.map(p=>({p,d:parseDe(p.golive)})).filter(x=>x.d&&x.d>=today).sort((a,b)=>a.d-b.d)[0];
+ const days=nextGo?Math.round((nextGo.d-today)/864e5):null;
+ const tabs={aktiv:S.projects.filter(p=>p.phase!=="Planeamento"),geplant:S.projects.filter(p=>p.phase==="Planeamento"),abgeschlossen:[]};
+ const ht=S.homeTab||"aktiv",rows=tabs[ht];
+ const st=p=>p.health==="good"?pill("p-good","Dentro do plano"):p.health==="crit"?pill("p-crit","Risco"):p.health==="warn"?pill("p-warn","Observar"):pill("p-neu","Planeamento");
+ return`<div class="home"><div class="home-main">
+ <section class="hero">${waveArt()}
+  <div><h1>${greet()}, ${esc(u.name.split(" ")[0])}! 👋</h1><p class="sub">A sua plataforma empresarial para migração, transformação e processos inteligentes.</p></div>
+  <form class="ask big" data-form="ask">${ic("ai",22)}<input id="askIn" placeholder="Diga-me o que pretende fazer …" aria-label="Diga-me o que pretende fazer"><button class="send" type="submit" aria-label="Enviar">${ic("send",18)}</button></form>
+  <div class="quick">
+   <button data-act="newMig">${ic("rocket",16)}Iniciar migração</button>
+   <button data-act="ask" data-q="Analysiere den Projektstatus">${ic("gauge",16)}Analisar estado do projeto</button>
+   <button data-act="genTests">${ic("test",16)}Gerar casos de teste</button>
+   <button data-act="ask" data-q="Bereite unseren Go-live vor">${ic("flag",16)}Preparar go-live</button>
+   <button data-act="palette" aria-label="Mais ações">${ic("dots",16)}</button>
+  </div>
+ </section>
+ <div class="grid g4">
+  <div class="card stat">${ic("layers",30)}<div><div class="v">${tabs.aktiv.length}</div><div class="l">Projetos ativos</div></div><span class="d" style="color:var(--good)">↑ +1</span></div>
+  <div class="card stat">${ic("db",30)}<div><div class="v">${S.jobs.length}</div><div class="l">Migrações em curso</div></div><span class="d" title="Taxa de sucesso de todas as execuções de teste: ${pct(ok,tot)} %" style="top:50%;transform:translateY(-50%)">${ring(pct(ok,tot))}</span></div>
+  <div class="card stat">${ic("checkc",30)}<div><div class="v">${openTests}</div><div class="l">Testes pendentes</div></div><span class="d" style="color:var(--crit)">${S.tests.filter(t=>t.status==="fehlgeschlagen").length} rot</span></div>
+  <div class="card stat">${ic("flag",30)}<div><div class="v">${days!=null?days+" Dias":"–"}</div><div class="l" title="${nextGo?esc(nextGo.p.name)+" · "+esc(nextGo.p.golive):""}">Até ao próximo go-live</div></div></div>
+ </div>
+ <section class="card promo">
+  <div class="art">${promoArt()}</div>
+  <div style="display:flex;flex-direction:column;gap:8px"><span class="kick">STEGARC Migrate</span><h2>Iniciar nova migração</h2><p class="muted">Transfira os seus dados de forma segura, automática e com apoio de IA entre sistemas suportados.</p><div><button class="btn pri" data-act="newMig" style="margin-top:6px">Configurar migração ${ic("arrowr",16)}</button></div></div>
+  <div class="checks">${["Ligar sistemas","Analisar dados","Obter mapeamento por IA","Executar migração de teste","Iniciar migração produtiva"].map(t=>`<span>${ic("check",18)}${t}</span>`).join("")}</div>
+ </section>
+ <section class="card">
+  <div class="card-h" style="border-bottom:none;flex-wrap:wrap"><div class="row" style="gap:18px"><h2>Os meus projetos</h2><div class="seg">${[["aktiv","Ativo"],["geplant","Planeado"],["abgeschlossen","Concluído"]].map(t=>`<button class="${ht===t[0]?"on":""}" data-act="homeTab" data-t="${t[0]}">${t[1]} <b>${tabs[t[0]].length}</b></button>`).join("")}</div></div><a class="btn ghost sm" href="#projekte">Todos os projetos ${ic("arrowr",15)}</a></div>
+  <div class="tbl-wrap" style="padding:0 6px 6px"><table><thead><tr><th>Projeto</th><th>Progresso</th><th>Estado</th><th>Próximo marco</th><th></th></tr></thead><tbody>
+  ${rows.length?rows.map(p=>{const m=p.milestones.find(x=>x[2]!=="done");return`<tr class="click" data-act="openProj" data-id="${p.id}"><td><div class="row" style="flex-wrap:nowrap"><span class="proj-ic">${ic(PIC[p.id]||"cube",20)}</span><div><b>${esc(p.name)}</b><div class="small muted">${esc(PSUB[p.id]||p.product)}</div></div></div></td>
+   <td style="min-width:180px"><div class="row" style="flex-wrap:nowrap"><div class="bar acc" style="flex:1;min-width:90px"><i style="width:${p.progress}%"></i></div><span class="num" style="width:42px;text-align:right">${p.progress} %</span></div></td>
+   <td>${st(p)}</td><td>${m?`<div class="ms">${ic("cal",19)}<div><div>${esc(m[0])}</div><div class="small muted">${m[1]}</div></div></div>`:`<span class="faint">–</span>`}</td>
+   <td class="r"><button class="dots" data-act="openProj" data-id="${p.id}" aria-label="Abrir projeto">${ic("dots",18)}</button></td></tr>`}).join(""):`<tr><td colspan="5" class="empty">Sem projetos nesta vista.</td></tr>`}
+  </tbody></table></div>
+ </section>
+ </div>
+ <aside class="home-side">
+  <section class="card aic" aria-label="Assistente de IA">
+   <div class="aic-h"><h2>${ic("ai",22)}Assistente de IA</h2><select class="model" id="homeModel" aria-label="Modelo de linguagem"><option>Claude</option><option>Azure OpenAI</option><option>Modelo local</option></select></div>
+   ${S.chat.length?`<div class="home-chat" id="aiBody">${S.chat.map(m=>m.u?`<div class="msg u">${esc(m.u)}</div>`:`<div class="msg a">${m.a}</div>`).join("")}</div><button class="btn ghost sm" style="align-self:flex-start" data-act="clearChat">Novo chat</button>`
+   :`<div><div class="hi">Olá ${esc(u.name.split(" ")[0])}! 👋</div><p class="muted">Como posso ajudar hoje?</p></div>
+   <div style="display:flex;flex-direction:column;gap:10px">${[["bars","Analise o progresso da nossa migração."],["shield","Que riscos ameaçam o nosso go-live?"],["doc","Crie casos de teste a partir do nosso processo Purchase-to-Pay."],["pie","Prepare um relatório de estado para o Steering Committee."]].map(q=>`<button class="qcard" data-act="ask" data-q="${esc(q[1])}">${ic(q[0],22)}<span>${esc(q[1])}</span></button>`).join("")}</div>`}
+   <form class="composer" data-form="homeChat"><input id="homeChatIn" placeholder="Faça uma pergunta ou indique uma tarefa …" aria-label="Pergunta ao assistente de IA"><div class="tools"><button type="button" class="tb" data-act="palette" aria-label="Adicionar ação">${ic("plus",16)}</button><button type="button" class="tb" data-act="aiSettings" aria-label="Definições de IA">${ic("sliders",16)}</button><button class="send" type="submit" aria-label="Enviar">${ic("send",17)}</button></div></form>
+   <p class="small faint">Demo: respostas baseadas em regras a partir dos dados desta entidade, sem modelo de linguagem.</p>
+  </section>
+  <section class="card aic">
+   <h2>Acesso rápido</h2>
+   <div class="tiles">
+    <button class="tile on" data-act="newMig">${ic("db",26)}Migração</button>
+    <button class="tile" data-act="newProject">${ic("proj",26)}Projeto</button>
+    <button class="tile" data-act="goTests">${ic("checkc",26)}Teste</button>
+    <button class="tile" data-act="goProc">${ic("proc",26)}Processo</button>
+   </div>
+  </section>
+ </aside></div>`;
+}
+/* ============ Projekte ============ */
+function viewProjekte(){
+ const p=S.projects.find(x=>x.id===S.projSel);
+ return`<div class="page-head"><div><p class="eyebrow">Transformation Management</p><h1>Projetos</h1></div><button class="btn pri" data-act="newProject">Novo projeto</button></div>
+ <section class="card tbl-wrap"><table><thead><tr><th>Projeto</th><th>Produto</th><th>Fase</th><th>Go-live</th><th class="r">Progresso</th><th>Estado</th></tr></thead><tbody>
+ ${S.projects.map(x=>`<tr class="click" data-act="projSel" data-id="${x.id}" ${x.id===S.projSel?'style="background:var(--accent-soft)"':""}><td><b>${esc(x.name)}</b></td><td>${esc(x.product)}</td><td>${esc(x.phase)}</td><td class="num">${esc(x.golive)}</td><td class="r num">${x.progress} %</td><td>${pill(hCls[x.health],hTxt[x.health])}</td></tr>`).join("")}
+ </tbody></table></section>
+ ${p?`<div class="row between"><h2>${esc(p.name)}</h2><button class="btn" data-act="ask" data-q="Welche Aktivitäten gefährden unseren Go-live?">${ic("ai")}O que ameaça o go-live?</button></div>
+ <div class="grid g4">
+  <div class="card kpi"><span class="eyebrow">Orçamento</span><span class="v">${eur(p.budget)}</span></div>
+  <div class="card kpi"><span class="eyebrow">Consumido</span><span class="v">${eur(p.spent)}</span><span class="small muted">${pct(p.spent,p.budget)} % com ${p.progress} % de progresso</span></div>
+  <div class="card kpi"><span class="eyebrow">Go-live</span><span class="v">${esc(p.golive)}</span></div>
+  <div class="card kpi"><span class="eyebrow">Decisões pendentes</span><span class="v">${p.decisions.filter(d=>d[1]==="offen").length}</span></div>
+ </div>
+ <div class="grid g3">
+  <section class="card"><div class="card-h"><h3>Marcos</h3></div><div class="list">${p.milestones.map(m=>`<div class="li"><div class="grow">${esc(m[0])}</div><span class="num small muted">${m[1]}</span>${pill(m[2]==="done"?"p-good":m[2]==="run"?"p-acc":"p-neu",m[2]==="done"?"erledigt":m[2]==="run"?"em execução":"geplant")}</div>`).join("")}</div></section>
+  <section class="card"><div class="card-h"><h3>Riscos</h3><button class="btn sm ghost" data-act="addRisk">Registar risco</button></div><div class="list">${p.risks.length?p.risks.map(r=>`<div class="li"><span class="sev" style="background:var(--${r[1]==="crit"?"crit":"warn"})"></span><div class="grow">${esc(r[0])}<div class="small faint">${esc(r[2])}</div></div></div>`).join(""):`<div class="empty">Ainda sem riscos registados.</div>`}</div></section>
+  <section class="card"><div class="card-h"><h3>Decisões</h3></div><div class="list">${p.decisions.length?p.decisions.map(d=>`<div class="li"><div class="grow">${esc(d[0])}<div class="small faint">${esc(d[2])}</div></div>${pill(d[1]==="offen"?"p-warn":"p-good",d[1])}</div>`).join(""):`<div class="empty">Sem decisões pendentes.</div>`}</div></section>
+ </div>`:""}`;
+}
+
+/* ============ Migration ============ */
+function viewMigration(){
+ if(S.wiz)return viewWizard();
+ const tot=S.jobs.reduce((a,j)=>a+j.total,0),ok=S.jobs.reduce((a,j)=>a+j.ok,0),err=S.jobs.reduce((a,j)=>a+j.err,0),warn=S.jobs.reduce((a,j)=>a+j.warn,0);
+ const cov=Math.round(S.jobs.reduce((a,j)=>a+j.cov,0)/S.jobs.length);
+ return`<div class="page-head"><div><p class="eyebrow">STEGARC Migrate</p><h1>Migrações</h1></div><button class="btn pri" data-act="newMig">Nova migração</button></div>
+ <div class="grid g4">
+  <div class="card kpi"><span class="eyebrow">Com sucesso</span><span class="v" style="color:var(--good)">${n(ok)}</span><span class="small muted">de ${n(tot)} registos</span></div>
+  <div class="card kpi"><span class="eyebrow">Com erros</span><span class="v" style="color:var(--crit)">${n(err)}</span><span class="small muted">${n(warn)} avisos</span></div>
+  <div class="card kpi"><span class="eyebrow">Cobertura de mapeamento</span><span class="v">${cov} %</span><span class="small muted">Campos obrigatórios, média de todos os objetos</span></div>
+  <div class="card kpi"><span class="eyebrow">Engine</span><span class="v" style="font-size:16px">Motor de testes</span><span class="small muted">Engine do parceiro ainda não ligada</span></div>
+ </div>
+ <section class="card tbl-wrap"><table><thead><tr><th>Objeto</th><th>Origem → destino</th><th>Última execução</th><th class="r">Registos</th><th class="r">Erros</th><th class="r">Mapeamento</th><th>Estado</th><th></th></tr></thead><tbody>
+ ${S.jobs.map(j=>`<tr><td><b>${esc(j.name)}</b></td><td class="small">${esc(j.src)} → ${esc(j.tgt)}</td><td>${esc(j.run)}</td><td class="r num">${n(j.total)}</td><td class="r num" style="color:${j.err?"var(--crit)":"inherit"}">${n(j.err)}</td><td class="r num">${j.cov} %</td><td>${pill(hCls[j.health],j.status)}</td>
+ <td class="r">${j.id==="j4"?`<button class="btn sm pri" data-act="newMig">Iniciar assistente</button>`:j.err?`<button class="btn sm" data-act="ask" data-q="Warum konnten ${n(j.err)} ${j.name}sätze nicht migriert werden?">Explicar erro</button>`:j.missing.length?`<button class="btn sm" data-act="ask" data-q="Welche Mappings fehlen noch für die nächste Testmigration?">Mapeamentos pendentes</button>`:""}</td></tr>`).join("")}
+ </tbody></table></section>
+ <div class="grid g2">
+  <section class="card"><div class="card-h"><h3>Erros por causa · Dados mestre de materiais</h3>${pill("p-crit","2.400 registos")}</div>
+   <div class="list">${S.jobs[0].errGroups.map(g=>`<div class="li"><div class="grow"><div>${esc(g[0])}</div><div class="small faint">Sugestão: ${esc(g[2])}</div><div class="bar" style="margin-top:6px"><i style="width:${pct(g[1],2400)}%;background:var(--crit)"></i></div></div><span class="num">${n(g[1])}</span></div>`).join("")}</div></section>
+  <section class="card"><div class="card-h"><h3>Histórico de migrações</h3></div>
+   <div class="list">${[["Dados mestre de materiais · Migração de teste 3","03.11.2026","45.800 ok · 2.400 erros"],["Fornecedores · Migração de teste 3","03.11.2026","6.298 ok · 12 erros"],["Dados mestre de materiais · Migração de teste 2","13.10.2026","41.200 ok · 7.000 erros"],["Fornecedores · Migração de teste 2","13.10.2026","6.020 ok · 290 erros"]].map(h=>`<div class="li"><div class="grow">${h[0]}<div class="small faint">${h[2]}</div></div><span class="num small muted">${h[1]}</span></div>`).join("")}</div></section>
+ </div>`;
+}
+const WSTEPS=["Intenção","Ligações","Objetos","Análise","Mapeamento","Execução de teste","Validação","Aprovação"];
+function wizCanReach(w,i){
+ if(i<=1)return true;
+ if(i>=2&&!w.parsed)return false;
+ if(i>=3&&!(w.conn.src==="ok"&&w.conn.tgt==="ok"))return false;
+ if(i>=4&&!Object.values(w.objs).some(Boolean))return false;
+ if(i>=5&&!w.analyzed)return false;
+ if(i>=6&&covOf(w)<100)return false;
+ if(i>=7&&w.test.state!=="done")return false;
+ if(i>=8&&!w.val)return false;
+ return true;
+}
+function viewWizard(){
+ const w=S.wiz;
+ const what=["Descreva a migração por palavras suas. O STEGARC identifica a origem, o destino e o objeto.","Selecione o sistema de origem e de destino e verifique a ligação.","Selecione os objetos. Só é oferecido o que o conector suporta.","O STEGARC verifica a estrutura e a qualidade dos dados. Decide como tratar os problemas.","Atribua os campos. As sugestões de IA estão tracejadas e têm de ser confirmadas.","Uma execução de teste carrega no ambiente de teste. Os dados produtivos ficam intactos.","Verifique o resultado e a reconciliação antes de solicitar a aprovação.","As execuções produtivas requerem aprovação de quatro olhos por uma função autorizada."][w.step-1];
+ return`<div class="page-head"><div><p class="eyebrow">Nova migração · Clientes</p><h1>Assistente de migração</h1></div><button class="btn ghost" data-act="closeWiz">Para a visão geral</button></div>
+ <div class="steps" role="list">${WSTEPS.map((s,i)=>{const k=i+1,can=wizCanReach(w,k);return`<button class="step ${k<w.step?"done":k===w.step?"cur":""}" role="listitem" data-act="wizGo" data-s="${k}" ${can?"":"disabled"} aria-current="${k===w.step?"step":"false"}"><span class="ln"></span><span class="t">${k}. ${s}</span></button>`}).join("")}</div>
+ <div class="what">${what}</div>
+ <section class="card card-pad" style="display:flex;flex-direction:column;gap:16px">${WIZ[w.step](w)}</section>
+ <div class="row between">
+  <button class="btn" data-act="wizGo" data-s="${w.step-1}" ${w.step===1?"disabled":""}>Voltar</button>
+  ${w.step<8?`<button class="btn pri" data-act="wizGo" data-s="${w.step+1}" ${wizCanReach(w,w.step+1)?"":"disabled"}>Seguinte: ${WSTEPS[w.step]}</button>`:""}
+ </div>`;
+}
+const WIZ={
+ 1:w=>`<label class="f">O que pretende migrar?<textarea class="input" id="wizIntent" data-on="wizIntent">${esc(w.intent)}</textarea></label>
+  <div class="row"><button class="btn pri" data-act="wizParse">${ic("ai")}Identificar intenção</button><span class="small faint">Identificação baseada em regras nesta demo</span></div>
+  ${w.parsed?`<div class="note acc"><div style="display:flex;flex-direction:column;gap:8px"><b>Identificado – verifique</b><div class="chips"><span class="chip">Origem: ${esc(w.parsed.src)}</span><span class="chip">Destino: ${esc(w.parsed.tgt)}</span><span class="chip">Objeto: ${esc(w.parsed.obj)}</span></div><span class="small">Conectores disponíveis: ${esc(w.parsed.src)} (engine de teste) · ${esc(w.parsed.tgt)} (engine de teste)</span></div></div>`:""}`,
+ 2:w=>{const opt=(sel,list)=>list.map(o=>`<option ${o===sel?"selected":""}>${o}</option>`).join("");
+  const st=s=>s==="ok"?pill("p-good","Ligação ok"):s==="run"?pill("p-acc","a verificar …"):pill("p-neu","não verificado");
+  return`<div class="grid g2">
+   <div style="display:flex;flex-direction:column;gap:10px"><label class="f">Sistema de origem<select class="input" id="wizSrc" data-on="wizSrc">${opt(w.src,["Microsoft Dynamics 365","SAP ECC 6.0","Salesforce","Ficheiro CSV/Excel"])}</select></label>
+    <label class="f">Ligação<select class="input" id="wizSrcConn"><option>DYN-PROD-EU (OAuth, permissões de leitura)</option></select></label>
+    <div class="row">${st(w.conn.src)}<button class="btn sm" data-act="wizConn" data-k="src">Testar ligação</button></div></div>
+   <div style="display:flex;flex-direction:column;gap:10px"><label class="f">Sistema de destino<select class="input" id="wizTgt" data-on="wizTgt">${opt(w.tgt,["SAP S/4HANA","Microsoft Dynamics 365","PostgreSQL"])}</select></label>
+    <label class="f">Ligação<select class="input" id="wizTgtConn"><option>S4-QAS-100 (entidade de teste)</option><option>S4-PRD-100 (produtivo, apenas com aprovação)</option></select></label>
+    <div class="row">${st(w.conn.tgt)}<button class="btn sm" data-act="wizConn" data-k="tgt">Testar ligação</button></div></div></div>
+   <div class="note demo small">As credenciais ficam no cofre da entidade e nunca são apresentadas em texto simples. Na demo responde a engine de teste.</div>`},
+ 3:w=>`<div class="list card">${[["Clientes",true,"12.480 registos na origem"],["Contactos",true,"31.920 registos na origem"],["Oportunidades de venda",false,"Não suportado pelo conector (o destino não tem objeto correspondente)"],["Propostas",false,"Não suportado pelo conector"]].map(o=>`<label class="li" style="${o[1]?"cursor:pointer":"opacity:.5"}"><input type="checkbox" ${o[1]?"":"disabled"} ${w.objs[o[0]]?"checked":""} data-on="wizObj" data-o="${o[0]}" id="obj-${o[0]}"><div class="grow"><b>${o[0]}</b><div class="small faint">${o[2]}</div></div></label>`).join("")}</div>
+  ${w.objs.Kontakte?`<div class="note warn small">O protótipo executa o fluxo para „Clientes“. „Contactos“ seria criado como segundo job.</div>`:""}`,
+ 4:w=>w.analyzed?`<div class="grid g4">
+   <div class="card kpi"><span class="eyebrow">Registos</span><span class="v">12.480</span></div>
+   <div class="card kpi"><span class="eyebrow">Campos</span><span class="v">48</span><span class="small muted">10 relevantes para o destino</span></div>
+   <div class="card kpi"><span class="eyebrow">Constatações</span><span class="v">3</span></div>
+   <div class="card kpi"><span class="eyebrow">Qualidade</span><span class="v">89,4 %</span><span class="small muted">completo e válido</span></div></div>
+   <div class="list card">
+    <div class="li"><span class="sev" style="background:var(--warn)"></span><div class="grow"><b>214 duplicados</b> (mesmo NIF IVA e nome)<div class="small faint">Regra: prevalece o registo mais recente, os contactos são fundidos</div></div><label class="row small"><input type="checkbox" id="dedupe" data-on="dedupe" ${w.dedupe?"checked":""}>Fundir</label></div>
+    <div class="li"><span class="sev" style="background:var(--warn)"></span><div class="grow"><b>1.032 clientes sem NIF IVA</b><div class="small faint">O S/4HANA exige-o para clientes da UE. Carregar como aviso ou completar dados de origem.</div></div><label class="row small"><input type="checkbox" id="vatWarn" data-on="vatWarn" ${w.vatWarn?"checked":""}>Carregar como aviso</label></div>
+    <div class="li"><span class="sev" style="background:var(--crit)"></span><div class="grow"><b>88 códigos postais com formato errado</b><div class="small faint">Só corrigível na origem. Estes registos são indicados como erro na execução de teste.</div></div></div>
+   </div>`:`<div class="empty"><p style="margin-bottom:12px">A análise lê a estrutura e amostras da origem. Não altera dados.</p><button class="btn pri" data-act="wizAnalyze">Iniciar análise</button></div>`,
+ 5:w=>{const cov=covOf(w);return`<div class="row between"><div class="row"><b>Campos obrigatórios atribuídos: ${cov} %</b><div class="bar" style="width:160px"><i style="width:${cov}%;background:${cov===100?"var(--good)":"var(--accent)"}"></i></div></div>
+   <button class="btn" data-act="mapAcceptAll">${ic("ai")}Aceitar todas as sugestões a partir de 90 %</button></div>
+   <div class="map-grid">
+    <div><p class="eyebrow" style="margin-bottom:8px">Campos de origem · Dynamics</p><div class="srcf">${SRC_FIELDS.map(f=>`<span class="chip mono" draggable="true" data-drag="${f}" style="font-size:12px">${f}</span>`).join("")}</div><p class="small faint" style="margin-top:8px">Arrastar para um campo de destino ou selecionar à direita.</p></div>
+    <div class="card">${w.map.map((m,i)=>`<div class="maprow ${m.state==="sug"?"sugg-row":""}" data-drop="${i}">
+      <div><b>${esc(m.label)}</b>${m.req?` <span class="small" style="color:var(--crit)">Obrigatório</span>`:""}<div class="mono small faint">${m.tgt}</div></div>
+      <div><select class="input mono small" id="map-${i}" data-on="mapSel" data-i="${i}"><option value="">— não atribuído —</option>${SRC_FIELDS.map(f=>`<option ${(m.src||m.sug)===f?"selected":""}>${f}</option>`).join("")}<option value="CONST:KUND" ${(m.src||"").startsWith("CONST")?"selected":""}>Constante „KUND“</option></select>
+       <div class="why">${m.state==="sug"&&m.sug?`Sugestão de IA · ${m.conf} % · ${esc(m.why)}`:m.state==="ok"?`Confirmado${m.by?" de "+esc(m.by):""}`:esc(m.why)}</div></div>
+      <div class="row">${m.state==="ok"?pill("p-good","ok"):`<button class="btn sm" data-act="mapOk" data-i="${i}" ${(m.src||m.sug)?"":"disabled"}>Aplicar</button>`}</div></div>`).join("")}</div>
+   </div>`},
+ 6:w=>{const t=w.test;return t.state==="idle"?`<div class="grid g2"><label class="f">Âmbito<select class="input" id="testScope"><option>Teste completo (12.480 registos)</option><option>Amostra 10 %</option></select></label><label class="f">Destino<select class="input" id="testTgt"><option>S4-QAS-100 (entidade de teste)</option></select></label></div>
+   <div class="row"><button class="btn pri" data-act="wizTest">Iniciar execução de teste</button><span class="small faint">A engine de teste simula a execução, resultado com base nas suas decisões na análise.</span></div>`
+   :`<div class="row between"><b>${t.state==="done"?"Execução de teste concluída":"Execução de teste em curso …"}</b><span class="num">${t.pct} %</span></div><div class="prog"><i style="width:${t.pct}%"></i></div>
+   <div class="grid g4"><div class="card kpi"><span class="eyebrow">Processados</span><span class="v">${n(Math.round(12480*t.pct/100))}</span></div><div class="card kpi"><span class="eyebrow">Com sucesso</span><span class="v" style="color:var(--good)">${t.res?n(t.res.ok):"…"}</span></div><div class="card kpi"><span class="eyebrow">Erros</span><span class="v" style="color:var(--crit)">${t.res?n(t.res.err):"…"}</span></div><div class="card kpi"><span class="eyebrow">Duração</span><span class="v">${t.state==="done"?"00:04:12":"em execução"}</span></div></div>
+   ${t.state==="done"?`<div class="row"><button class="btn" data-act="wizTestReset">Testar novamente</button></div>`:""}`},
+ 7:w=>{const r=w.test.res;const rows=[["Número de clientes",n(r.expected),n(r.ok),r.expected-r.ok],["Total do limite de crédito",eur(r.srcSum),eur(r.tgtSum),r.srcSum-r.tgtSum],["Países (distintos)","27","27",0]];
+  return`<div class="grid g3"><div class="card kpi"><span class="eyebrow">Com sucesso</span><span class="v" style="color:var(--good)">${n(r.ok)}</span><span class="small muted">${pct(r.ok,r.expected)} % dos registos esperados</span></div><div class="card kpi"><span class="eyebrow">Erros</span><span class="v" style="color:var(--crit)">${n(r.err)}</span></div><div class="card kpi"><span class="eyebrow">Avisos</span><span class="v" style="color:var(--warn)">${n(r.warn)}</span></div></div>
+  <div class="grid g2"><div class="card"><div class="card-h"><h3>Erros por causa</h3></div><div class="list">${r.groups.map(g=>`<div class="li"><span class="sev" style="background:var(--crit)"></span><div class="grow">${esc(g[0])}<div class="small faint">${esc(g[2])}</div></div><span class="num">${n(g[1])}</span></div>`).join("")}</div></div>
+  <div class="card tbl-wrap"><div class="card-h"><h3>Reconciliação origem ↔ destino</h3></div><table><thead><tr><th>Verificação</th><th class="r">Esperado</th><th class="r">No destino</th><th class="r">Diferença</th></tr></thead><tbody>${rows.map(x=>`<tr><td>${x[0]}</td><td class="r num">${x[1]}</td><td class="r num">${x[2]}</td><td class="r num" style="color:${x[3]?"var(--crit)":"var(--good)"}">${x[3]?(x[0].includes("Total")?eur(x[3]):n(x[3])):"0"}</td></tr>`).join("")}</tbody></table><p class="small faint" style="padding:0 16px 12px">As diferenças correspondem exatamente aos registos com erro à esquerda.</p></div></div>
+  ${r.err>88?`<div class="note warn small">Dica: no passo 4, fundir duplicados e carregar NIF IVA em falta como aviso, depois testar novamente.</div>`:`<div class="note good small">Restam apenas erros que têm de ser corrigidos na origem.</div>`}`},
+ 8:w=>{const r=w.test.res,a=w.approval&&S.approvals.find(x=>x.id===w.approval),p=w.prod;
+  return`<div class="tbl-wrap"><table><tbody>
+   <tr><td class="muted">Migração</td><td><b>Clientes</b> · ${esc(w.src)} → ${esc(w.tgt)}</td></tr>
+   <tr><td class="muted">Destino</td><td>S4-PRD-100 (produtivo)</td></tr>
+   <tr><td class="muted">Mapeamento</td><td>${w.map.filter(m=>m.state==="ok").length} campos confirmados, versão 1</td></tr>
+   <tr><td class="muted">Regras</td><td>Duplicados: ${w.dedupe?"fundir":"nicht behandeln"} · NIF IVA em falta: ${w.vatWarn?"carregar como aviso":"como erro"}</td></tr>
+   <tr><td class="muted">Última execução de teste</td><td>${n(r.ok)} com sucesso · ${n(r.err)} erros · ${n(r.warn)} avisos</td></tr>
+   <tr><td class="muted">Aprovação</td><td>${!a?pill("p-neu","nicht angefordert"):a.status==="offen"?pill("p-warn","a aguardar aprovação"):a.status==="freigegeben"?pill("p-good","freigegeben von "+USERS[a.by].name+" · "+a.at):pill("p-crit","abgelehnt")}</td></tr>
+  </tbody></table></div>
+  ${!a?`<div class="row"><button class="btn pri" data-act="wizRequest">Solicitar aprovação</button><span class="small faint">Enviado a funções com direito de aprovação (responsáveis de dados).</span></div>`:""}
+  ${a&&a.status==="offen"?`<div class="note acc small">A aprovação tem de ser dada por outra pessoa com direito de aprovação. Na demo, mude para „Julia K.“ através da foto de perfil no canto superior direito e confirme através do sino.</div><div class="row"><a class="btn" href="#freigaben">Para as aprovações</a></div>`:""}
+  ${a&&a.status==="freigegeben"?(p.state==="idle"?`<div class="row"><button class="btn pri" data-act="wizProd">Iniciar execução produtiva</button><span class="small faint">O início é registado com utilizador, hora e ID de aprovação.</span></div>`
+   :`<div class="row between"><b>${p.state==="done"?"Execução produtiva concluída":"Execução produtiva em curso …"}</b><span class="num">${p.pct} %</span></div><div class="prog"><i style="width:${p.pct}%"></i></div>
+   ${p.state==="done"?`<div class="note good">${n(r.ok)} clientes carregados em produção, ${n(r.err)} registos com erro para tratamento posterior, protocolo de reconciliação guardado no registo de auditoria.</div><div class="row"><button class="btn" data-act="closeWiz">Para a visão geral</button><a class="btn" href="#cutover">Ver no plano de cutover</a></div>`:""}`):""}`}
+};
+
+/* ============ Tests ============ */
+function viewTests(){
+ const c={};S.tests.forEach(t=>c[t.status]=(c[t.status]||0)+1);
+ const tab=S.testTab;
+ return`<div class="page-head"><div><p class="eyebrow">Test Management</p><h1>Testes</h1></div><div class="row"><button class="btn" data-act="genTests">${ic("ai")}Derivar casos de teste do processo P2P</button></div></div>
+ <div class="grid g4">${["bestanden","fehlgeschlagen","blockiert","offen"].map(s=>`<div class="card kpi"><span class="eyebrow">${s}</span><span class="v">${c[s]||0}</span></div>`).join("")}</div>
+ <div class="tabs" role="tablist">${[["faelle","Casos de teste"],["defects","Erros"],["abdeckung","Cobertura"]].map(t=>`<button class="tab ${tab===t[0]?"on":""}" role="tab" data-act="testTab" data-t="${t[0]}">${t[1]}</button>`).join("")}</div>
+ ${tab==="faelle"?`<section class="card tbl-wrap"><table><thead><tr><th>ID</th><th>Caso de teste</th><th>Associado a</th><th>Tipo</th><th>Estado</th><th>Erros</th><th></th></tr></thead><tbody>
+  ${S.tests.map((t,i)=>`<tr><td class="mono small">${t.id}</td><td>${esc(t.title)}${t.gen?` ${pill("p-demo","Rascunho de IA")}`:""}</td><td class="small">${esc(t.link)}</td><td class="small">${t.type}</td><td>${pill(stCls[t.status],t.status)}</td><td class="mono small">${t.defect||"–"}</td>
+  <td class="r"><select class="input small" style="width:auto" id="ts-${i}" data-on="testStatus" data-i="${i}" aria-label="Definir estado">${["offen","bestanden","fehlgeschlagen","blockiert"].map(s=>`<option ${s===t.status?"selected":""}>${s}</option>`).join("")}</select></td></tr>`).join("")}
+ </tbody></table></section>`:""}
+ ${tab==="defects"?`<div class="row"><button class="btn" data-act="groupDefects">${ic("ai")}Agrupar erros por causa</button></div>
+ ${S.defGrouped?`<div class="grid g3">${Object.entries(S.defects.reduce((a,d)=>{(a[d.cause]=a[d.cause]||[]).push(d);return a},{})).map(([k,v])=>`<section class="card"><div class="card-h"><h3>${esc(k)}</h3>${pill("p-neu",v.length+" Erros")}</div><div class="list">${v.map(d=>`<div class="li"><div class="grow">${esc(d.title)}<div class="small faint mono">${d.id}</div></div></div>`).join("")}</div></section>`).join("")}</div><div class="note demo small">Agrupamento pelo campo „Causa“. Um modelo de linguagem compararia adicionalmente os textos de erro.</div>`:""}
+ <section class="card tbl-wrap"><table><thead><tr><th>ID</th><th>Erros</th><th>Gravidade</th><th>Causa</th><th>Estado</th></tr></thead><tbody>${S.defects.map(d=>`<tr><td class="mono small">${d.id}</td><td>${esc(d.title)}</td><td>${pill(d.sev==="kritisch"?"p-crit":d.sev==="hoch"?"p-warn":"p-neu",d.sev)}</td><td class="small">${esc(d.cause)}</td><td class="small">${d.status}</td></tr>`).join("")}</tbody></table></section>`:""}
+ ${tab==="abdeckung"?`<section class="card tbl-wrap"><table><thead><tr><th>Objeto</th><th class="r">Casos de teste</th><th class="r">bestanden</th><th>Cobertura</th></tr></thead><tbody>
+  ${[["Processo P2P",s=>s.link==="Processo P2P"],["Migração de clientes",s=>s.link==="Migração de clientes"],["Migração de dados mestre de materiais",s=>s.link==="Migração de dados mestre de materiais"],["Migração de fornecedores",s=>s.link==="Migração de fornecedores"],["Migração de ativos",s=>s.link==="Migração de ativos"],["Requisitos",s=>s.link.startsWith("Requisito")]].map(([k,f])=>{const ts=S.tests.filter(f),ok=ts.filter(t=>t.status==="bestanden").length;return`<tr><td>${k}</td><td class="r num">${ts.length}</td><td class="r num">${ok}</td><td>${ts.length?`<div class="bar" style="max-width:220px"><i style="width:${pct(ok,ts.length)}%;background:var(--good)"></i></div>`:pill("p-crit","sem casos de teste")}</td></tr>`}).join("")}
+ </tbody></table></section>`:""}`;
+}
+
+/* ============ Cutover ============ */
+function viewCutover(){
+ const c=cutCalc(),sc=Math.max(c.total,S.cut.window)+2;
+ const gng=[["Migração de teste sem erros críticos",S.jobs.every(j=>j.health!=="crit")],["Sem erros críticos pendentes",!S.defects.some(d=>d.sev==="kritisch"&&d.status!=="behoben")],["O cutover cabe na janela",c.buffer>=0],["Aprovação produtiva de clientes concedida",S.approvals.some(a=>a.type==="Execução produtiva"&&a.status==="freigegeben")]];
+ return`<div class="page-head"><div><p class="eyebrow">Cutover Management · S/4HANA Conversion Fábrica Sul</p><h1>Plano de cutover</h1></div></div>
+ <div class="grid g4">
+  <div class="card kpi"><span class="eyebrow">Duração do caminho crítico</span><span class="v">${c.total} h</span></div>
+  <div class="card kpi"><span class="eyebrow">Janela</span><span class="v">${S.cut.window} h</span><span class="small muted">sex 18:00 a dom 10:00</span></div>
+  <div class="card kpi"><span class="eyebrow">Margem de segurança</span><span class="v" style="color:${c.buffer<0?"var(--crit)":c.buffer<3?"var(--warn)":"var(--good)"}">${c.buffer} h</span></div>
+  <div class="card kpi"><span class="eyebrow">Atividades</span><span class="v">${S.cut.acts.length}</span><span class="small muted">${c.crit.size} no caminho crítico</span></div>
+ </div>
+ <section class="card card-pad" style="display:flex;flex-direction:column;gap:10px">
+  <div class="row between"><h3>O que acontece se a migração de dados demorar mais?</h3><span class="small faint">Cálculo determinístico a partir das dependências</span></div>
+  <div class="row"><label for="delay" class="small">Atraso na migração de dados de movimento</label><input type="range" id="delay" min="0" max="12" step="1" value="${S.cut.delay}" data-on="delay" style="flex:1;min-width:160px;accent-color:var(--accent)"><b class="num" style="width:44px">+${S.cut.delay} h</b></div>
+  <div class="note ${c.buffer<0?"crit":c.buffer<3?"warn":"good"} small">${c.buffer<0?`O cutover excede a janela em ${-c.buffer} h. Opções: prolongar a janela até dom ${10-c.buffer}:00, antecipar os itens em aberto em paralelo ou marcar o go/no-go mais cedo.`:c.buffer<3?`Apenas ${c.buffer} h de margem. Qualquer atraso adicional no caminho crítico adia a disponibilização aos utilizadores.`:`O plano tem ${c.buffer} h de margem.`}</div>
+ </section>
+ <section class="card tbl-wrap"><div class="gantt">
+  <div class="g-row" style="border-bottom:1px solid var(--line-strong)"><span class="eyebrow">Atividade</span><div class="row small faint between"><span>0 h</span><span>${Math.round(sc/2)} h</span><span>${sc} h</span></div><span class="eyebrow" style="text-align:right">Duração</span></div>
+  ${S.cut.acts.map(a=>{const r=c.res[a.id];return`<div class="g-row"><div><div style="font-weight:${c.crit.has(a.id)?650:400}">${esc(a.name)}</div><div class="small faint">${esc(a.owner)}</div></div><div class="g-track"><span class="g-bar ${c.crit.has(a.id)?"crit":""} ${a.id==="c4"&&S.cut.delay?"delay":""}" style="left:${r.st/sc*100}%;width:${r.dur/sc*100}%" title="${r.st} h a ${r.end} h"></span><span class="g-win" style="left:${S.cut.window/sc*100}%"></span></div><span class="num small" style="text-align:right">${r.dur} h</span></div>`}).join("")}
+ </div><div class="row small faint" style="padding:10px 12px;gap:16px"><span class="row" style="gap:6px"><i style="width:12px;height:8px;border-radius:2px;background:var(--accent);display:inline-block"></i>caminho crítico</span><span class="row" style="gap:6px"><i style="width:12px;height:0;border-top:2px dashed var(--crit);display:inline-block"></i>Fim da janela de cutover</span></div></section>
+ <section class="card"><div class="card-h"><h3>Critérios go/no-go</h3>${S.cut.decision?pill(S.cut.decision==="Go"?"p-good":"p-crit","Decisão: "+S.cut.decision):""}</div>
+  <div class="list">${gng.map(g=>`<div class="li"><span class="sev" style="background:var(--${g[1]?"good":"crit"})"></span><div class="grow">${g[0]}</div>${pill(g[1]?"p-good":"p-crit",g[1]?"cumprido":"não cumprido")}</div>`).join("")}</div>
+  <div class="row" style="padding:12px 16px;border-top:1px solid var(--line)"><button class="btn pri" data-act="gng" data-v="Go" ${me().canApprove?"":"disabled"}>Go</button><button class="btn danger" data-act="gng" data-v="No-Go" ${me().canApprove?"":"disabled"}>No-Go</button><span class="small faint">${me().canApprove?"A decisão é registada. A IA nunca decide sozinha.":"Apenas funções com direito de aprovação decidem. Na demo, mude para Julia K. através da foto de perfil."}</span></div></section>`;
+}
+
+/* ============ Prozesse ============ */
+function bpmnSvg(all,hl){
+ const steps=all.filter(s=>!s.offline),hasGw=steps.some(s=>s.kind==="gw");
+ const W=150,G=40,H=56,y0=60,HT=hasGw?220:140;let x=24;const pos=[];
+ steps.forEach(s=>{const w=s.kind==="start"||s.kind==="end"?36:s.kind==="gw"?56:W;pos.push({s,x,w});x+=w+G});
+ const width=x-G+64;
+ let out=`<svg width="${width}" height="${HT}" viewBox="0 0 ${width} ${HT}" role="img" aria-label="Modelo de processo Purchase-to-Pay"><defs><marker id="pa" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="var(--fg-3)"/></marker></defs>`;
+ pos.forEach((p,i)=>{const cy=y0+H/2,isHl=hl&&hl.includes(p.s.id),stroke=isHl?"var(--accent)":"var(--fg-3)",sw=isHl?2:1.25,fill=isHl?"var(--accent-soft)":"var(--surface)";
+  if(i<pos.length-1){out+=`<line x1="${p.x+p.w}" y1="${cy}" x2="${pos[i+1].x-2}" y2="${cy}" stroke="var(--fg-3)" stroke-width="1.25" marker-end="url(#pa)"/>`}
+  if(p.s.kind==="start"||p.s.kind==="end"){out+=`<circle cx="${p.x+18}" cy="${cy}" r="18" fill="${fill}" stroke="${stroke}" stroke-width="${p.s.kind==="end"?3:sw}"/><text x="${p.x+18}" y="${cy+36}" text-anchor="middle" font-size="11.5" fill="var(--fg-2)">${esc(p.s.name)}</text>`}
+  else if(p.s.kind==="gw"){out+=`<polygon points="${p.x+28},${cy-28} ${p.x+56},${cy} ${p.x+28},${cy+28} ${p.x},${cy}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"/><text x="${p.x+28}" y="${cy+5}" text-anchor="middle" font-size="16" fill="var(--fg)">×</text><text x="${p.x+28}" y="${cy-36}" text-anchor="middle" font-size="11.5" fill="var(--fg-2)">${esc(p.s.name)}</text><text x="${p.x+60}" y="${cy-6}" font-size="11" fill="var(--fg-2)">nein</text>`;
+   const ex=all.find(z=>z.id===p.s.branch),nx=pos[i+1].x;if(ex){out+=`<path d="M${p.x+28} ${cy+28}V${cy+92}H${nx-2}" fill="none" stroke="${stroke}" stroke-width="${sw}" marker-end="url(#pa)"/><text x="${p.x+34}" y="${cy+52}" font-size="11" fill="var(--fg-2)">ja</text><rect x="${nx}" y="${cy+70}" width="${W}" height="44" rx="8" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"/><text x="${nx+W/2}" y="${cy+96}" text-anchor="middle" font-size="12.5" fill="var(--fg)">${esc(ex.name)}</text><path d="M${nx+W/2} ${cy+70}V${cy+H/2+2}" fill="none" stroke="${stroke}" stroke-width="${sw}" marker-end="url(#pa)"/>`}}
+  else{out+=`<rect x="${p.x}" y="${y0}" width="${p.w}" height="${H}" rx="8" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"/><text x="${p.x+p.w/2}" y="${cy+4}" text-anchor="middle" font-size="12.5" fill="var(--fg)">${esc(p.s.name)}</text>`}
+ });
+ return out+"</svg>";
+}
+function s_hasExtra(steps){return steps.some(s=>s.kind==="gw")}
+function mainline(steps){return steps.filter(s=>!s.offline)}
+function viewProzesse(){
+ const P=S.proc,pr=P.proposal;
+ return`<div class="page-head"><div><p class="eyebrow">Process Intelligence · fase de expansão</p><h1>Purchase-to-Pay</h1></div>${pill("p-neu","Versão "+P.version)}</div>
+ <div class="note demo small">Fase de expansão após o Migrate. O modelo segue elementos BPMN 2.0 (início, tarefa, gateway exclusivo, fim); a alteração por texto é baseada em regras nesta demo.</div>
+ <form class="ask" data-form="proc" style="background:var(--surface)"><input id="procIn" value="Füge eine zusätzliche Freigabe für Bestellungen über 50.000 Euro ein." aria-label="Descrever alteração ao processo"><button class="btn pri" type="submit">${ic("ai")}Criar sugestão</button></form>
+ ${pr?`<section class="card"><div class="card-h"><h3>Sugestão · versão ${P.version+1}</h3><div class="row"><button class="btn sm" data-act="procReject">Descartar</button><button class="btn sm pri" data-act="procAccept">Aplicar</button></div></div>
+  <div class="card-pad" style="display:flex;flex-direction:column;gap:10px"><div class="bpmn-wrap">${bpmnSvg(pr.steps,pr.hl)}</div>
+  <div class="chips">${pr.diff.map(d=>`<span class="chip">${esc(d)}</span>`).join("")}</div></div></section>`:""}
+ <section class="card"><div class="card-h"><h3>Modelo atual</h3><button class="btn sm" data-act="procTests">Derivar casos de teste</button></div><div class="card-pad"><div class="bpmn-wrap">${bpmnSvg(P.steps,[])}</div></div></section>
+ <section class="card"><div class="card-h"><h3>Versões</h3></div><div class="list">${P.history.map(h=>`<div class="li"><span class="mono small" style="width:30px">${h[0]}</span><div class="grow">${esc(h[1])}</div><span class="num small muted">${h[2]}</span></div>`).join("")}</div></section>`;
+}
+
+/* ============ Analysen ============ */
+function forecast(){
+ const t=REV.map((_,i)=>i+1),N=t.length,mt=t.reduce((a,b)=>a+b)/N,my=REV.reduce((a,b)=>a+b)/N;
+ const b=t.reduce((a,ti,i)=>a+(ti-mt)*(REV[i]-my),0)/t.reduce((a,ti)=>a+(ti-mt)**2,0),a=my-b*mt;
+ const g=1+S.an.growth/100;
+ const fc=Array.from({length:12},(_,i)=>Math.round((a+b*(13+i))*g));
+ return{a,b,fc,sum:fc.reduce((x,y)=>x+y,0),base:REV.reduce((x,y)=>x+y,0)};
+}
+function viewAnalytics(){
+ const f=forecast(),all=REV.concat(f.fc),mx=Math.ceil(Math.max(...all)/100)*100+50,mn=Math.floor(Math.min(...all)/100)*100-50;
+ const W=720,H=260,L=48,R=16,T=16,B=32,X=i=>L+i*(W-L-R)/23,Y=v=>T+(1-(v-mn)/(mx-mn))*(H-T-B);
+ const ticks=[];for(let v=Math.ceil(mn/100)*100;v<=mx;v+=100)ticks.push(v);
+ const pathA=REV.map((v,i)=>`${i?"L":"M"}${X(i)} ${Y(v)}`).join(""),pathF=[REV[11]].concat(f.fc).map((v,i)=>`${i?"L":"M"}${X(11+i)} ${Y(v)}`).join("");
+ return`<div class="page-head"><div><p class="eyebrow">Analytics & Planning · fase de expansão</p><h1>Forecast de vendas 2027</h1></div></div>
+ <div class="grid g3">
+  <div class="card kpi"><span class="eyebrow">Real 2026</span><span class="v">${n(f.base)} T€</span></div>
+  <div class="card kpi"><span class="eyebrow">Forecast 2027</span><span class="v">${n(f.sum)} T€</span><span class="small muted">${f.sum>=f.base?"+":""}${pct(f.sum-f.base,f.base)} % vs. 2026</span></div>
+  <div class="card kpi"><span class="eyebrow">Cenário</span><span class="v">${S.an.growth>0?"+":""}${S.an.growth} %</span><span class="small muted">Acréscimo sobre a tendência</span></div>
+ </div>
+ <section class="card card-pad" style="display:flex;flex-direction:column;gap:12px">
+  <div class="row between"><h3>Vendas mensais em mil € · real 2026 e forecast 2027</h3><div class="row small"><label for="growth">Cenário</label><input type="range" id="growth" min="-10" max="10" step="1" value="${S.an.growth}" data-on="growth" style="accent-color:var(--accent)"></div></div>
+  <div class="tbl-wrap"><svg viewBox="0 0 ${W} ${H}" width="100%" style="min-width:560px" role="img" aria-label="Evolução das vendas 2026 e forecast 2027">
+   ${ticks.map(v=>`<line x1="${L}" x2="${W-R}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line)"/><text x="${L-8}" y="${Y(v)+4}" text-anchor="end" font-size="11" fill="var(--fg-3)" font-family="var(--f-mono)">${v}</text>`).join("")}
+   ${[0,3,6,9,12,15,18,21].map(i=>`<text x="${X(i)}" y="${H-10}" text-anchor="middle" font-size="11" fill="var(--fg-3)">${MONTHS[i%12]} ${i<12?"26":"27"}</text>`).join("")}
+   <line x1="${X(11.5)}" x2="${X(11.5)}" y1="${T}" y2="${H-B}" stroke="var(--line-strong)" stroke-dasharray="3 3"/>
+   <path d="${pathA}L${X(11)} ${H-B}L${X(0)} ${H-B}Z" fill="var(--accent)" fill-opacity=".08"/>
+   <path d="${pathA}" fill="none" stroke="var(--accent)" stroke-width="2"/>
+   <path d="${pathF}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-dasharray="5 4"/>
+   <circle cx="${X(23)}" cy="${Y(f.fc[11])}" r="4" fill="var(--accent)"/><text x="${X(23)-6}" y="${Y(f.fc[11])-10}" text-anchor="end" font-size="12" fill="var(--fg)" font-family="var(--f-mono)">${n(f.fc[11])}</text>
+  </svg></div>
+  <div class="note acc small"><div><b>Método de cálculo (determinístico):</b> regressão linear sobre 12 meses, <span class="mono">Vendas(t) = ${f.a.toFixed(1).replace(".",",")} + ${f.b.toFixed(2).replace(".",",")} · t</span>, cenário como fator ${(1+S.an.growth/100).toFixed(2).replace(".",",")}. A IA apenas sugere o modelo; o cálculo é feito no motor de cálculo.</div></div>
+ </section>
+ <section class="card tbl-wrap"><table><thead><tr><th>Mês 2027</th>${MONTHS.map(m=>`<th class="r">${m}</th>`).join("")}</tr></thead><tbody><tr><td>Forecast mil €</td>${f.fc.map(v=>`<td class="r num">${n(v)}</td>`).join("")}</tr></tbody></table></section>`;
+}
+
+/* ============ Freigaben ============ */
+function viewFreigaben(){
+ const u=me();
+ return`<div class="page-head"><div><p class="eyebrow">Controlo</p><h1>Aprovações</h1></div><span class="small muted">Sessão iniciada como ${esc(u.name)} · ${esc(u.role)}</span></div>
+ <div class="note small ${u.canApprove?"good":"acc"}">${u.canApprove?"Pode conceder aprovações, mas nunca para os seus próprios pedidos.":"A sua função pode solicitar aprovações, mas não concedê-las. Na demo, mude para Julia K. através da foto de perfil no canto superior direito."}</div>
+ <section class="card tbl-wrap"><table><thead><tr><th>ID</th><th>Tipo</th><th>Objeto</th><th>Solicitado por</th><th>Estado</th><th></th></tr></thead><tbody>
+ ${S.approvals.map(a=>`<tr><td class="mono small">${a.id}</td><td>${esc(a.type)}</td><td>${esc(a.obj)}${a.detail?`<div class="small faint">${esc(a.detail)}</div>`:""}</td><td>${esc(USERS[a.requester].name)}</td>
+  <td>${a.status==="offen"?pill("p-warn","offen"):a.status==="freigegeben"?pill("p-good","freigegeben"):pill("p-crit","abgelehnt")}${a.by!=null?`<div class="small faint">${esc(USERS[a.by].name)} · ${a.at}</div>`:""}</td>
+  <td class="r">${a.status==="offen"?(u.canApprove&&u.id!==a.requester?`<div class="row" style="justify-content:flex-end"><button class="btn sm danger" data-act="appr" data-id="${a.id}" data-v="abgelehnt">Rejeitar</button><button class="btn sm pri" data-act="appr" data-id="${a.id}" data-v="freigegeben">Aprovar</button></div>`:`<span class="small faint">${u.id===a.requester?"pedido próprio":"sem permissão"}</span>`):""}</td></tr>`).join("")}
+ </tbody></table></section>
+ <section class="card"><div class="card-h"><h3>Registo de auditoria</h3><span class="small faint">neueste zuerst</span></div><div class="list">${S.audit.length?S.audit.slice(0,12).map(e=>`<div class="li"><span class="num small muted" style="width:120px;flex:none">${e.at}</span><div class="grow">${esc(e.t)}</div><span class="small faint">${esc(e.who)}</span></div>`).join(""):`<div class="empty">Ainda sem registos nesta sessão.</div>`}</div></section>`;
+}
+
+/* ============ Einstellungen ============ */
+function viewEinstellungen(){
+ const t=S.setTab;
+ const tabs=[["mandant","Entidade"],["rollen","Utilizadores e funções"],["lizenz","Módulos e licença"],["ki","Serviço de IA"],["konnektoren","Conectores"]];
+ return`<div class="page-head"><div><p class="eyebrow">Plataforma</p><h1>Definições</h1></div></div>
+ <div class="tabs" role="tablist">${tabs.map(x=>`<button class="tab ${t===x[0]?"on":""}" role="tab" data-act="setTab" data-t="${x[0]}">${x[1]}</button>`).join("")}</div>
+ ${t==="mandant"?`<section class="card card-pad grid g2"><label class="f">Entidade<input class="input" id="tenName" value="Muster Industrie GmbH"></label><label class="f">ID da entidade<input class="input mono" id="tenId" value="DEMO-01" readonly></label><label class="f">Região de dados<select class="input" id="tenReg"><option>UE (Frankfurt)</option><option>Suíça (Zurique)</option></select></label><label class="f">Isolamento de dados<select class="input" id="tenIso"><option>Base de dados partilhada, Row-Level Security</option><option>Base de dados própria (Enterprise)</option></select></label><label class="f">Início de sessão<select class="input" id="tenSso"><option>OpenID Connect · Entra ID</option><option>OpenID Connect · Okta</option></select></label><label class="f">Retenção do registo de auditoria<select class="input" id="tenRet"><option>10 anos</option><option>6 anos</option></select></label></section>`:""}
+ ${t==="rollen"?`<section class="card tbl-wrap"><table><thead><tr><th>Utilizador</th><th>Função</th><th>Criar migração</th><th>Execução de teste</th><th>Aprovar para produção</th></tr></thead><tbody>${USERS.map(u=>`<tr><td><b>${esc(u.name)}</b></td><td>${esc(u.role)}</td><td>${pill(u.id<2?"p-good":"p-neu",u.id<2?"ja":"nein")}</td><td>${pill("p-good","ja")}</td><td>${pill(u.canApprove?"p-good":"p-neu",u.canApprove?"sim, não os próprios":"nein")}</td></tr>`).join("")}</tbody></table></section>`:""}
+ ${t==="lizenz"?`<div class="grid g4">${[["Starter","1 projeto, conectores de ficheiros + 1 conector de sistema",false],["Professional","Vários projetos, execuções produtivas com aprovação, reconciliação",true],["Enterprise","SSO, base de dados própria, SLA, exportação de auditoria",false],["Parceiro","Consola de parceiros, modelos reutilizáveis",false]].map(p=>`<section class="card card-pad" style="display:flex;flex-direction:column;gap:8px;${p[2]?"border-color:var(--accent);border-width:2px":""}"><div class="row between"><h3>${p[0]}</h3>${p[2]?pill("p-acc","aktiv"):""}</div><p class="small muted">${p[1]}</p><p class="small faint">Preço configurável</p></section>`).join("")}</div>
+  <section class="card tbl-wrap"><table><thead><tr><th>Módulo</th><th>Produto</th><th>Estado</th><th class="r">Quota de IA</th></tr></thead><tbody>${[["Migrações","Migrate","aktiv","62 % utilizado"],["Projetos, testes, cutover","Transform","Fase de teste até 31.12.","–"],["Processos","Transform","Pré-visualização","–"],["Análises","Intelligence","Pré-visualização","–"]].map(m=>`<tr><td>${m[0]}</td><td>${m[1]}</td><td>${pill(m[2]==="aktiv"?"p-good":"p-neu",m[2])}</td><td class="r num">${m[3]}</td></tr>`).join("")}</tbody></table></section>`:""}
+ ${t==="ki"?`<section class="card card-pad grid g2"><label class="f">Modelo padrão<select class="input" id="aiModel"><option>Anthropic Claude</option><option>Azure OpenAI</option><option>OpenAI</option><option>Modelo local (servidor próprio)</option></select></label><label class="f">Dados confidenciais de clientes<select class="input" id="aiConf"><option>Apenas para modelo local</option><option>Apenas pseudonimizados para modelos externos</option><option>Nunca enviar para IA</option></select></label><label class="f">Orçamento mensal de IA<input class="input mono" id="aiBudget" value="500 €"></label><label class="f">Registo<select class="input" id="aiLog"><option>Cada pedido com custo e classe de dados</option></select></label></section><div class="note demo small">Neste protótipo o assistente responde com base em regras. Não é chamado nenhum modelo de linguagem.</div>`:""}
+ ${t==="konnektoren"?`<section class="card tbl-wrap"><table><thead><tr><th>Sistema</th><th>Tipo</th><th>Leitura</th><th>Escrita</th><th>Origem do conector</th></tr></thead><tbody>${[["SAP ECC 6.0","ERP"],["SAP S/4HANA","ERP"],["Microsoft Dynamics 365","ERP/CRM"],["Oracle ERP","ERP"],["Salesforce","CRM"],["HubSpot","CRM"],["PostgreSQL, SQL Server, MySQL","Base de dados"],["CSV, Excel, JSON, XML, Parquet","Ficheiro"]].map(c=>`<tr><td><b>${c[0]}</b></td><td class="small">${c[1]}</td><td>${pill("p-demo","Motor de testes")}</td><td>${pill("p-demo","Motor de testes")}</td><td>${pill("p-warn","Engine do parceiro: não verificada")}</td></tr>`).join("")}</tbody></table></section><div class="note warn small">Ainda não se sabe que conectores a engine do parceiro traz efetivamente. Esta lista será preenchida após a análise da engine.</div>`:""}`;
+}
+
+/* ============ Assistent ============ */
+function aiPanel(full){
+ return`<div class="ai-h"><div class="row">${ic("ai",20)}<h2 style="font-size:16px">Assistente de IA</h2>${pill("p-demo","regelbasiert")}</div>${full?"":`<button class="icon-btn" data-act="toggleAi" aria-label="Fechar assistente">${ic("x",16)}</button>`}</div>
+ <div class="ai-body" id="aiBody">${S.chat.length?S.chat.map(m=>m.u?`<div class="msg u">${esc(m.u)}</div>`:`<div class="msg a">${m.a}</div>`).join(""):`<div class="muted small" style="display:flex;flex-direction:column;gap:10px"><p>Analiso os dados de projeto, teste, migração e cutover desta entidade e preparo ações. Nunca concedo aprovações eu próprio.</p><div style="display:flex;flex-direction:column;gap:8px">${[["shield","Mostre-me os riscos críticos do go-live"],["bars","Porque não foi possível migrar 2.400 registos de dados mestre de materiais?"],["doc","Que mapeamentos faltam ainda para a próxima migração de teste?"],["pie","Prepare o próximo relatório do Steering Committee"]].map(s=>`<button class="qcard" data-act="ask" data-q="${esc(s[1])}">${ic(s[0],20)}<span>${esc(s[1])}</span></button>`).join("")}</div></div>`}</div>
+ <form class="ai-f" data-form="chat"><div class="composer"><input id="chatIn" placeholder="Faça uma pergunta ou indique uma tarefa …" aria-label="Mensagem para o assistente"><div class="tools"><button type="button" class="tb" data-act="palette" aria-label="Adicionar ação">${ic("plus",16)}</button><button class="send" type="submit" aria-label="Enviar">${ic("send",17)}</button></div></div></form>`;
+}
+function viewAssistent(){return`<div class="page-head"><div><p class="eyebrow">Em toda a plataforma</p><h1>Assistente</h1></div></div><section class="card page-ai" style="display:flex;flex-direction:column;overflow:hidden">${aiPanel(true)}</section>`}
+const src=a=>`<div class="chips"><span class="small faint">Base de dados:</span>${a.map(x=>`<span class="chip src">${esc(x)}</span>`).join("")}</div>`;
+function answer(q){
+ const t=q.toLowerCase();
+ if(/migrier|migration.*(nach|von)|aus .* nach/.test(t)&&/(dynamics|salesforce|ecc|hubspot|csv)/.test(t)&&!/warum|fortschritt|fehlen/.test(t)){
+  S.wiz=newWiz(q);S.ai=S.ai;setTimeout(()=>go("migration"),0);
+  return`<p>Abri o assistente de migração com a sua descrição. Confirme no primeiro passo a origem, o destino e o objeto.</p>`+src(["Catálogo de conectores (engine de teste)"])}
+ if(/warum|2\.?400|materialst/.test(t)){const j=S.jobs.find(x=>x.err&&t.includes(x.name.toLowerCase()))||S.jobs[0];
+  return`<p><b>${n(j.err)} registos ${esc(j.name)}</b> falharam em ${j.run}. ${j.errGroups.length===1?"Uma causa explicada":j.errGroups.length+" Explicar causas"} todos os erros:</p><table><tbody>${j.errGroups.map(g=>`<tr><td>${esc(g[0])}</td><td class="r num">${n(g[1])}</td></tr>`).join("")}</tbody></table>${j.id==="j1"?`<p>Recomendação: completar primeiro a tabela de valores de unidades de medida (resolve ${pct(1380,2400)} %). A atribuição da fábrica 1200 requer uma decisão de negócio.</p>`:`<p>Recomendação: ${esc(j.errGroups[0][2])}.</p>`}`+src(["Registo de erros "+j.name+" · "+j.run])+`<div class="row"><button class="btn sm" data-act="ask" data-q="Welche Mappings fehlen noch für die nächste Testmigration?">Mostrar mapeamentos pendentes</button></div>`}
+ if(/mapping|fehlen/.test(t)){const rows=S.jobs.flatMap(j=>j.missing.map(m=>[j.name,...m]));const w=S.wiz;const wm=w?w.map.filter(m=>m.req&&m.state!=="ok").map(m=>["Clientes (assistente)",m.label,"não confirmado"]):[];
+  return`<p>Para a próxima migração de teste faltam <b>${rows.length+wm.length}</b> atribuições, priorizadas pelos registos afetados:</p><table><thead><tr><th>Objeto</th><th>Campo</th><th>Estado</th></tr></thead><tbody>${rows.concat(wm).map(r=>`<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td><td class="small">${esc(r[2])}</td></tr>`).join("")}</tbody></table>`+src(["Cobertura de mapeamento de todos os objetos de migração"])}
+ if(/go-?live|risik|gefährd/.test(t)){const c=cutCalc();const crit=S.defects.filter(d=>d.sev==="kritisch"&&d.status!=="behoben").length;const failed=S.tests.filter(x=>x.status==="fehlgeschlagen").length;
+  const rows=[["Migração de dados",S.jobs.some(j=>j.health==="crit")?"crit":"good","Dados mestre de materiais 2.400 erros (5 %)"],["Testes",crit?"crit":failed?"warn":"good",`${failed} falhados, ${crit} erro crítico pendente`],["Cutover",c.buffer<0?"crit":c.buffer<3?"warn":"good",`Margem de ${c.buffer} h numa janela de ${S.cut.window} h`],["Decisões","warn","Classes de avaliação pendentes até ao comité de direção de 26.11."],["Recursos","warn","Key user de compras a 50 % em dezembro"]];
+  return`<p>Prontidão para o go-live <b>S/4HANA Conversion – Fábrica Sul</b> (01.03.2027):</p><table><tbody>${rows.map(r=>`<tr><td>${r[0]}</td><td>${pill(hCls[r[1]],r[1]==="crit"?"kritisch":r[1]==="warn"?"beobachten":"ok")}</td><td class="small">${esc(r[2])}</td></tr>`).join("")}</tbody></table><p>Maior alavanca: corrigir o erro D-21 (unidades de medida). Bloqueia o caso de teste TC-202 e explica 1.380 erros de migração.</p><p class="small faint">Incerteza: o risco de recursos baseia-se numa estimativa do planeamento de recursos.</p>`+src(["Projeto Fábrica Sul","Casos de teste e erros","Plano de cutover","Execuções de migração"])}
+ if(/steering|bericht|lenkungs|statusreport|projektstatus/.test(t)){const c=cutCalc();const p=S.projects[0];
+  return`<p><b>Rascunho do relatório de estado para o comité de direção · ${new Date().toLocaleDateString("pt-PT")}</b></p><p><b>Estado global:</b> Amarelo. Progresso ${p.progress} %, orçamento consumido a ${pct(p.spent,p.budget)} %.</p><p><b>Alcançado:</b> Blueprint aceite; fornecedores com 99,8 % de sucesso na migração de teste 3.</p><p><b>Crítico:</b> Dados mestre de materiais 2.400 erros; margem de cutover ${c.buffer} h.</p><p><b>Decisão solicitada:</b> Redefinir as classes de avaliação ou transferir 1:1.</p><p><b>Próximos marcos:</b> Teste de integração 1 (20.11.), migração de teste 4 (11.12.).</p>`+src(["Projeto Fábrica Sul","Migrações","Plano de cutover","Registo de decisões"])+`<div class="row"><button class="btn sm" data-act="copyReport">Copiar texto</button></div>`}
+ if(/fortschritt|analysier.*migration|migrationsfortschritt/.test(t)){const tot=S.jobs.reduce((a,j)=>a+j.total,0),ok=S.jobs.reduce((a,j)=>a+j.ok,0);
+  return`<p>Em todos os objetos foram carregados com sucesso <b>${n(ok)} von ${n(tot)}</b> registos (${pct(ok,tot)} %) nas execuções de teste.</p><table><tbody>${S.jobs.map(j=>`<tr><td>${esc(j.name)}</td><td>${pill(hCls[j.health],j.status)}</td><td class="r num">${j.cov} %</td></tr>`).join("")}</tbody></table><p>Os ativos são o próximo estrangulamento: 64 % de cobertura de mapeamento e ainda sem execução de teste.</p>`+src(["Execuções de migração","Cobertura de mapeamento"])}
+ if(/testf|testfälle/.test(t)){setTimeout(()=>ACT.genTests(),0);return`<p>Derivo casos de teste a partir do processo Purchase-to-Pay e abro a gestão de testes. Cada rascunho é marcado como „Rascunho IA“ até alguém o aceitar.</p>`+src(["Modelo de processo P2P, versão "+S.proc.version,"Casos de teste existentes"])}
+ if(false){setTimeout(()=>{S.testTab="faelle";go("tests")},0);return`<p>Abro a gestão de testes. Aí pode derivar casos de teste do processo P2P; cada rascunho é marcado como „Rascunho IA“ até alguém o aceitar.</p>`}
+ if(/projekt.*(erstell|anleg|neu)|neues transformationsprojekt/.test(t)){setTimeout(()=>ACT.newProject(),0);return`<p>Abri o formulário para um novo projeto.</p>`}
+ if(/cutover|sechs stunden|6 stunden|länger dauert/.test(t)){setTimeout(()=>{S.cut.delay=6;go("cutover")},0);return`<p>Abro o plano de cutover e defino o atraso da migração de dados de movimento para +6 h. Resultado: a janela é excedida em ${(()=>{const d=S.cut.delay;S.cut.delay=6;const c=cutCalc();S.cut.delay=d;return -c.buffer})()} h.</p>`+src(["Plano de cutover, 11 atividades, dependências"])}
+ return`<p>Nesta demo não tenho uma análise adequada para isso. Posso avaliar riscos de go-live, explicar erros de migração, listar mapeamentos em falta, redigir um relatório para o comité de direção, simular atrasos de cutover ou iniciar uma nova migração.</p>`;
+}
+function ask(q){if(!q.trim())return;S.chat.push({u:q});S.chat.push({a:answer(q)});if(!["assistent","start"].includes(route()))S.ai=true;audit("Pergunta ao assistente: "+q.slice(0,60));render()}
+
+/* ============ Aktionen ============ */
+const ACT={
+ goSettings(){S.menu=false;renderLayer();go("einstellungen")},
+ goFreigaben(){go("freigaben")},
+ goTests(){S.testTab="faelle";go("tests")},
+ goProc(){go("prozesse")},
+ aiSettings(){S.setTab="ki";go("einstellungen")},
+ userMenu(){S.menu=!S.menu;renderLayer()},
+ closeMenu(){S.menu=false;renderLayer()},
+ setUser(d){S.user=+d.id;S.menu=false;audit("Utilizador alterado (demo) para "+me().name);renderLayer();render();toast("Sessão iniciada como "+me().name)},
+ logout(){S.menu=false;S.logged=false;renderLayer();render()},
+ homeTab(d){S.homeTab=d.t;render()},
+ openProj(d){S.projSel=d.id;go("projekte")},
+ clearChat(){S.chat=[];render()},
+ help(){S.modal=()=>`<div style="padding:22px;display:flex;flex-direction:column;gap:12px"><h2>Como funciona o protótipo</h2><p class="muted">Todos os dados são sintéticos, a migração corre contra uma engine de teste. O assistente de IA responde com base em regras.</p><ol style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px"><li>Na página inicial, selecionar „Iniciar migração“ e percorrer o assistente até à execução de teste.</li><li>No último passo, solicitar a aprovação.</li><li>Mudar para Julia K. através da foto de perfil no canto superior direito e aprovar através do sino.</li><li>Voltar à migração e iniciar a execução produtiva.</li></ol><p class="small faint">⌘K ou Ctrl+K abre a pesquisa de comandos.</p><div class="row" style="justify-content:flex-end"><button class="btn pri" data-act="closeModal">Entendido</button></div></div>`;renderLayer()},
+ login(){S.logged=true;audit("Início de sessão por SSO");if(!location.hash)location.hash="start";render()},
+ palette(){openPalette()},
+ toggleAi(){S.ai=!S.ai;render()},
+ theme(){const r=document.documentElement,cur=r.getAttribute("data-theme"),dark=cur?cur==="dark":matchMedia("(prefers-color-scheme: dark)").matches;r.setAttribute("data-theme",dark?"light":"dark")},
+ ask(d){ask(d.q)},
+ closeModal(){S.modal=null;renderLayer()},
+ projSel(d){S.projSel=d.id;render()},
+ newProject(){S.modal=()=>`<form data-form="newProject" style="display:flex;flex-direction:column;gap:12px;padding:20px"><h2>Novo projeto</h2><label class="f">Nome<input class="input" id="npName" required autofocus placeholder="p. ex. S/4HANA Rollout Fábrica Norte"></label><div class="grid g2"><label class="f">Produto<select class="input" id="npProd"><option>Transform</option><option>Migrate</option></select></label><label class="f">Go-live planeado<input class="input" id="npGo" type="date"></label></div><div class="row" style="justify-content:flex-end"><button type="button" class="btn" data-act="closeModal">Cancelar</button><button class="btn pri" type="submit">Criar projeto</button></div></form>`;renderLayer()},
+ addRisk(){S.modal=()=>`<form data-form="addRisk" style="display:flex;flex-direction:column;gap:12px;padding:20px"><h2>Registar risco</h2><label class="f">Descrição<input class="input" id="rkText" required autofocus></label><label class="f">Gravidade<select class="input" id="rkSev"><option value="warn">beobachten</option><option value="crit">kritisch</option></select></label><div class="row" style="justify-content:flex-end"><button type="button" class="btn" data-act="closeModal">Cancelar</button><button class="btn pri" type="submit">Guardar</button></div></form>`;renderLayer()},
+ newMig(){S.wiz=newWiz();go("migration")},
+ closeWiz(){S.wiz=null;render()},
+ wizGo(d){const s=+d.s;if(s<1||s>8||!wizCanReach(S.wiz,s))return;S.wiz.step=s;if(s===7)S.wiz.val=true;render();window.scrollTo&&$(".main")&&($(".main").scrollTop=0)},
+ wizParse(){const w=S.wiz,t=w.intent.toLowerCase();
+  const sys=[["dynamics","Microsoft Dynamics 365"],["salesforce","Salesforce"],["hubspot","HubSpot"],["ecc","SAP ECC 6.0"],["csv","Ficheiro CSV/Excel"],["excel","Ficheiro CSV/Excel"]];
+  const srcM=sys.find(s=>t.includes(s[0]));const tgt=/s\/?4/.test(t)?"SAP S/4HANA":/postgres/.test(t)?"PostgreSQL":"SAP S/4HANA";
+  const obj=/lieferant/.test(t)?"Fornecedores":/material/.test(t)?"Dados mestre de materiais":"Clientes";
+  w.parsed={src:srcM?srcM[1]:"Microsoft Dynamics 365",tgt,obj};w.src=w.parsed.src;w.tgt=tgt;audit("Intenção identificada: "+w.parsed.src+" → "+tgt+" · "+obj);render()},
+ wizConn(d){const w=S.wiz;w.conn[d.k]="run";render();setTimeout(()=>{w.conn[d.k]="ok";audit("Ligação testada: "+(d.k==="src"?w.src:w.tgt));render()},700)},
+ wizAnalyze(){const w=S.wiz;w.analyzed=true;audit("Análise de dados de clientes: 12.480 registos, 3 constatações");render()},
+ mapOk(d){const m=S.wiz.map[+d.i];m.src=m.src||m.sug;m.state="ok";m.by=me().name;render()},
+ mapAcceptAll(){let c=0;S.wiz.map.forEach(m=>{if(m.state==="sug"&&m.sug&&m.conf>=90){m.src=m.sug;m.state="ok";m.by=me().name;c++}});audit(c+" Sugestões de mapeamento aceites");toast(c+" Sugestões aceites. Abaixo de 90 %, verifique individualmente.");render()},
+ wizTest(){const w=S.wiz;w.test={state:"run",pct:0,res:null};w.val=null;audit("Execução de teste de clientes iniciada (S4-QAS-100)");render();
+  const iv=setInterval(()=>{w.test.pct=Math.min(100,w.test.pct+7);if(w.test.pct>=100){clearInterval(iv);w.test.state="done";w.test.res=runResult(w,false);S.jobs[3]={...S.jobs[3],run:"Execução de teste 1",ok:w.test.res.ok,err:w.test.res.err,warn:w.test.res.warn,cov:covOf(w),status:w.test.res.err>88?"Teste com erros":"Teste aprovado",health:w.test.res.err>88?"warn":"good"};audit("Execução de teste de clientes terminada: "+n(w.test.res.ok)+" ok, "+n(w.test.res.err)+" Erros")}
+   if(route()==="migration"&&S.wiz&&S.wiz.step===6)render()},150)},
+ wizTestReset(){S.wiz.test={state:"idle",pct:0,res:null};S.wiz.val=null;render()},
+ wizRequest(){const w=S.wiz,id="A-"+(105+S.approvals.length);S.approvals.unshift({id,type:"Execução produtiva",obj:"Clientes Dynamics → S/4HANA",detail:`${n(w.test.res.ok)} registos, ${n(w.test.res.err)} erros na execução de teste`,requester:S.user,status:"offen"});w.approval=id;audit("Aprovação "+id+" solicitado: execução produtiva de clientes");toast("Aprovação "+id+" angefordert");render()},
+ appr(d){const a=S.approvals.find(x=>x.id===d.id),u=me();if(!u.canApprove||u.id===a.requester)return;a.status=d.v;a.by=u.id;a.at=now();audit("Aprovação "+a.id+" "+d.v);toast("Aprovação "+a.id+": "+d.v);render()},
+ wizProd(){const w=S.wiz,a=S.approvals.find(x=>x.id===w.approval);if(!a||a.status!=="freigegeben")return;w.prod={state:"run",pct:0};audit("Execução produtiva de clientes iniciada com aprovação "+a.id);render();
+  const iv=setInterval(()=>{w.prod.pct=Math.min(100,w.prod.pct+5);if(w.prod.pct>=100){clearInterval(iv);w.prod.state="done";const r=w.test.res;S.jobs[3]={...S.jobs[3],run:"Execução produtiva",status:"Carregado em produção",health:"good"};audit("Execução produtiva de clientes terminada: "+n(r.ok)+" carregados, protocolo de reconciliação guardado")}
+   if(route()==="migration"&&S.wiz&&S.wiz.step===8)render()},120)},
+ testTab(d){S.testTab=d.t;render()},
+ genTests(){const have=new Set(S.tests.map(t=>t.title));let c=0;S.proc.steps.filter(s=>s.kind==="task"||s.kind==="gw").forEach(s=>{const title=s.kind==="gw"?"Fluxo de aprovação: "+s.name:"Verificar passo do processo: "+s.name;if(!have.has(title)&&!S.tests.some(t=>t.title.includes(s.name))){S.tests.push({id:"TC-"+(400+S.tests.length),title,link:"Processo P2P",type:"Integração",status:"offen",defect:null,gen:true});c++}});
+  audit(c+" Casos de teste derivados do processo P2P");toast(c?c+" Rascunhos de casos de teste adicionados":"Todos os passos do processo já têm casos de teste");S.testTab="faelle";go("tests")},
+ groupDefects(){S.defGrouped=!S.defGrouped;render()},
+ gng(d){const u=me();if(!u.canApprove)return;S.cut.decision=d.v;audit("Decisão go/no-go: "+d.v);toast("Decisão „"+d.v+"“ registada");render()},
+ procAccept(){const P=S.proc;P.steps=P.proposal.steps;P.version++;P.history.unshift(["v"+P.version,P.proposal.diff.join(", "),new Date().toLocaleDateString("pt-PT")]);P.proposal=null;audit("Processo P2P versão "+P.version+" transferido");render()},
+ procReject(){S.proc.proposal=null;render()},
+ procTests(){ACT.genTests()},
+ setTab(d){S.setTab=d.t;render()},
+ copyReport(_,el){const txt=el.closest(".msg").innerText.replace(/Text kopieren$/,"").trim();const done=()=>toast("Relatório copiado");try{navigator.clipboard.writeText(txt).then(done,()=>toast("Não foi possível copiar. Selecione o texto."))}catch(e){toast("Não foi possível copiar. Selecione o texto.")}}
+};
+const ON={
+ user(v){S.user=+v;audit("Utilizador alterado (demo) para "+me().name);render()},
+ wizIntent(v){S.wiz.intent=v;S.wiz.parsed=null},
+ wizSrc(v){S.wiz.src=v;S.wiz.conn.src=null;render()},
+ wizTgt(v){S.wiz.tgt=v;S.wiz.conn.tgt=null;render()},
+ wizObj(v,el){S.wiz.objs[el.dataset.o]=el.checked;render()},
+ dedupe(v,el){S.wiz.dedupe=el.checked;if(S.wiz.test.state==="done"){S.wiz.test={state:"idle",pct:0,res:null};S.wiz.val=null}render()},
+ vatWarn(v,el){S.wiz.vatWarn=el.checked;if(S.wiz.test.state==="done"){S.wiz.test={state:"idle",pct:0,res:null};S.wiz.val=null}render()},
+ mapSel(v,el){const m=S.wiz.map[+el.dataset.i];m.src=v||null;m.state=v?"ok":"open";m.by=me().name;render()},
+ testStatus(v,el){const t=S.tests[+el.dataset.i];t.status=v;t.gen=false;audit("Caso de teste "+t.id+" para „"+v+"“ definido");render()},
+ delay(v){S.cut.delay=+v;render()},
+ growth(v){S.an.growth=+v;render()}
+};
+const FORMS={
+ login(){ACT.login()},
+ ask(){ask($("#askIn").value)},
+ chat(){ask($("#chatIn").value)},
+ homeChat(){ask($("#homeChatIn").value)},
+ newProject(){const name=$("#npName").value.trim();if(!name)return;const id="p"+(S.projects.length+1);const g=$("#npGo").value;S.projects.push({id,name,product:$("#npProd").value,phase:"Planeamento",golive:g?g.split("-").reverse().join("."):"offen",health:"neu",budget:0,spent:0,progress:0,milestones:[],risks:[],decisions:[]});S.projSel=id;S.modal=null;audit("Projeto criado: "+name);renderLayer();toast("Projeto criado");go("projekte")},
+ addRisk(){const t=$("#rkText").value.trim();if(!t)return;S.projects.find(p=>p.id===S.projSel).risks.unshift([t,$("#rkSev").value,"manuell erfasst"]);S.modal=null;audit("Risco registado: "+t);renderLayer();render()},
+ proc(){const t=$("#procIn").value.toLowerCase();const P=S.proc;
+  const m=t.match(/(\d{1,3}(?:[.\s]?\d{3})*)\s*(?:€|euro|eur)/);
+  if(/freigabe|genehmig/.test(t)){const amt=m?m[1].replace(/\s/g,""):"50.000";const steps=P.steps.slice();const at=steps.findIndex(s=>s.name==="Criar encomenda de compra");
+   if(steps.some(s=>s.kind==="gw")){toast("O modelo já contém uma aprovação.");return}
+   steps.splice(at+1,0,{id:"g1",kind:"gw",name:"Valor > "+amt+" €?",branch:"x1"},{id:"x1",kind:"task",name:"Aprovação da direção de compras",offline:true});
+   P.proposal={steps,hl:["g1","x1"],diff:["+ Gateway „Valor > "+amt+" €?“ após „Criar encomenda de compra“","+ Tarefa „Aprovação da direção de compras“ no caminho Sim","Caminho Não diretamente para a entrada de mercadorias"]};audit("Sugestão de processo criada: aprovação acima de "+amt+" €");render()}
+  else toast("A demo não reconhece esta alteração. Experimente: aprovação para encomendas de compra acima de 50.000 euros.")}
+};
+
+/* ============ Palette ============ */
+function openPalette(){
+ const items=[["Início","go:start"],["Projetos","go:projekte"],["Migrações","go:migration"],["Iniciar nova migração","act:newMig"],["Testes","go:tests"],["Plano de cutover","go:cutover"],["Processos","go:prozesse"],["Análises","go:analytics"],["Aprovações","go:freigaben"],["Definições","go:einstellungen"],["Criar novo projeto","act:newProject"],["Analisar riscos de go-live","ask:Zeige mir die kritischen Go-live-Risiken"],["Redigir relatório para o comité de direção","ask:Bereite den nächsten Steering-Committee-Bericht vor"]];
+ S.pal={q:"",items};
+ S.modal=()=>{const q=S.pal.q.toLowerCase(),f=S.pal.items.filter(i=>i[0].toLowerCase().includes(q));
+  return`<div style="padding:10px;border-bottom:1px solid var(--line)"><input class="input" id="palIn" autofocus placeholder="Página, ação ou pergunta" value="${esc(S.pal.q)}" data-on="pal" aria-label="Pesquisa"></div><div>${f.map(i=>`<button class="pal-item" data-act="palRun" data-v="${esc(i[1])}">${ic(i[1].startsWith("ask")?"ai":"search")}${esc(i[0])}</button>`).join("")}${q&&!f.length?`<button class="pal-item" data-act="palRun" data-v="ask:${esc(S.pal.q)}">${ic("ai")}Perguntar ao assistente: „${esc(S.pal.q)}“</button>`:""}</div>`};
+ renderLayer();
+}
+ACT.palRun=d=>{const[k,...r]=d.v.split(":"),v=r.join(":");S.modal=null;renderLayer();if(k==="go")go(v);else if(k==="act")ACT[v]();else ask(v)};
+ON.pal=v=>{S.pal.q=v;const pos=v.length;renderLayer();const el=$("#palIn");if(el){el.focus();el.setSelectionRange(pos,pos)}};
+
+/* ============ Events ============ */
+document.addEventListener("click",e=>{const a=e.target.closest("[data-act]");if(!a||a.disabled)return;if(a.tagName==="A")return;e.preventDefault();const f=ACT[a.dataset.act];if(f)f(a.dataset,a)});
+document.addEventListener("change",e=>{const el=e.target.closest("[data-on]");if(!el||el.dataset.on==="wizIntent"||el.dataset.on==="pal")return;ON[el.dataset.on]&&ON[el.dataset.on](el.value,el)});
+document.addEventListener("input",e=>{const el=e.target.closest("[data-on]");if(!el)return;const k=el.dataset.on;if(k==="wizIntent"||k==="pal")ON[k](el.value,el);else if(k==="delay"){const b=el.nextElementSibling;if(b)b.textContent="+"+el.value+" h"}});
+document.addEventListener("submit",e=>{const f=e.target.closest("[data-form]");if(!f)return;e.preventDefault();FORMS[f.dataset.form]&&FORMS[f.dataset.form]()});
+document.addEventListener("keydown",e=>{if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==="k"&&S.logged){e.preventDefault();openPalette()}if(e.key==="Escape"&&(S.modal||S.menu)){S.modal=null;S.menu=false;renderLayer()}});
+document.addEventListener("dragstart",e=>{const c=e.target.closest("[data-drag]");if(c){e.dataTransfer.setData("text/plain",c.dataset.drag)}});
+document.addEventListener("dragover",e=>{const r=e.target.closest("[data-drop]");if(r){e.preventDefault();r.classList.add("drop")}});
+document.addEventListener("dragleave",e=>{const r=e.target.closest("[data-drop]");if(r)r.classList.remove("drop")});
+document.addEventListener("drop",e=>{const r=e.target.closest("[data-drop]");if(!r)return;e.preventDefault();const f=e.dataTransfer.getData("text/plain");const m=S.wiz.map[+r.dataset.drop];m.src=f;m.state="ok";m.by=me().name;render()});
+window.addEventListener("hashchange",()=>{render();const m=$(".main");if(m)m.scrollTop=0});
+function afterRender(rt){
+ if(rt==="migration"||rt==="assistent"||S.ai){const b=$("#aiBody");if(b)b.scrollTop=b.scrollHeight}
+ if(rt==="migration"&&S.wiz&&S.wiz.step===5){}
+ if(S.focus){const el=document.getElementById(S.focus);if(el){el.focus();if(el.setSelectionRange){const l=el.value.length;el.setSelectionRange(l,l)}}S.focus=null}
+}
+const VIEWS={start:viewStart,projekte:viewProjekte,migration:viewMigration,tests:viewTests,cutover:viewCutover,prozesse:viewProzesse,analytics:viewAnalytics,freigaben:viewFreigaben,assistent:viewAssistent,einstellungen:viewEinstellungen};
+/* Range-Schieber: Fokus nach Neuaufbau halten */
+const _delay=ON.delay,_growth=ON.growth;ON.delay=v=>{S.focus="delay";_delay(v)};ON.growth=v=>{S.focus="growth";_growth(v)};
+render();
+</script>
+<nav aria-label="Language" style="position:fixed;left:12px;bottom:12px;z-index:99;display:flex;gap:2px;background:rgba(23,21,58,.9);border-radius:10px;padding:4px;font:600 11.5px ui-monospace,monospace"><a href="prototyp.html" hreflang="de" lang="de" title="Deutsch" style="color:#b6b3d8;text-decoration:none;padding:4px 7px;border-radius:7px">DE</a><a href="prototyp.en.html" hreflang="en" lang="en" title="English" style="color:#b6b3d8;text-decoration:none;padding:4px 7px;border-radius:7px">EN</a><a href="prototyp.es.html" hreflang="es" lang="es" title="Español" style="color:#b6b3d8;text-decoration:none;padding:4px 7px;border-radius:7px">ES</a><a href="prototyp.pt.html" hreflang="pt" lang="pt" title="Português" aria-current="true" style="color:#fff;text-decoration:none;padding:4px 7px;border-radius:7px;background:rgba(255,255,255,.14)">PT</a><a href="prototyp.pl.html" hreflang="pl" lang="pl" title="Polski" style="color:#b6b3d8;text-decoration:none;padding:4px 7px;border-radius:7px">PL</a></nav></body></html>

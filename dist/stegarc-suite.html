@@ -513,6 +513,10 @@ body.layer .app.live .cost-ctr{display:none}
 .vid-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .vid-box video{width:100%;aspect-ratio:16/9;border-radius:10px;background:#000;display:block}
 .page-head .vid-chip{display:flex;width:fit-content}
+/* v0.11 Sprachumschalter */
+.lang-sw{display:inline-flex;align-items:center;flex:none}.lang-sw select{appearance:none;-webkit-appearance:none;border:1px solid var(--line);border-radius:10px;padding:6px 10px;background:var(--surface);color:var(--fg);font:600 12.5px var(--f-mono);cursor:pointer}.lang-sw select:hover{border-color:var(--accent-line,var(--line-strong))}
+.sr-only{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+@media (max-width:700px){.lang-sw select{padding:5px 6px;font-size:11.5px}}
 
 </style>
 <div id="root"></div>
@@ -5572,6 +5576,25 @@ VIEWS.peco = () => { const html = _pecoIx(); if (S.pe.tab !== "infra") return ht
     <section class="card" style="overflow:auto"><div class="card-pad" style="padding-bottom:0"><h3>Sizing</h3></div>${ixSizeTable([["Ist (" + esc(x.row.erp) + ")", x.sizing], ...(tgt ? [["Ziel STEGARC (Szenario D)", tgt]] : []), ["Was-wäre-wenn", wi]])}<div class="card-pad">${ixWhatIfForm("co", true)}${ixFormulas(x.sizing)}${tgt ? `<p class="small faint">Ziel STEGARC: Annahmen der Zielarchitektur (u. a. ${IX.PROFILES["STEGARC Suite"].usersPerVcpu} gleichzeitige Nutzer je vCPU), nicht gemessen. Kosten und Szenarien: <a href="#pe-trans">ERP Transformation</a>.</p>` : ""}</div></section>`;
   return html.replace(/<p class="small faint">Quelle:/, m0 => body + m0); };
 
+/* ===== v0.11 Sprachen – Umschalter oben rechts; die Übersetzung selbst entsteht beim Build (tools/i18n.py) ===== */
+const LANG_LIST = [["de", "Deutsch"], ["en", "English"], ["es", "Español"], ["pt", "Português"], ["pl", "Polski"]];
+const LANG = "de";
+// Filme in Landessprache, sobald es sie gibt (build.py trägt vorhandene media/<film>.<sprache>.mp4 ein)
+const VID_LOCAL = {};
+function setLang(l) {
+  if (!LANG_LIST.some(x => x[0] === l) || l === LANG) return;
+  try { localStorage.setItem("stegarc.lang", l); } catch (e) {}
+  try { window.name = "stegarc.lang=" + l; } catch (e) {}
+  try { const u = new URL(location.href); u.searchParams.set("lang", l); history.replaceState(null, "", u.toString()); } catch (e) {}
+  location.reload();
+}
+const _topExtrasL = topExtras;
+topExtras = function () {
+  return `<label class="lang-sw" title="Sprache"><span class="sr-only">Sprache</span><select aria-label="Sprache">${LANG_LIST.map(([k, n]) => `<option value="${k}"${k === LANG ? " selected" : ""}>${k.toUpperCase()} · ${n}</option>`).join("")}</select></label>` + _topExtrasL();
+};
+document.addEventListener("change", e => { const s = e.target.closest && e.target.closest(".lang-sw select"); if (s) setLang(s.value); });
+try { document.documentElement.lang = LANG; } catch (e) {}
+
 /* ===== v0.9.10 Filme (16:9) – Spieler als eigene Ebene außerhalb von #root, damit Neuzeichnen die Wiedergabe nicht abbricht ===== */
 const VIDEOS = {
   imagespot: { title: "STEGARC in 60 Sekunden", file: "stegarc-imagespot", dur: "1:00" },
@@ -5589,8 +5612,10 @@ function vidClose() { const o = document.getElementById("vidOverlay"); if (!o) r
 function vidKey(e) { if (e.key === "Escape") vidClose(); }
 ACT.vidPlay = (d, el) => { vidClose(); const v = FILMS_ON && VIDEOS[d.v]; if (!v) return; vidClose.back = el || null;
   const o = document.createElement("div"); o.id = "vidOverlay"; o.className = "vid-overlay"; o.setAttribute("role", "dialog"); o.setAttribute("aria-modal", "true"); o.setAttribute("aria-label", v.title);
-  o.innerHTML = `<div class="vid-box"><div class="vid-head"><b>${esc(v.title)}</b><button class="icon-btn" data-vid-close aria-label="Film schließen">✕</button></div><video controls autoplay playsinline preload="metadata" poster="${VID_BASE}${v.file}.jpg"><source src="${VID_BASE}${v.file}.mp4" type="video/mp4"></video><p class="small faint">${esc(VID_NOTE)}</p></div>`;
+  o.innerHTML = `<div class="vid-box"><div class="vid-head"><b>${esc(v.title)}</b><button class="icon-btn" data-vid-close aria-label="Film schließen">✕</button></div><video controls autoplay playsinline preload="metadata" poster="${VID_BASE}${v.file}.jpg"><source src="${VID_BASE}${VID_LOCAL[v.file] ? v.file + "." + LANG : v.file}.mp4" type="video/mp4">${vidTracks(v.file)}</video><p class="small faint">${esc(VID_NOTE)}</p></div>`;
   o.addEventListener("click", e => { if (e.target === o || e.target.closest("[data-vid-close]")) vidClose(); }); document.body.appendChild(o); document.addEventListener("keydown", vidKey); o.querySelector("[data-vid-close]").focus(); };
+// Untertitel je Sprache (WebVTT neben den Filmen; Englisch ist eingebrannt). In der Seitensprache vorausgewählt (außer Deutsch, wie bisher), außer der Film liegt schon in dieser Sprache vor
+const vidTracks = f => LANG_LIST.filter(([k]) => k !== "en").map(([k, n]) => `<track kind="subtitles" srclang="${k}" label="${n}" src="${VID_BASE}${f}.${k}.vtt"${k === LANG && k !== "de" && !VID_LOCAL[f] ? " default" : ""}>`).join("");
 /* Einbau: Film-Knopf direkt unter der Seitenüberschrift */
 const vidAfterH1 = (html, id) => { const i = html.indexOf("</h1>"); return i < 0 ? vidChip(id) + html : html.slice(0, i + 5) + vidChip(id) + html.slice(i + 5); };
 for (const [route, pick] of [["home", () => S.layer === "layer" ? "experience-layer" : "imagespot"], ["systems", () => "experience-layer"], ["pe", () => "pe-command-center"], ["infra", () => "it-infrastruktur"], ["pe-infra", () => "it-infrastruktur"]]) {

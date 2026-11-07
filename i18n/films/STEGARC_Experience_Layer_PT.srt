@@ -1,0 +1,73 @@
+1
+00:00:00,350 --> 00:00:01,872
+Quatro sistemas diferentes.
+
+2
+00:00:01,892 --> 00:00:03,348
+Quatro acessos diferentes.
+
+3
+00:00:03,368 --> 00:00:05,310
+E, ainda assim, nenhuma visão global.
+
+4
+00:00:06,050 --> 00:00:14,350
+STEGARC Experience Layer: SAP, Microsoft 365,
+ServiceNow, Workday e motor ERP próprio.
+
+5
+00:00:15,117 --> 00:00:17,224
+Cada tarefa chega a uma
+só caixa de entrada.
+
+6
+00:00:17,244 --> 00:00:21,687
+Os mesmos cartões e ações,
+seja qual for o sistema.
+
+7
+00:00:22,450 --> 00:00:25,467
+O assistente mostra aprovações em cartões.
+Sugere.
+
+8
+00:00:25,487 --> 00:00:26,530
+A decisão é sua.
+
+9
+00:00:27,283 --> 00:00:32,013
+Um router escolhe o agente certo para cada
+pedido, sempre por um acesso aprovado.
+
+10
+00:00:32,750 --> 00:00:37,515
+Cada ação fica registada: utilizador,
+função, sistema, rota e custo.
+
+11
+00:00:37,535 --> 00:00:39,580
+Auditável de raiz.
+
+12
+00:00:40,317 --> 00:00:43,721
+Quando estiver pronto,
+passe um processo para o motor STEGARC.
+
+13
+00:00:43,741 --> 00:00:46,057
+A caixa de entrada fica exatamente igual.
+
+14
+00:00:46,817 --> 00:00:48,908
+Funciona até dentro do
+Teams ou do Copilot.
+
+15
+00:00:48,928 --> 00:00:51,667
+Uma só interface,
+onde quer que a sua equipa trabalhe.
+
+16
+00:00:52,417 --> 00:00:56,367
+STEGARC Experience Layer.
+Uma interface. Todos os sistemas.

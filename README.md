@@ -189,6 +189,10 @@ Ein Bereich **Private Equity** in derselben Navigation, für PE-Investoren. Plan
 
 Seite „IT-Infrastruktur“ in der Suite (je Mandant, live aus Engine und Konnektoren) und im PE-Bereich (Portfolio und je Unternehmen, Integrationsstatus live aus dem Hub). Sizing mit Formeln, Ziel STEGARC und Was-wäre-wenn. Alles Beispielwerte – keine Herstellerangaben. Details: [`docs/it-infrastruktur.md`](docs/it-infrastruktur.md). Tests: `node test/infra.test.js`.
 
+## Sprachen
+
+Deutsch ist die Quellsprache. Englisch (en-GB), Spanisch (es-ES), Portugiesisch (pt-PT) und Polnisch entstehen beim Build aus `i18n/<sprache>.json` (Schlüssel = deutscher Text, `{0}` … für `${…}`-Ausdrücke) über `tools/i18n.py`. Neue oder geänderte Texte: `python3 build.py` zeigt, wie viele Texte ohne Übersetzung bleiben; Einträge in allen vier Wörterbüchern ergänzen. Suite: Sprache per Umschalter oder `index.html?lang=en`; Produktseite `stegarc.en.html` usw.
+
 ## Filme
 
 Web-Fassungen der Filme liegen in `media/` (16:9, 720p, je 2–4 MB, mit Vorschaubild); die Originale bleiben außerhalb des Repos. Zuordnung in `src/app_media.js` (`VIDEOS`) und in `src/stegarc.html`. Neue Filme: Datei nach `media/` (Name `stegarc-<thema>.mp4` und `.jpg`), Eintrag in `VIDEOS`, Einbau mit `vidAfterH1`.

@@ -26,6 +26,8 @@ jobs:
           pip install playwright
           python -m playwright install --with-deps chromium
           python test/e2e.py
+      - name: Sprachen (EN/ES/PT/PL)
+        run: python test/i18n.py
       - uses: actions/upload-artifact@v5
         if: always()
         with: { name: screenshots, path: test-results }

@@ -1,0 +1,51 @@
+1
+00:00:00,350 --> 00:00:02,538
+Fünfundzwanzig Portfoliounternehmen.
+
+2
+00:00:02,558 --> 00:00:05,644
+Ein Flickenteppich aus ERP-Systemen.
+Und eine Frage.
+
+3
+00:00:05,664 --> 00:00:07,720
+Wie stehen wir wirklich da?
+
+4
+00:00:08,483 --> 00:00:13,074
+Das STEGARC PE Command Center macht
+daraus eine Live-Portfoliosicht.
+
+5
+00:00:13,094 --> 00:00:16,063
+Umsatz, EBITDA und Cash an einem Ort.
+
+6
+00:00:16,817 --> 00:00:21,437
+Liquidität über alle Unternehmen –
+mit Sechsmonatsprognose und Frühwarnungen.
+
+7
+00:00:22,183 --> 00:00:27,623
+Wertsteigerung Hebel für Hebel verfolgen –
+vom Potenzial bis zum realisierten EBITDA.
+
+8
+00:00:28,383 --> 00:00:33,573
+Der KI-Finanzberater nennt Nachzügler –
+und zeigt genau, wie er darauf kommt.
+
+9
+00:00:34,317 --> 00:00:39,237
+Der ERP-Integration-Hub zeigt Datenquellen
+und wo Mappings brechen.
+
+10
+00:00:39,983 --> 00:00:46,353
+Die ERP-Transformation plant den Weg –
+Welle für Welle auf eine Plattform.
+
+11
+00:00:47,117 --> 00:00:51,237
+STEGARC PE Command Center.
+Jedes Unternehmen. Eine Sicht.

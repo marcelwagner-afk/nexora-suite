@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.11.0 – Sprachen EN · ES · PT · PL (2026-11)
+
+- **Fünf Sprachen:** Suite, Produktseite und Prototyp gibt es auf Deutsch, Englisch (en-GB), Spanisch (es-ES), Portugiesisch (pt-PT) und Polnisch. Umschalter oben rechts (Suite), in der Kopfleiste (Produktseite) bzw. unten links (Prototyp). Zahlen- und Datumsformat folgen der Sprache.
+- **Übersetzung zur Build-Zeit:** Der Quelltext bleibt deutsch. `tools/i18n.py` zerlegt JS, Template-Literale und HTML und ersetzt sichtbare Texte über `i18n/<sprache>.json` (Schlüssel = deutscher Text, Platzhalter `{0}` für `${…}`). Keine neuen Abhängigkeiten. Neue Texte ohne Übersetzung bleiben deutsch; der Build meldet die Abdeckung.
+- **Ausgaben:** `index.html` (Pages) und das Artifact enthalten alle Sprachen in einem Dokument, ausgeführt wird nur die gewählte (`?lang=`, sonst zuletzt gewählt, sonst Deutsch). Produktseite `stegarc.<sprache>.html` mit `hreflang`, Prototyp `prototyp.<sprache>.html`, Einzeldateien `dist/stegarc-suite.<sprache>.html`.
+- **Assistent:** Beispielfragen in der Landessprache werden vor der regelbasierten Auswertung zurückübersetzt; mit Claude antwortet der Assistent in der gewählten Sprache.
+- **Filme:** Untertitel DE/ES/PT/PL als WebVTT (`media/stegarc-*.<sprache>.vtt`), in der Seitensprache vorausgewählt. Vertonte Landesfassungen werden automatisch genutzt, sobald `media/stegarc-*.<sprache>.mp4` vorliegt.
+- **Tests:** `test/i18n.py` – Wörterbücher vollständig und platzhaltertreu, jede Sprache ohne Skriptfehler in zehn Ansichten, Umschalter DE → EN → DE, Produktseite und Prototyp je Sprache (mobil ohne Querscrollen).
+
 ## v0.10.1 – STEGARC-Filme (2026-11)
 
 - **Filme wieder eingeschaltet:** neue Fassungen mit STEGARC in Bild, Ton und Untertiteln (`media/stegarc-*.mp4|jpg`, 1280 px, Vorschaubild bei 9,2 s); Schalter `FILMS = True`. Texterkennung über alle acht Fassungen: kein alter Name im Bild.
