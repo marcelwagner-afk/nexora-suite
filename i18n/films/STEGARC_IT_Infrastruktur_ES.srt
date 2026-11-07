@@ -1,0 +1,38 @@
+1
+00:00:00,350 --> 00:00:02,872
+Toda plataforma nueva
+plantea la misma pregunta.
+
+2
+00:00:02,892 --> 00:00:04,910
+¿Qué hace falta para operarla?
+
+3
+00:00:05,650 --> 00:00:08,544
+STEGARC muestra su propia
+arquitectura en directo.
+
+4
+00:00:08,564 --> 00:00:13,480
+Usuarios, acceso, aplicación,
+servicio de IA, datos e integraciones.
+
+5
+00:00:14,217 --> 00:00:16,467
+El dimensionamiento sigue
+el uso real de la demo.
+
+6
+00:00:16,487 --> 00:00:21,367
+Usuarios, documentos, llamadas y volumen
+de datos, con cada supuesto a la vista.
+
+7
+00:00:22,117 --> 00:00:28,027
+Los inversores ven así toda la cartera,
+con una simulación por adquisición.
+
+8
+00:00:28,783 --> 00:00:32,673
+STEGARC. Transparente del
+proceso a la infraestructura.

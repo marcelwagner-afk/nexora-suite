@@ -1,0 +1,51 @@
+1
+00:00:00,350 --> 00:00:02,538
+Dwadzieścia pięć spółek portfelowych.
+
+2
+00:00:02,558 --> 00:00:05,644
+Mozaika systemów ERP. I jedno pytanie.
+
+3
+00:00:05,664 --> 00:00:07,720
+Jak naprawdę nam idzie?
+
+4
+00:00:08,483 --> 00:00:13,074
+STEGARC PE Command Center łączy
+je w jeden widok portfela na żywo.
+
+5
+00:00:13,094 --> 00:00:16,063
+Przychody,
+EBITDA i gotówka w jednym miejscu.
+
+6
+00:00:16,817 --> 00:00:21,437
+Płynność wszystkich spółek, z prognozą
+na pół roku i wczesnymi ostrzeżeniami.
+
+7
+00:00:22,183 --> 00:00:27,623
+Tworzenie wartości dźwignia po dźwigni –
+od potencjału po zrealizowaną EBITDA.
+
+8
+00:00:28,383 --> 00:00:33,573
+Zapytaj doradcę finansowego AI, które
+spółki odstają – i zobacz, skąd to wie.
+
+9
+00:00:34,317 --> 00:00:39,237
+Hub integracji ERP pokazuje, które systemy
+dają dane, a gdzie zawodzi mapowanie.
+
+10
+00:00:39,983 --> 00:00:46,353
+Transformacja ERP zmienia ją w roadmapę –
+fala po fali, na jedną platformę.
+
+11
+00:00:47,117 --> 00:00:51,237
+STEGARC PE Command Center.
+Każda spółka. Jeden widok.

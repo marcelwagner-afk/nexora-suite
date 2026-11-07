@@ -1,0 +1,66 @@
+1
+00:00:00,350 --> 00:00:03,996
+A sua empresa funciona com SAP,
+Microsoft, ServiceNow e Workday.
+
+2
+00:00:04,016 --> 00:00:07,410
+E a sua equipa salta
+entre eles o dia todo.
+
+3
+00:00:08,400 --> 00:00:12,250
+Apresentamos o STEGARC.
+A suite empresarial nativa de IA.
+
+4
+00:00:13,017 --> 00:00:17,497
+Um painel para cada função, pensado nos
+seus processos, não nos fornecedores.
+
+5
+00:00:18,250 --> 00:00:20,308
+Uma só caixa para todos os sistemas.
+
+6
+00:00:20,328 --> 00:00:25,960
+Aprove no SAP,
+ServiceNow ou Workday sem sair do STEGARC.
+
+7
+00:00:26,717 --> 00:00:27,914
+Pergunte por palavras suas.
+
+8
+00:00:27,934 --> 00:00:32,597
+O assistente responde com ecrãs reais,
+e nada acontece sem o seu clique.
+
+9
+00:00:33,350 --> 00:00:35,868
+Por trás corre um motor ERP completo.
+
+10
+00:00:35,888 --> 00:00:39,580
+Contabilidade, inventário e produção,
+tudo em tempo real.
+
+11
+00:00:40,317 --> 00:00:45,087
+Para investidores, o PE Command Center
+reúne todas as participadas numa só vista.
+
+12
+00:00:45,850 --> 00:00:48,420
+Comece como uma camada
+sobre os seus sistemas.
+
+13
+00:00:48,440 --> 00:00:52,760
+Depois migre processo a processo,
+até o STEGARC ser o seu ERP.
+
+14
+00:00:53,517 --> 00:00:57,817
+STEGARC. O seu negócio.
+As suas regras. O seu ERP.

@@ -1,0 +1,66 @@
+1
+00:00:00,350 --> 00:00:03,996
+Ihr Unternehmen läuft auf SAP,
+Microsoft, ServiceNow und Workday.
+
+2
+00:00:04,016 --> 00:00:07,410
+Und Ihre Teams springen
+den ganzen Tag hin und her.
+
+3
+00:00:08,400 --> 00:00:12,250
+Das ist STEGARC.
+Die KI-native Enterprise-Suite.
+
+4
+00:00:13,017 --> 00:00:17,497
+Ein Dashboard für jede Rolle – gebaut um
+Ihre Prozesse, nicht um Ihre Anbieter.
+
+5
+00:00:18,250 --> 00:00:20,308
+Eine Inbox für alle Systeme.
+
+6
+00:00:20,328 --> 00:00:25,960
+Freigeben in SAP, ServiceNow oder
+Workday – ohne STEGARC zu verlassen.
+
+7
+00:00:26,717 --> 00:00:27,914
+Fragen Sie in eigenen Worten.
+
+8
+00:00:27,934 --> 00:00:32,597
+Der Assistent zeigt echte Masken –
+und nichts passiert ohne Ihren Klick.
+
+9
+00:00:33,350 --> 00:00:35,868
+Dahinter läuft eine komplette ERP-Engine.
+
+10
+00:00:35,888 --> 00:00:39,580
+Buchhaltung,
+Lager und Produktion – alles live.
+
+11
+00:00:40,317 --> 00:00:45,087
+Investoren sehen im PE Command Center
+alle Portfoliounternehmen auf einen Blick.
+
+12
+00:00:45,850 --> 00:00:48,420
+Starten Sie als Schicht
+über Ihren Systemen.
+
+13
+00:00:48,440 --> 00:00:52,760
+Dann Prozess für Prozess umziehen,
+bis STEGARC Ihr ERP ist.
+
+14
+00:00:53,517 --> 00:00:57,817
+STEGARC. Ihr Business.
+Ihre Regeln. Ihr ERP.

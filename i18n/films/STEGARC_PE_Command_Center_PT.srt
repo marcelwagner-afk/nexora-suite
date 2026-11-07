@@ -1,0 +1,52 @@
+1
+00:00:00,350 --> 00:00:02,538
+Vinte e cinco empresas participadas.
+
+2
+00:00:02,558 --> 00:00:05,644
+Uma manta de retalhos de ERP.
+E uma pergunta.
+
+3
+00:00:05,664 --> 00:00:07,720
+Como estamos, de facto?
+
+4
+00:00:08,483 --> 00:00:13,074
+O STEGARC PE Command Center junta-as
+numa vista de portefólio em tempo real.
+
+5
+00:00:13,094 --> 00:00:16,063
+Receitas, EBITDA e tesouraria,
+num só lugar.
+
+6
+00:00:16,817 --> 00:00:21,437
+Veja a liquidez de cada empresa, com
+previsão a seis meses e alertas precoces.
+
+7
+00:00:22,183 --> 00:00:27,623
+Criação de valor alavanca a alavanca,
+do potencial ao EBITDA realizado.
+
+8
+00:00:28,383 --> 00:00:33,573
+Pergunte ao consultor financeiro de IA
+quem fica aquém e veja como lá chegou.
+
+9
+00:00:34,317 --> 00:00:39,237
+O hub de integração ERP mostra quem envia
+dados e onde falham os mapeamentos.
+
+10
+00:00:39,983 --> 00:00:46,353
+A transformação ERP traça o roteiro:
+vaga a vaga, rumo a uma só plataforma.
+
+11
+00:00:47,117 --> 00:00:51,237
+STEGARC PE Command Center.
+Cada empresa. Uma vista.

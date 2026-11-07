@@ -1,0 +1,825 @@
+<!doctype html><html lang="pt"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"></head><body style="margin:0"><link rel="alternate" hreflang="de" href="https://marcelwagner-afk.github.io/stegarc-suite/stegarc.html"><link rel="alternate" hreflang="en" href="https://marcelwagner-afk.github.io/stegarc-suite/stegarc.en.html"><link rel="alternate" hreflang="es" href="https://marcelwagner-afk.github.io/stegarc-suite/stegarc.es.html"><link rel="alternate" hreflang="pt" href="https://marcelwagner-afk.github.io/stegarc-suite/stegarc.pt.html"><link rel="alternate" hreflang="pl" href="https://marcelwagner-afk.github.io/stegarc-suite/stegarc.pl.html"><link rel="alternate" hreflang="x-default" href="https://marcelwagner-afk.github.io/stegarc-suite/stegarc.en.html">
+<title>STEGARC · O seu próprio ERP</title>
+<meta name="description" content="STEGARC – a Enterprise Suite nativa de IA: business case, demos ao vivo e caminho para a sua própria plataforma ERP.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: dunkle Navigationsleiste links, helle Arbeitsfläche mit weichen Karten; Startseite zweispaltig mit Assistent rechts; Telefon: Navigation als dunkle Leiste oben */
+:root{
+  --bg:#f7f6fc; --surface:#ffffff; --sunk:#f1effa; --line:#e7e4f2; --line-strong:#d3cfe6;
+  --fg:#16142b; --fg-2:#4e4b66; --fg-3:#85829c;
+  --accent:#6a45f0; --accent-2:#8b6cff; --accent-ink:#ffffff; --accent-soft:#efeafe; --accent-line:#cfc2fb;
+  --nav-bg:#17153a; --nav-bg-2:#211d52; --nav-fg:#c9c6e6; --nav-fg-strong:#ffffff; --nav-on:#3a2f8f; --nav-line:#2c2860;
+  --good:#16834a; --good-soft:#e3f5ea; --warn:#b26a00; --warn-soft:#fdf1dc; --crit:#c62a3a; --crit-soft:#fde6e8;
+  /* Marktposition: Kategorien und Bewertungen */ --cat-suite:#3f62c8; --cat-work:#0d7f74; --cat-ai:#b25f0c; --rate-good:#16834a; --rate-mid:#b07a12; --rate-weak:#a3a0b8; --quad:#f1eefb;
+  --demo:#6a45f0; --demo-soft:#efeafe;
+  --shadow:0 1px 2px rgba(35,28,90,.04),0 4px 16px rgba(35,28,90,.06);
+  --f-display:"Plus Jakarta Sans","Segoe UI",system-ui,sans-serif;
+  --f-body:"Plus Jakarta Sans","Segoe UI",system-ui,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,"SFMono-Regular",Consolas,monospace;
+  --r:14px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#100f22; --surface:#191733; --sunk:#221f42; --line:#2b2850; --line-strong:#3c3870;
+  --fg:#ecebf8; --fg-2:#b4b1d0; --fg-3:#8784a8;
+  --accent:#9b80ff; --accent-2:#b6a2ff; --accent-ink:#140f33; --accent-soft:#2a2358; --accent-line:#4b3fa0;
+  --nav-bg:#0b0a1c; --nav-bg-2:#14123a; --nav-fg:#b6b3d8; --nav-fg-strong:#ffffff; --nav-on:#2f2775; --nav-line:#221f4a;
+  --good:#5fd38f; --good-soft:#163527; --warn:#f0b05a; --warn-soft:#3a2c14; --crit:#ff8a94; --crit-soft:#3d1a22;
+  --cat-suite:#86a3ff; --cat-work:#4fd1c0; --cat-ai:#f0a54a; --rate-good:#5fd38f; --rate-mid:#e8b44c; --rate-weak:#5d5a80; --quad:#1b1944;
+  --demo:#b6a2ff; --demo-soft:#2a2358; --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 16px rgba(0,0,0,.25); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#100f22; --surface:#191733; --sunk:#221f42; --line:#2b2850; --line-strong:#3c3870;
+  --fg:#ecebf8; --fg-2:#b4b1d0; --fg-3:#8784a8;
+  --accent:#9b80ff; --accent-2:#b6a2ff; --accent-ink:#140f33; --accent-soft:#2a2358; --accent-line:#4b3fa0;
+  --nav-bg:#0b0a1c; --nav-bg-2:#14123a; --nav-fg:#b6b3d8; --nav-fg-strong:#ffffff; --nav-on:#2f2775; --nav-line:#221f4a;
+  --good:#5fd38f; --good-soft:#163527; --warn:#f0b05a; --warn-soft:#3a2c14; --crit:#ff8a94; --crit-soft:#3d1a22;
+  --cat-suite:#86a3ff; --cat-work:#4fd1c0; --cat-ai:#f0a54a; --rate-good:#5fd38f; --rate-mid:#e8b44c; --rate-weak:#5d5a80; --quad:#1b1944;
+  --demo:#b6a2ff; --demo-soft:#2a2358; --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 16px rgba(0,0,0,.25); color-scheme:dark}
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:14px;line-height:1.5}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--nav-bg)}
+*{box-sizing:border-box}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.num,.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.num{font-size:.92em}
+h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:-.015em}
+h1{font-size:26px;font-weight:800} h2{font-size:18px;font-weight:750} h3{font-size:15px;font-weight:700}
+p{margin:0}
+.muted{color:var(--fg-2)} .faint{color:var(--fg-3)} .small{font-size:12.5px}
+.eyebrow{font-size:11.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--fg-3);font-weight:700}
+.ic{flex:none}
+
+/* Shell */
+.app{display:grid;grid-template-columns:248px minmax(0,1fr);height:100%}
+.app.with-ai{grid-template-columns:248px minmax(0,1fr) 380px}
+.side{background:linear-gradient(180deg,var(--nav-bg) 0%,var(--nav-bg-2) 100%);color:var(--nav-fg);display:flex;flex-direction:column;gap:2px;padding:18px 12px 12px;overflow:auto}
+.brand{display:flex;align-items:center;gap:10px;padding:2px 10px 22px;color:var(--nav-fg-strong);text-decoration:none}
+.brand b{font-family:var(--f-display);font-size:19px;font-weight:800;letter-spacing:.01em;display:block;line-height:1.1}
+.brand small{display:block;font-size:10.5px;color:var(--nav-fg);font-weight:500}
+.nav a,.nav button.nv{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:10px;color:var(--nav-fg);text-decoration:none;font-weight:550;border:none;background:none;width:100%;text-align:left;cursor:pointer}
+.nav a:hover,.nav button.nv:hover{background:rgba(255,255,255,.06);color:var(--nav-fg-strong)}
+.nav a.on{background:linear-gradient(90deg,var(--nav-on),rgba(106,69,240,.55));color:var(--nav-fg-strong)}
+.nav a .cnt{margin-left:auto;font-size:11px;background:var(--accent-2);color:#fff;border-radius:10px;padding:0 7px;font-weight:700}
+.nav-sep{height:1px;background:var(--nav-line);margin:12px 10px}
+.nav-label{padding:4px 14px 8px;font-size:12px;color:var(--nav-fg);font-weight:600}
+.app-ic{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;color:#fff;flex:none}
+.app-ic.m{background:linear-gradient(135deg,#7b5cff,#5434d6)} .app-ic.t{background:linear-gradient(135deg,#1f9c8b,#13685f)} .app-ic.i{background:linear-gradient(135deg,#9a5cf0,#5c2db8)}
+.nav a.appl{padding:7px 10px;gap:12px;color:var(--nav-fg-strong)}
+.tenant{margin-top:auto;display:flex;align-items:center;gap:10px;padding:12px;border-radius:12px;border:none;background:rgba(255,255,255,.05);color:var(--nav-fg-strong);cursor:pointer;text-align:left;width:100%}
+.tenant:hover{background:rgba(255,255,255,.09)}
+.tenant .av{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.1);display:grid;place-items:center;flex:none}
+.tenant small{display:block;color:var(--nav-fg);font-size:11.5px}
+.main{display:flex;flex-direction:column;min-width:0;overflow:auto}
+.top{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(8px);display:grid;grid-template-columns:minmax(0,1fr) minmax(0,560px) minmax(0,1fr);align-items:center;gap:12px;padding:12px max(24px,env(safe-area-inset-right,0px)) 12px 24px}
+.top .right{display:flex;align-items:center;justify-content:flex-end;gap:6px}
+.search{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--accent-line);border-radius:12px;padding:9px 14px;color:var(--fg-2);cursor:pointer;text-align:left;box-shadow:var(--shadow);min-width:0;width:100%}
+.search .ic{color:var(--accent)}
+.search span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.search kbd{margin-left:auto;font-family:var(--f-mono);font-size:11px;background:var(--sunk);border-radius:6px;padding:2px 7px;color:var(--fg-2)}
+.round{width:40px;height:40px;border-radius:50%;border:none;background:transparent;display:grid;place-items:center;cursor:pointer;color:var(--fg);position:relative}
+.round:hover{background:var(--sunk)}
+.round .dot{position:absolute;top:8px;right:9px;width:9px;height:9px;border-radius:50%;background:var(--accent);border:2px solid var(--bg)}
+.avatar{display:flex;align-items:center;gap:6px;border:none;background:none;cursor:pointer;padding:2px;border-radius:24px;color:var(--fg)}
+.avatar .face{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#ffb38a,#e0668f);color:#fff;font-weight:700;display:grid;place-items:center;font-size:13.5px}
+.avatar .face.u1{background:linear-gradient(135deg,#8b6cff,#4a2fd0)} .avatar .face.u2{background:linear-gradient(135deg,#3cc3a8,#1d7d6d)}
+.page{padding:8px 24px 32px;display:flex;flex-direction:column;gap:20px;max-width:1320px;width:100%}
+.page-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;padding-top:12px}
+
+/* Elements */
+.btn{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line-strong);background:var(--surface);border-radius:10px;padding:8px 14px;font-weight:600;cursor:pointer;white-space:nowrap;color:var(--fg)}
+.btn:hover{border-color:var(--accent-line);background:var(--accent-soft)}
+.btn.pri{background:linear-gradient(135deg,var(--accent-2),var(--accent));border-color:transparent;color:#fff;box-shadow:0 4px 12px rgba(106,69,240,.25)}
+:root[data-theme="dark"] .btn.pri{color:var(--accent-ink)}
+.btn.pri:hover{filter:brightness(1.06);background:linear-gradient(135deg,var(--accent-2),var(--accent))}
+.btn.ghost{border-color:transparent;background:transparent;color:var(--accent)}
+.btn.ghost:hover{background:var(--accent-soft)}
+.btn.sm{padding:5px 10px;font-size:12.5px;border-radius:8px}
+.btn.danger{color:var(--crit);border-color:var(--crit)}
+.btn.danger:hover{background:var(--crit-soft)}
+.btn[disabled]{opacity:.45;cursor:not-allowed;filter:none;box-shadow:none}
+.icon-btn{border:1px solid var(--line);background:var(--surface);border-radius:10px;width:34px;height:34px;display:grid;place-items:center;cursor:pointer;color:var(--fg-2)}
+.icon-btn:hover{color:var(--fg);border-color:var(--accent-line)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow)}
+.card-pad{padding:18px}
+.card-h{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px 18px;border-bottom:1px solid var(--line)}
+.grid{display:grid;gap:16px}
+.g2{grid-template-columns:repeat(2,minmax(0,1fr))} .g3{grid-template-columns:repeat(3,minmax(0,1fr))} .g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.kpi{padding:16px 18px;display:flex;flex-direction:column;gap:2px}
+.kpi .v{font-family:var(--f-display);font-size:24px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:650;border-radius:8px;padding:3px 9px;white-space:nowrap}
+.pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.p-good{background:var(--good-soft);color:var(--good)} .p-warn{background:var(--warn-soft);color:var(--warn)} .p-crit{background:var(--crit-soft);color:var(--crit)} .p-neu{background:var(--sunk);color:var(--fg-2)} .p-acc{background:var(--accent-soft);color:var(--accent)} .p-demo{background:var(--demo-soft);color:var(--demo)}
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;font-size:12px;color:var(--fg-3);font-weight:600;padding:10px 14px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:12px 14px;border-bottom:1px solid var(--line);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr.click{cursor:pointer} tr.click:hover td{background:var(--sunk)}
+td.r,th.r{text-align:right}
+.bar{height:8px;background:var(--sunk);border-radius:6px;overflow:hidden;display:flex}
+.bar i{display:block;height:100%}
+.bar.acc i{background:linear-gradient(90deg,var(--accent-2),var(--accent))}
+.list{display:flex;flex-direction:column}
+.li{display:flex;align-items:flex-start;gap:12px;padding:12px 18px;border-bottom:1px solid var(--line)}
+.li:last-child{border-bottom:none}
+.li .grow{flex:1;min-width:0}
+.sev{width:3px;align-self:stretch;border-radius:2px;flex:none}
+.input,select.input,textarea.input{width:100%;background:var(--surface);border:1px solid var(--line-strong);border-radius:10px;padding:8px 11px}
+textarea.input{resize:vertical;min-height:72px}
+label.f{display:flex;flex-direction:column;gap:6px;font-weight:600;font-size:13px}
+.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.between{justify-content:space-between}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line-strong);border-radius:20px;padding:3px 11px;font-size:12.5px;background:var(--surface)}
+.chip.src{border-style:dashed;color:var(--fg-2)}
+.note{border-radius:10px;padding:11px 13px;font-size:13px;display:flex;gap:10px;align-items:flex-start}
+.note.demo{background:var(--demo-soft);color:var(--fg)}
+.note.warn{background:var(--warn-soft)} .note.crit{background:var(--crit-soft)} .note.good{background:var(--good-soft)} .note.acc{background:var(--accent-soft)}
+.empty{padding:28px 16px;text-align:center;color:var(--fg-3)}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);overflow-x:auto}
+.tab{padding:9px 13px;border:none;background:none;cursor:pointer;color:var(--fg-2);font-weight:600;border-bottom:2px solid transparent;white-space:nowrap}
+.tab.on{color:var(--accent);border-bottom-color:var(--accent)}
+.seg{display:inline-flex;gap:8px;flex-wrap:wrap}
+.seg button{border:1px solid var(--line);background:var(--surface);border-radius:20px;padding:5px 12px;cursor:pointer;font-weight:600;color:var(--fg-2);display:inline-flex;gap:8px;align-items:center}
+.seg button b{font-size:11.5px;background:var(--sunk);border-radius:10px;padding:0 7px;font-weight:700}
+.seg button.on{background:var(--accent-soft);border-color:var(--accent-line);color:var(--accent)}
+.seg button.on b{background:var(--surface)}
+
+/* Startseite */
+.home{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:20px;align-items:start}
+.home-main{display:flex;flex-direction:column;gap:18px;min-width:0}
+.home-side{display:flex;flex-direction:column;gap:18px;position:sticky;top:76px}
+.hero{position:relative;padding:22px 2px 8px;display:flex;flex-direction:column;gap:16px;isolation:isolate}
+.hero-wave{position:absolute;right:-24px;top:-70px;width:min(520px,70%);height:220px;z-index:-1;pointer-events:none}
+.hero h1{font-size:36px;font-weight:800;letter-spacing:-.025em}
+.hero .sub{font-size:16px;color:var(--fg-2)}
+.ask{display:flex;gap:8px;background:var(--surface);border:1.5px solid var(--accent-line);border-radius:16px;padding:7px 7px 7px 16px;align-items:center;box-shadow:0 6px 24px rgba(106,69,240,.10)}
+.ask .ic{color:var(--accent)}
+.ask input{flex:1;border:none;background:transparent;outline:none;padding:10px 0;min-width:0;font-size:15.5px}
+.ask.big{max-width:880px;width:100%;align-self:center}
+.send{width:48px;height:38px;border:none;border-radius:12px;background:linear-gradient(135deg,var(--accent-2),var(--accent));color:#fff;display:grid;place-items:center;cursor:pointer;flex:none}
+.quick{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.quick button{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--surface);border-radius:20px;padding:7px 15px;cursor:pointer;font-weight:550;box-shadow:var(--shadow);color:var(--fg)}
+.quick button .ic{color:var(--accent)}
+.quick button:hover{border-color:var(--accent-line)}
+.sugg{border:1px solid var(--line);background:var(--surface);border-radius:20px;padding:5px 12px;font-size:13px;cursor:pointer;color:var(--fg-2)}
+.sugg:hover{border-color:var(--accent);color:var(--fg)}
+.stat{display:flex;align-items:center;gap:14px;padding:16px 18px}
+.stat .si{color:var(--accent);flex:none}
+.stat .v{font-family:var(--f-display);font-size:21px;font-weight:800;line-height:1.1}
+.stat .l{font-size:12.5px;color:var(--fg-2)}
+.stat .d{margin-left:auto;font-size:12px;font-weight:700;align-self:flex-start;white-space:nowrap}
+.promo{display:grid;grid-template-columns:minmax(0,240px) minmax(0,1fr) minmax(0,220px);gap:22px;align-items:center;padding:18px 22px;background:linear-gradient(120deg,var(--accent-soft) 0%,var(--surface) 48%)}
+.promo .art{display:grid;place-items:center}
+.promo h2{font-size:22px;font-weight:800}
+.promo .kick{font-size:13px;font-weight:700;color:var(--accent)}
+.checks{display:flex;flex-direction:column;gap:9px;border-left:1px solid var(--line);padding-left:20px}
+.checks span{display:flex;gap:10px;align-items:center;font-size:13.5px}
+.checks .ic{color:var(--good)}
+.ms{display:flex;gap:10px;align-items:center}
+.ms .ic{color:var(--fg-3)}
+.dots{border:none;background:none;cursor:pointer;color:var(--fg-3);padding:4px 6px;border-radius:6px}
+.dots:hover{background:var(--sunk);color:var(--fg)}
+.proj-ic{width:38px;height:38px;border-radius:10px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;flex:none}
+.aic{padding:18px;display:flex;flex-direction:column;gap:14px}
+.aic-h{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.aic-h h2{display:flex;gap:10px;align-items:center}
+.aic-h h2 .ic{color:var(--accent)}
+.model{border:1px solid var(--line);background:var(--sunk);border-radius:8px;padding:4px 8px;font-size:12.5px;font-weight:600}
+.aic .hi{font-family:var(--f-display);font-size:21px;font-weight:800}
+.qcard{display:flex;gap:14px;align-items:center;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:11px 14px;cursor:pointer;box-shadow:var(--shadow);color:var(--fg);width:100%}
+.qcard .ic{color:var(--accent)}
+.qcard:hover{border-color:var(--accent-line)}
+.composer{border:1px solid var(--line-strong);border-radius:12px;padding:10px 10px 8px 12px;display:flex;flex-direction:column;gap:8px;background:var(--surface)}
+.composer input{border:none;outline:none;background:transparent;padding:4px 2px;font-style:italic}
+.composer .tools{display:flex;align-items:center;gap:4px}
+.composer .tools .tb{width:30px;height:30px;border-radius:50%;border:1px solid var(--line);background:none;display:grid;place-items:center;cursor:pointer;color:var(--fg-2)}
+.composer .send{margin-left:auto;width:38px;height:34px;border-radius:10px}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.tile{display:flex;flex-direction:column;align-items:center;gap:8px;padding:18px 8px;border:1px solid var(--line);border-radius:12px;background:var(--surface);cursor:pointer;font-weight:650;color:var(--fg)}
+.tile .ic{color:var(--fg)}
+.tile:hover,.tile.on{background:var(--accent-soft);border-color:var(--accent-line)}
+.tile.on .ic{color:var(--accent)}
+.home-chat{display:flex;flex-direction:column;gap:12px;max-height:420px;overflow:auto}
+
+/* Wizard */
+.steps{display:flex;gap:0;overflow-x:auto;padding-bottom:2px}
+.step{flex:1;min-width:104px;display:flex;flex-direction:column;gap:6px;padding:0 6px 0 0;cursor:pointer;background:none;border:none;text-align:left}
+.step .ln{height:5px;border-radius:3px;background:var(--line)}
+.step.done .ln{background:var(--accent)} .step.cur .ln{background:var(--accent-2);opacity:.6}
+.step .t{font-size:12px;color:var(--fg-3);font-weight:600}
+.step.cur .t,.step.done .t{color:var(--fg)}
+.step[disabled]{cursor:default}
+.what{font-size:13px;color:var(--fg-2);background:var(--accent-soft);border-radius:10px;padding:9px 13px}
+.map-grid{display:grid;grid-template-columns:220px minmax(0,1fr);gap:16px}
+.srcf{display:flex;flex-direction:column;gap:6px}
+.srcf .chip{cursor:grab;justify-content:space-between;border-radius:8px}
+.maprow{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1.2fr) auto;gap:10px;align-items:center;padding:10px 14px;border-bottom:1px solid var(--line)}
+.maprow.drop{background:var(--accent-soft)}
+.maprow.sugg-row .input{border-style:dashed;border-color:var(--accent-line)}
+.maprow:last-child{border-bottom:none}
+.why{font-size:12px;color:var(--fg-3)}
+.prog{height:10px;background:var(--sunk);border-radius:6px;overflow:hidden}
+.prog i{display:block;height:100%;background:linear-gradient(90deg,var(--accent-2),var(--accent));transition:width .15s}
+
+/* Gantt */
+.gantt{display:flex;flex-direction:column;gap:0;min-width:640px}
+.g-row{display:grid;grid-template-columns:220px minmax(0,1fr) 70px;gap:10px;align-items:center;padding:7px 14px;border-bottom:1px solid var(--line)}
+.g-track{position:relative;height:20px;background:repeating-linear-gradient(90deg,transparent 0,transparent calc(10% - 1px),var(--line) calc(10% - 1px),var(--line) 10%)}
+.g-bar{position:absolute;top:3px;height:14px;border-radius:5px;background:var(--line-strong)}
+.g-bar.crit{background:linear-gradient(90deg,var(--accent-2),var(--accent))}
+.g-bar.delay{background:var(--warn)}
+.g-win{position:absolute;top:-4px;bottom:-4px;border-left:2px dashed var(--crit)}
+
+/* Assistent */
+.ai{border-left:1px solid var(--line);background:var(--surface);display:flex;flex-direction:column;min-width:0;height:100%}
+.ai-h{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--line)}
+.ai-h .ic{color:var(--accent)}
+.ai-body{flex:1;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:14px}
+.msg{display:flex;flex-direction:column;gap:8px;max-width:100%}
+.msg.u{align-self:flex-end;background:var(--accent-soft);border-radius:12px 12px 3px 12px;padding:8px 12px;max-width:88%}
+.msg.a{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px}
+.msg.a table td,.msg.a table th{padding:6px 8px;font-size:12.5px}
+.ai-f{padding:12px;border-top:1px solid var(--line)}
+.page-ai{max-width:860px}
+.page-ai .ai-body{min-height:360px}
+
+/* Dialoge */
+.scrim{position:fixed;inset:0;background:rgba(18,14,50,.35);z-index:40;display:flex;align-items:flex-start;justify-content:center;padding:max(64px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) 16px max(16px,env(safe-area-inset-left,0px))}
+.dlg{background:var(--surface);border:1px solid var(--line);border-radius:16px;width:100%;max-width:560px;max-height:80vh;overflow:auto;box-shadow:0 24px 60px rgba(20,14,70,.25)}
+.menu-pop{position:fixed;top:calc(64px + env(safe-area-inset-top,0px));right:max(20px,env(safe-area-inset-right,0px));z-index:45;background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:0 18px 48px rgba(20,14,70,.2);width:300px;max-width:calc(100% - 32px);padding:8px}
+.pal-item{display:flex;align-items:center;gap:10px;padding:10px 16px;cursor:pointer;border:none;background:none;width:100%;text-align:left;border-radius:8px;color:var(--fg)}
+.pal-item:hover,.pal-item.on{background:var(--sunk)}
+.pal-item .ic{color:var(--accent)}
+.toast{position:fixed;right:max(20px,env(safe-area-inset-right,0px));bottom:max(20px,env(safe-area-inset-bottom,0px));background:var(--nav-bg);color:#fff;border-radius:10px;padding:11px 15px;z-index:50;font-weight:600;max-width:360px;box-shadow:0 10px 30px rgba(20,14,70,.3)}
+
+/* Anmeldung */
+.login{min-height:100%;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.login-l{background:radial-gradient(120% 80% at 90% 10%,rgba(139,108,255,.45),transparent 60%),linear-gradient(160deg,var(--nav-bg),var(--nav-bg-2));color:#fff;padding:48px;display:flex;flex-direction:column;justify-content:space-between;gap:32px}
+.login-l h1{font-size:36px;max-width:15ch;line-height:1.12}
+.login-r{display:grid;place-items:center;padding:32px max(16px,env(safe-area-inset-right,0px)) 32px max(16px,env(safe-area-inset-left,0px))}
+.login-box{width:100%;max-width:370px;display:flex;flex-direction:column;gap:14px}
+
+.bpmn-wrap{overflow-x:auto;background:var(--bg);border-radius:10px;border:1px solid var(--line)}
+.bpmn-wrap svg text{font-family:var(--f-body)}
+
+@media (max-width:1280px){.home{grid-template-columns:minmax(0,1fr)} .home-side{position:static;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr)} .promo{grid-template-columns:minmax(0,200px) minmax(0,1fr)} .checks{grid-column:1/-1;border-left:none;padding-left:0;flex-direction:row;flex-wrap:wrap;gap:8px 18px}}
+@media (max-width:1100px){.app.with-ai{grid-template-columns:248px minmax(0,1fr)} .app.with-ai .ai{position:fixed;right:0;top:0;bottom:0;width:min(400px,100%);z-index:30;box-shadow:-8px 0 24px rgba(0,0,0,.15);padding-top:env(safe-area-inset-top,0px)} .g4{grid-template-columns:repeat(2,minmax(0,1fr))} .top{grid-template-columns:minmax(0,1fr) auto} .top .spacer{display:none}}
+@media (max-width:820px){
+  .app,.app.with-ai{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr)}
+  .side{flex-direction:row;align-items:center;padding:8px max(16px,env(safe-area-inset-right,0px)) 8px max(16px,env(safe-area-inset-left,0px));overflow-x:auto;gap:2px}
+  .brand{padding:0 8px 0 0} .brand span{display:none}
+  .nav-sep,.nav-label,.tenant,.nav a.appl{display:none}
+  .nav a,.nav button.nv{white-space:nowrap;padding:7px 11px;width:auto}
+  .top{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+  .page{padding:8px max(16px,env(safe-area-inset-right,0px)) 24px max(16px,env(safe-area-inset-left,0px))}
+  .g2,.g3,.g4{grid-template-columns:minmax(0,1fr)}
+  .home-side{grid-template-columns:minmax(0,1fr)}
+  .promo{grid-template-columns:minmax(0,1fr)} .promo .art{display:none}
+  .hero h1{font-size:26px} .hero-wave{display:none}
+  .map-grid{grid-template-columns:minmax(0,1fr)}
+  .maprow{grid-template-columns:minmax(0,1fr)}
+  .login{grid-template-columns:minmax(0,1fr)} .login-l{padding:28px 20px}
+  .search kbd{display:none}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* STEGARC-Produktseite: dunkle Markenleiste, helle Fläche, weiche Karten, Violett als Akzent */
+a.btn{text-decoration:none}
+html{scroll-behavior:smooth;height:auto}body{height:auto;min-height:100%}
+.ts-top{position:sticky;top:0;z-index:20;background:linear-gradient(110deg,var(--nav-bg),var(--nav-bg-2));color:var(--nav-fg);padding-top:env(safe-area-inset-top,0px)}
+.ts-top .in{max-width:1240px;margin:auto;display:flex;align-items:center;gap:22px;padding:12px max(24px,env(safe-area-inset-right,0px)) 12px max(24px,env(safe-area-inset-left,0px))}
+.ts-brand{display:flex;align-items:center;gap:10px;color:var(--nav-fg-strong);text-decoration:none}.ts-brand b{font-family:var(--f-display);font-size:18px;font-weight:800;letter-spacing:.06em;display:block;line-height:1.1}.ts-brand small{display:block;font-size:10.5px;color:var(--nav-fg);font-weight:500;letter-spacing:.02em}
+.ts-nav{display:flex;gap:4px;margin-left:auto}.ts-nav a{color:var(--nav-fg);text-decoration:none;padding:8px 12px;border-radius:10px;font-weight:550}.ts-nav a:hover{background:rgba(255,255,255,.07);color:var(--nav-fg-strong)}
+.ts-top .btn{background:rgba(255,255,255,.08);color:#fff;border-color:rgba(255,255,255,.25)}.ts-top .btn.pri{background:linear-gradient(135deg,var(--accent-2),var(--accent));border-color:transparent}
+.wrap{max-width:1240px;margin:auto;padding:0 max(24px,env(safe-area-inset-right,0px)) 0 max(24px,env(safe-area-inset-left,0px))}
+section.s{padding:44px 0;display:flex;flex-direction:column;gap:18px}
+.ts-video{width:100%;max-width:1100px}.ts-video video{width:100%;aspect-ratio:16/9;border-radius:14px;background:#000;display:block;box-shadow:var(--shadow)}.ts-vgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.ts-vcard{padding:14px;display:flex;flex-direction:column;gap:10px}.ts-vcard .btn{align-self:flex-start}@media (max-width:820px){.ts-vgrid{grid-template-columns:minmax(0,1fr)}}
+.s-title{font-size:30px;font-weight:800;letter-spacing:-.015em}.s-sub{color:var(--fg-2);font-size:15.5px;max-width:820px}
+.ts-hero{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:36px;align-items:center;padding:56px 0 30px;position:relative;isolation:isolate}
+.ts-hero h1{font-size:clamp(38px,5vw,64px);line-height:1.06;letter-spacing:-.03em;font-weight:800;margin:14px 0 16px}.ts-hero h1 span{background:linear-gradient(90deg,var(--accent-2),var(--accent));-webkit-background-clip:text;background-clip:text;color:transparent}
+.ts-hero .lead{font-size:17px;color:var(--fg-2);max-width:640px}
+.hero-card{padding:26px;background:linear-gradient(145deg,var(--surface),var(--accent-soft));display:flex;flex-direction:column;gap:8px}
+.hero-card .big{font-family:var(--f-display);font-size:50px;font-weight:800;letter-spacing:-.03em;color:var(--accent);font-variant-numeric:tabular-nums;line-height:1.05}
+.statrow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:8px}.statrow>div{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px}.statrow b{display:block;font-size:17px;font-family:var(--f-display)}.statrow small{color:var(--fg-3);font-size:11.5px}
+.vcard{padding:22px;display:flex;flex-direction:column;gap:8px}.vcard .ico{width:42px;height:42px;border-radius:12px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center}
+.calc{display:grid;grid-template-columns:340px minmax(0,1fr);gap:16px;align-items:start}
+.calc form{padding:20px;display:flex;flex-direction:column;gap:14px}.calc label.f span.v{font-family:var(--f-mono);color:var(--accent)}
+.calc .hint{font-size:11.5px;color:var(--fg-3);font-weight:500}
+.res{padding:20px;display:flex;flex-direction:column;gap:16px}
+.live{display:inline-flex;align-items:center;gap:7px;color:var(--good);font-size:12px;font-weight:700;letter-spacing:.06em}.live::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--good);box-shadow:0 0 0 4px var(--good-soft)}
+.cmp{display:flex;flex-direction:column;gap:6px}.cmp .bar{height:20px;border-radius:7px}.cmp .bar i{transition:width .35s}.cmp .bar.old i{background:var(--line-strong)}
+.story-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.story{padding:18px;display:flex;flex-direction:column;gap:8px}.story .steps-n{font-family:var(--f-mono);font-size:12px;color:var(--fg-3)}.story p{color:var(--fg-2);font-size:13.5px}.story .go{margin-top:auto}
+.ly-feat{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}.ly-steps{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:12px;align-items:stretch;margin-top:18px}.ly-steps .card{padding:20px;display:flex;flex-direction:column;gap:6px}.ly-steps .n{font-family:var(--f-display);font-size:28px;font-weight:800;color:var(--accent)}.ly-arr{align-self:center;font-size:22px;color:var(--accent)}@media (max-width:820px){.ly-steps{grid-template-columns:minmax(0,1fr)}.ly-arr{transform:rotate(90deg);justify-self:center}}
+.ts-nav a{white-space:nowrap}
+.ts-lang{flex:none}.ts-lang select{appearance:none;-webkit-appearance:none;background:rgba(255,255,255,.08);color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:10px;padding:7px 10px;font:600 12.5px var(--f-mono);cursor:pointer}.ts-lang option{color:#16142b}.sr-only{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}@media (max-width:620px){.ts-lang select{padding:6px 8px;font-size:11.5px}}
+.tline{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}.tline .card{padding:20px;display:flex;flex-direction:column;gap:6px}.tline .n{font-family:var(--f-display);font-size:28px;font-weight:800;color:var(--accent)}
+.cta{padding:44px 24px;text-align:center;align-items:center;background:linear-gradient(145deg,var(--surface),var(--accent-soft));display:flex;flex-direction:column;gap:14px}
+.ts-foot{margin-top:40px;background:linear-gradient(110deg,var(--nav-bg),var(--nav-bg-2));color:var(--nav-fg)}.ts-foot .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;padding-top:28px;padding-bottom:max(36px,env(safe-area-inset-bottom,0px))}.ts-foot b{color:#fff;letter-spacing:.08em}
+table.cost td,table.cost th{padding:10px 8px}table.cost td:not(:first-child),table.cost th:not(:first-child){text-align:right;font-family:var(--f-mono);font-size:13px}table.cost tr.sum td{font-weight:700;border-top:2px solid var(--line-strong)}
+
+/* Marktposition (#markt) – Daten in src/market.js; Farben ausschließlich über Tokens aus base.css */
+#markt{gap:44px}
+#markt .mk-head{display:flex;flex-direction:column;gap:12px}
+#markt .mk-h1{font-size:clamp(28px,4vw,42px);line-height:1.08;font-weight:800;letter-spacing:-.02em}
+#markt .mk-lede{font-size:16.5px;color:var(--fg-2);max-width:68ch}
+#markt .mk-meta{display:flex;flex-wrap:wrap;gap:8px 18px;font:500 12.5px var(--f-mono);color:var(--fg-3)}
+#markt .mk-sec{display:flex;flex-direction:column;gap:16px}
+#markt .mk-sec h3.mk-h2{font-size:clamp(21px,2.4vw,26px);font-weight:800;letter-spacing:-.015em}
+#markt .mk-sec p.mk-intro{color:var(--fg-2);max-width:72ch}
+#markt .mk-map{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:20px 18px 14px}
+#markt .mk-scroll{overflow-x:auto}
+#markt .mk-map svg{display:block;width:100%;min-width:760px;height:auto}
+#markt .mk-legend{display:flex;flex-wrap:wrap;gap:10px 22px;padding:12px 6px 4px;font-size:13px;color:var(--fg-2)}
+#markt .mk-legend span{display:inline-flex;align-items:center;gap:8px}
+#markt .mk-dot{width:12px;height:12px;border-radius:50%;display:inline-block}
+#markt .mk-dot.hollow{background:transparent!important;border:2px solid var(--fg-2)}
+#markt svg .pt{cursor:pointer} #markt svg .pt:focus{outline:none}
+#markt svg .pt:focus .ring,#markt svg .pt:hover .ring{stroke:var(--fg);stroke-width:2}
+#markt svg text{font-family:var(--f-body)}
+#markt .mk-table{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:18px}
+#markt table{border-collapse:collapse;width:100%;min-width:980px;font-size:13.5px}
+#markt th,#markt td{padding:12px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}
+#markt thead th{font:600 11.5px/1.35 var(--f-mono);letter-spacing:.04em;text-transform:uppercase;color:var(--fg-3);background:var(--surface);white-space:normal}
+#markt tbody th{font-weight:700;font-size:14px;min-width:170px}
+#markt tbody th small{display:block;font-weight:500;font-size:12px;color:var(--fg-3);margin-top:2px}
+#markt tr:last-child td,#markt tr:last-child th{border-bottom:0}
+#markt tr.hl{background:var(--accent-soft)}
+#markt tr.goal{background:linear-gradient(90deg,var(--accent-soft),transparent 80%)} #markt tr.goal th{color:var(--accent)} #markt tr.now th{color:var(--fg-2)}
+#markt .r{display:flex;flex-direction:column;gap:3px}
+#markt .sym{display:inline-block;width:13px;height:13px;border-radius:50%;flex:none}
+#markt .r3 .sym,#markt .sym.s3{background:var(--rate-good)}
+#markt .r2 .sym,#markt .sym.s2{border:2px solid var(--rate-mid);background:linear-gradient(90deg,var(--rate-mid) 50%,transparent 50%)}
+#markt .r1 .sym,#markt .sym.s1{border:2px solid var(--rate-weak)}
+#markt .r0 .sym,#markt .sym.s0{width:12px;height:2px;border-radius:1px;background:var(--fg-3);margin-block:5px}
+#markt .rp .sym,#markt .sym.sp{border:2px dashed var(--accent);background:transparent}
+#markt .r em{font-style:normal;font-size:12px;color:var(--fg-3);line-height:1.35}
+#markt em.mat{font-style:normal;font-size:12.5px;color:var(--fg-2)}
+#markt .mk-matlegend{display:flex;flex-wrap:wrap;gap:8px 20px;font-size:13px;color:var(--fg-2)}
+#markt .mk-matlegend span{display:inline-flex;align-items:center;gap:8px}
+#markt .mk-grid4{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+#markt .mk-cell{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:10px;min-width:0}
+#markt .mk-k{font:600 12px var(--f-mono);color:var(--accent);letter-spacing:.06em;text-transform:uppercase}
+#markt .mk-cell p{color:var(--fg-2);font-size:14.5px}
+#markt .mk-proof{font-size:13px!important;color:var(--fg-3)!important;border-top:1px dashed var(--line-strong);padding-top:10px}
+#markt .mk-risks{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+#markt .mk-risk{padding:16px 0 0;border-top:2px solid var(--line-strong);display:flex;flex-direction:column;gap:8px;min-width:0}
+#markt .mk-risk p{color:var(--fg-2);font-size:14px} #markt .mk-risk .ans{color:var(--fg);font-weight:600}
+#markt .mk-path{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin:0;padding:0;list-style:none}
+#markt .mk-stage{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:12px;min-width:0}
+#markt .mk-stage p{color:var(--fg-2);font-size:14.5px}
+#markt .mk-bar{display:flex;height:10px;border-radius:5px;overflow:hidden;background:var(--line)} #markt .mk-bar i{display:block;height:100%;background:var(--accent)}
+#markt .mk-barl{display:flex;justify-content:space-between;font:500 12px var(--f-mono);color:var(--fg-3)}
+#markt .mk-tag{margin-top:auto;font-size:13px;font-weight:600;color:var(--fg)!important;border-top:1px dashed var(--line-strong);padding-top:10px}
+#markt .mk-note{font-size:13px;color:var(--fg-3);max-width:80ch}
+#markt .mk-sources{font-size:13px;color:var(--fg-3);display:flex;flex-direction:column;gap:6px}
+#markt .mk-sources ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px}
+#markt .mk-sources a{color:var(--fg-2);text-decoration-color:var(--line-strong);text-underline-offset:2px} #markt .mk-sources a:hover{color:var(--accent)}
+@media (max-width:760px){#markt .mk-grid4,#markt .mk-risks,#markt .mk-path{grid-template-columns:minmax(0,1fr)}}
+@media (prefers-reduced-motion:no-preference){#markt tr{transition:background .2s}}
+@media (max-width:980px){.ts-hero,.calc{grid-template-columns:minmax(0,1fr)}.story-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.tline{grid-template-columns:repeat(2,minmax(0,1fr))}.ts-nav{display:none}}
+@media (max-width:620px){.wrap,.ts-top .in{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}.story-grid,.tline,.statrow{grid-template-columns:minmax(0,1fr)}.g3{grid-template-columns:minmax(0,1fr)}.ts-top .btn.hide-s{display:none}.hero-card .big{font-size:40px}.s-title{font-size:25px}}
+@media print{.ts-top,.ts-hero .row,.no-print,.ts-foot{display:none!important}body{background:#fff}.card{box-shadow:none}section.s{padding:14px 0;break-inside:avoid}}
+</style>
+<header class="ts-top"><div class="in">
+  <a class="ts-brand" href="#top" aria-label="Início STEGARC"><span id="logo"></span><span><b>STEGARC</b><small>The AI-native Enterprise Suite</small></span></a>
+  <nav class="ts-nav" aria-label="Navegação da página"><a href="#value">Valor acrescentado</a><a href="#markt">Posição de mercado</a><a href="#layer">Layer</a><a href="#roi">Calculadora de custos</a><a href="#demo">Demonstração ao vivo</a><a href="#journey">Transformation</a></nav>
+  <label class="ts-lang"><span class="sr-only">Language</span><select aria-label="Language" onchange="location.href=this.value"><option value="stegarc.html" lang="de" title="Deutsch">DE</option><option value="stegarc.en.html" lang="en" title="English">EN</option><option value="stegarc.es.html" lang="es" title="Español">ES</option><option value="stegarc.pt.html" lang="pt" title="Português" selected>PT</option><option value="stegarc.pl.html" lang="pl" title="Polski">PL</option></select></label>
+  <a class="btn hide-s" id="suiteTop" href="index.html?lang=pt">Abrir suite</a><a class="btn pri" href="#roi">Business Case</a>
+</div></header>
+<!--FILM:START--><script type="application/ld+json">[
+ {
+  "@context": "https://schema.org",
+  "@type": "VideoObject",
+  "name": "STEGARC em 60 segundos",
+  "description": "Uma interface para SAP, Microsoft, ServiceNow e Workday – e o caminho para o seu próprio ERP. Demo com dados sintéticos.",
+  "thumbnailUrl": "https://marcelwagner-afk.github.io/stegarc-suite/media/stegarc-imagespot.jpg",
+  "contentUrl": "https://marcelwagner-afk.github.io/stegarc-suite/media/stegarc-imagespot.mp4",
+  "uploadDate": "2026-11-07",
+  "duration": "PT1M0S",
+  "inLanguage": "en",
+  "publisher": {
+   "@type": "Organization",
+   "name": "STEGARC"
+  }
+ },
+ {
+  "@context": "https://schema.org",
+  "@type": "VideoObject",
+  "name": "STEGARC Experience Layer",
+  "description": "Quatro sistemas, uma interface: inbox, router de agentes, registo e cockpit de substituição. Sistemas externos simulados.",
+  "thumbnailUrl": "https://marcelwagner-afk.github.io/stegarc-suite/media/stegarc-experience-layer.jpg",
+  "contentUrl": "https://marcelwagner-afk.github.io/stegarc-suite/media/stegarc-experience-layer.mp4",
+  "uploadDate": "2026-11-07",
+  "duration": "PT58S",
+  "inLanguage": "en",
+  "publisher": {
+   "@type": "Organization",
+   "name": "STEGARC"
+  }
+ },
+ {
+  "@context": "https://schema.org",
+  "@type": "VideoObject",
+  "name": "STEGARC PE Command Center",
+  "description": "Reporting de portfólio, liquidez, AI Financial Advisor, Integration Hub e transformação ERP para investidores de private equity. Dados sintéticos.",
+  "thumbnailUrl": "https://marcelwagner-afk.github.io/stegarc-suite/media/stegarc-pe-command-center.jpg",
+  "contentUrl": "https://marcelwagner-afk.github.io/stegarc-suite/media/stegarc-pe-command-center.mp4",
+  "uploadDate": "2026-11-07",
+  "duration": "PT53S",
+  "inLanguage": "en",
+  "publisher": {
+   "@type": "Organization",
+   "name": "STEGARC"
+  }
+ },
+ {
+  "@context": "https://schema.org",
+  "@type": "VideoObject",
+  "name": "STEGARC Infraestrutura de TI e sizing",
+  "description": "Arquitetura ao vivo, sizing a partir de pressupostos abertos e cenários what-if para o portfólio. Valores de exemplo, sem sizing de fabricante.",
+  "thumbnailUrl": "https://marcelwagner-afk.github.io/stegarc-suite/media/stegarc-it-infrastruktur.jpg",
+  "contentUrl": "https://marcelwagner-afk.github.io/stegarc-suite/media/stegarc-it-infrastruktur.mp4",
+  "uploadDate": "2026-11-07",
+  "duration": "PT36S",
+  "inLanguage": "en",
+  "publisher": {
+   "@type": "Organization",
+   "name": "STEGARC"
+  }
+ }
+]</script><!--FILM:END-->
+<main id="top" class="wrap">
+  <section class="ts-hero">
+    <div>
+      <p class="eyebrow">The future of enterprise independence</p>
+      <h1>Your Business.<br>Your Rules.<br><span>Your ERP.</span></h1>
+      <p class="lead">Seja SAP, Microsoft Dynamics, Oracle ou uma solução legada personalizada: acompanhamo-lo até à sua própria plataforma empresarial nativa de IA – adaptada aos seus processos, com cálculo transparente e sem taxas de licença STEGARC por utilizador.</p>
+      <div class="row" style="margin-top:22px"><a class="btn pri" href="#roi">Calcular potencial de poupança</a><a class="btn" href="#demo">Experimentar demo ao vivo</a></div>
+    </div>
+    <div class="card hero-card">
+      <span class="eyebrow" id="heroLabel">Cenário ilustrativo a 5 anos · 1.000 utilizadores ERP</span>
+      <span class="big" id="heroSaving">–</span>
+      <b style="font-size:16px">Diferença potencial de TCO</b>
+      <p class="muted small">Sem taxa de licença STEGARC por utilizador. Implementação e manutenção, infraestrutura e serviços de terceiros contratualmente definidos, apresentados de forma transparente.</p>
+      <div class="statrow"><div><b id="heroPct">–</b><small>redução modelada</small></div><div><b>On-prem</b><small>Disponibilização</small></div><div><b>Híbrido</b><small>Disponibilização</small></div></div>
+      <p class="faint small" style="margin-top:4px">Cálculo-modelo com os pressupostos da calculadora de custos – não é uma proposta do fabricante nem uma vantagem de preço garantida.</p>
+    </div>
+  </section>
+
+<!--FILM:START-->  <section class="s" id="film" aria-labelledby="filmTitle">
+    <p class="eyebrow">STEGARC em 60 segundos</p><h2 class="s-title" id="filmTitle">Uma interface para todos os sistemas. Depois, o seu próprio ERP.</h2>
+    <div class="ts-video"><video controls preload="none" playsinline poster="media/stegarc-imagespot.jpg" aria-label="STEGARC em 60 segundos"><source src="media/stegarc-imagespot.mp4" type="video/mp4"><track kind="subtitles" srclang="pt" label="Português" src="media/stegarc-imagespot.pt.vtt" default></video></div>
+    <p class="small faint">Demo com dados sintéticos · filme em inglês com legendas</p>
+  </section><!--FILM:END-->
+
+  <section class="s" id="value">
+    <p class="eyebrow">Porquê STEGARC</p><h2 class="s-title">Não o próximo ERP. O seu próprio.</h2>
+    <p class="s-sub">Uma base empresarial comum com exatamente os processos, integrações e interfaces de que a sua empresa precisa.</p>
+    <div class="grid g3">
+      <div class="card vcard"><span class="ico" data-ic="ai"></span><h3>AI-native by design</h3><p class="muted">Linguagem natural, análises explicáveis e workflows inteligentes diretamente no processo de negócio – com aprovações claras para ações críticas.</p></div>
+      <div class="card vcard"><span class="ico" data-ic="mig"></span><h3>Independência de ERP</h3><p class="muted">Arquitetura de integração aberta e migração universal como saída de dependências rígidas de fabricantes. Portabilidade de dados e direitos de utilização regulados contratualmente.</p></div>
+      <div class="card vcard"><span class="ico" data-ic="an"></span><h3>Rentabilidade previsível</h3><p class="muted">Sem custos de licença STEGARC por utilizador. Implementação e manutenção claramente definidas e custos operacionais externos apresentados de forma transparente.</p></div>
+    </div>
+  </section>
+
+  <section class="s" id="markt" aria-labelledby="mkTitle">
+    <div class="mk-head">
+      <p class="eyebrow" id="mkAsOf">Posição competitiva · novembro de 2026</p>
+      <h2 class="mk-h1" id="mkTitle">Quem fornece a interface única para todas as aplicações?</h2>
+      <p class="mk-lede">Cada grande fornecedor declara o seu assistente ou portal como a porta de entrada única. Nenhum é neutro em relação ao fabricante e, ao mesmo tempo, unifica o trabalho propriamente dito: ações, ecrãs e aprovações para além das fronteiras dos sistemas. É precisamente aí que está o lugar do STEGARC: primeiro como interface neutra sobre todos os sistemas, depois um dashboard ERP individual, expandido processo a processo até substituir os sistemas legados.</p>
+      <div class="mk-meta"><span>Base: foco de pesquisa „Interface unificada para todas as apps“</span><span>Classificação qualitativa, não uma medição</span><span id="mkInternalBadge" hidden>Versão interna</span></div>
+    </div>
+    <div class="mk-sec" aria-labelledby="mkH1">
+      <p class="eyebrow">01 · Mapa de posicionamento</p>
+      <h3 class="mk-h2" id="mkH1">Neutralidade vs. profundidade da unificação</h3>
+      <p class="mk-intro">Horizontal: quão ligada está a oferta à própria suite? Vertical: unifica apenas a entrada (login, página inicial, pesquisa) ou também o próprio trabalho (ações, ecrãs, aprovações no mesmo fluxo)? Tocar num ponto marca a linha correspondente na matriz.</p>
+      <div class="mk-map">
+        <div class="mk-scroll"><svg id="mkChart" viewBox="0 0 1000 640" role="img" aria-labelledby="mkChartT mkChartD"><title id="mkChartT">Mapa de posicionamento de interfaces de trabalho unificadas</title><desc id="mkChartD">Fornecedores de suites como SAP, Oracle e Workday estão à esquerda, camadas neutras como Glean, suites de intranet e Omnissa em baixo à direita. A área em cima à direita, neutra e com unificação profunda, está livre e marcada como visão-alvo do STEGARC.</desc></svg></div>
+        <div class="mk-legend"><span><i class="mk-dot" style="background:var(--cat-suite)"></i>Fornecedores de suites</span><span><i class="mk-dot" style="background:var(--cat-work)"></i>Portal, intranet, workspace</span><span><i class="mk-dot" style="background:var(--cat-ai)"></i>Camada de IA e pesquisa</span><span><i class="mk-dot" style="background:var(--accent)"></i>STEGARC</span><span><i class="mk-dot hollow"></i>anunciado, preview ou visão-alvo</span></div>
+      </div>
+    </div>
+    <div class="mk-sec" aria-labelledby="mkH2">
+      <p class="eyebrow">02 · Matriz de critérios</p>
+      <h3 class="mk-h2" id="mkH2">O que os fornecedores cobrem efetivamente hoje</h3>
+      <p class="mk-intro" id="mkMatIntro"></p>
+      <div class="mk-matlegend"><span><i class="sym s3"></i>stark</span><span><i class="sym s2"></i>teilweise</span><span><i class="sym s1"></i>schwach oder nicht</span><span><i class="sym s0"></i>sem informação fiável</span><span id="mkLegendPlanned"><i class="sym sp"></i>planeado (roadmap)</span></div>
+      <div class="mk-table"><table id="mkMat"><thead id="mkMatHead"></thead><tbody id="mkMatBody"></tbody></table></div>
+    </div>
+    <div class="mk-sec" aria-labelledby="mkH3">
+      <p class="eyebrow">03 · Espaço em branco</p>
+      <h3 class="mk-h2" id="mkH3">Quatro pontos em que o STEGARC se destaca</h3>
+      <p class="mk-intro" id="mkWsIntro"></p>
+      <div class="mk-grid4">
+        <article class="mk-cell"><span class="mk-k">Orquestração neutra</span><h3>Coordenar os assistentes em vez de competir com eles</h3><p>Um grupo com SAP, Microsoft 365 e ServiceNow terá em breve três portas de entrada „únicas“. O STEGARC encaminha cada tarefa para o agente adequado e mostra o resultado na mesma interface.</p><p class="mk-proof">Constatação: Joule, Copilot, Gemini Enterprise, Slack e EmployeeWorks reivindicam todos o papel de front door. A Workday mostra com o Workday Everywhere que „correr dentro dos outros“ funciona.</p></article>
+        <article class="mk-cell"><span class="mk-k">SAP com consciência de licenças</span><h3>Compliance by design em vez de agent tax como surpresa</h3><p>Para cada acesso ao SAP é visível por que via aprovada passa e quanto custa: Joule via A2A, MCP Gateway ou interface aprovada.</p><p class="mk-proof">Constatação: a SAP API Policy v4/2026 restringe agentes externos (a fonte é um artigo de opinião, verificar o texto original antes de declarações a clientes). DSAG: 3 % usam o Joule em produção.</p></article>
+        <article class="mk-cell"><span class="mk-k">Ecrãs no diálogo</span><h3>Tabelas, aprovações e KPI diretamente na conversa</h3><p>O chat puro falha no trabalho estruturado. O STEGARC mostra ecrãs reais no fluxo da conversa e salta, quando necessário, por deep link para a aplicação completa.</p><p class="mk-proof">Constatação: o MCP Apps faz parte da norma MCP desde julho de 2026 e funciona no Claude, ChatGPT e M365 Copilot. Cada ação é registada como mensagem verificável.</p></article>
+        <article class="mk-cell"><span class="mk-k">Europeu &amp; compatível com a codecisão</span><h3>Auditável, apto para comissões de trabalhadores, seguro contra descontinuação</h3><p>Cada ação no registo de eventos, funções e princípio dos quatro olhos visíveis, operação on-premises ou híbrida. Isto responde à residência de dados e à codecisão.</p><p class="mk-proof">Constatação: Viva Goals, Citrix Microapps e Meta Workplace foram descontinuados. Os clientes procuram estabilidade. A engine STEGARC já é baseada em eventos e reproduzível.</p></article>
+      </div>
+    </div>
+    <div class="mk-sec" aria-labelledby="mkH4">
+      <p class="eyebrow">04 · Riscos</p>
+      <h3 class="mk-h2" id="mkH4">Onde o posicionamento é vulnerável</h3>
+      <div class="mk-risks">
+        <div class="mk-risk"><h3>Canal de vendas da Microsoft</h3><p>O Teams e o Outlook já são o local de trabalho. Mais uma interface própria dificilmente se impõe.</p><p class="ans">Resposta: o STEGARC funciona também integrado no Teams e no Copilot, não apenas como página própria.</p></div>
+        <div class="mk-risk"><h3>Taxa de abandono de projetos agênticos</h3><p>A Gartner prevê que mais de 40 % dos projetos de IA agêntica sejam abandonados até ao final de 2027.</p><p class="ans">Resposta: começar com casos de uso bem delimitados e benefício mensurável, por exemplo aprovações entre sistemas.</p></div>
+        <div class="mk-risk"><h3>Acesso ao SAP</h3><p>A política da SAP está até agora documentada apenas por um artigo de opinião e pode mudar.</p><p class="ans">Resposta: manter a via de integração substituível por sistema e verificar o texto original da política.</p></div>
+      </div>
+    </div>
+    <div class="mk-sec" aria-labelledby="mkH5">
+      <p class="eyebrow">05 · Do layer ao seu próprio ERP</p>
+      <h3 class="mk-h2" id="mkH5">Primeiro sobrepor, depois substituir processo a processo</h3>
+      <p class="mk-intro">Como cada tarefa já é realizada na interface STEGARC, os colaboradores não notam que sistema trabalha por trás. Assim nasce para cada empresa um dashboard ERP individual segundo os seus processos e funções. Por trás, um processo após outro passa do sistema legado para a engine STEGARC, até os sistemas antigos poderem ser desligados. Na modernização de software, esta abordagem chama-se princípio strangler.</p>
+      <ol class="mk-path">
+        <li class="mk-stage"><span class="mk-k">Passo 1 · Sobrepor</span><h3>Uma interface sobre todos os sistemas</h3><p>O STEGARC fica sobre SAP, Microsoft 365, ServiceNow e Workday: um dashboard, uma inbox, uma pesquisa. Os sistemas legados continuam a ser os principais.</p><div class="mk-bar" role="img" aria-label="Ilustrativo: quase nenhum processo na engine STEGARC"><i style="width:6%"></i></div><div class="mk-barl"><span>Motor STEGARC</span><span>Sistemas legados</span></div><p class="mk-tag">Benefício desde o dia 1, sem risco de migração</p></li>
+        <li class="mk-stage"><span class="mk-k">Passo 2 · Expandir</span><h3>O dashboard cresce, os primeiros processos mudam</h3><p>Novos mosaicos, aprovações e análises por função. Os primeiros processos correm na engine STEGARC, em operação paralela com reconciliação face ao sistema legado.</p><div class="mk-bar" role="img" aria-label="Ilustrativo: cerca de um terço dos processos na engine STEGARC"><i style="width:35%"></i></div><div class="mk-barl"><span>Motor STEGARC</span><span>Sistemas legados</span></div><p class="mk-tag">A interface mantém-se, só muda o sistema por trás</p></li>
+        <li class="mk-stage"><span class="mk-k">Passo 3 · Substituir</span><h3>O STEGARC é o ERP</h3><p>Quando um processo está totalmente migrado, o sistema legado é desligado para esse processo. Os custos de licenças e de agentes desaparecem; a calculadora de custos mostra o potencial.</p><div class="mk-bar" role="img" aria-label="Ilustrativo: todos os processos na engine STEGARC"><i style="width:100%"></i></div><div class="mk-barl"><span>Motor STEGARC</span><span>Sistemas legados</span></div><p class="mk-tag">Your Business. Your Rules. Your ERP.</p></li>
+      </ol>
+      <p class="mk-note" id="mkPathNote"></p>
+    </div>
+    <div class="mk-sources" aria-labelledby="mkSrc"><span class="eyebrow" id="mkSrc">Fontes</span><ol id="mkSources"></ol></div>
+  </section>
+
+  <section class="s" id="layer" aria-labelledby="lyTitle">
+    <p class="eyebrow">Experience Layer</p><h2 class="s-title" id="lyTitle">Uma interface para todos os sistemas, depois o seu próprio ERP.</h2>
+    <p class="s-sub">Os colaboradores trabalham numa única interface sobre SAP, Microsoft 365, ServiceNow, Workday e a engine STEGARC. Como a interface está desacoplada do sistema por trás, o STEGARC cresce depois processo a processo até se tornar o seu próprio ERP.</p>
+    <!--FILM:START--><div class="ts-video"><video controls preload="none" playsinline poster="media/stegarc-experience-layer.jpg" aria-label="STEGARC Experience Layer"><source src="media/stegarc-experience-layer.mp4" type="video/mp4"><track kind="subtitles" srclang="pt" label="Português" src="media/stegarc-experience-layer.pt.vtt" default></video></div><!--FILM:END-->
+    <div class="grid g3 ly-feat">
+      <div class="card vcard"><span class="ico" data-ic="ai"></span><h3>Orquestração neutra</h3><p class="muted">Um router encaminha cada pedido para o agente ou sistema adequado. O resultado aparece na mesma interface, com o percurso visível.</p></div>
+      <div class="card vcard"><span class="ico" data-ic="shield"></span><h3>Ligação SAP com consciência de licenças</h3><p class="muted">Para cada acesso ao SAP é visível se passa pelo Joule (A2A), por um MCP Gateway ou por uma interface aprovada e quanto custa. O acesso direto de agentes não está previsto.</p></div>
+      <div class="card vcard"><span class="ico" data-ic="check"></span><h3>Ecrãs no diálogo</h3><p class="muted">Aprovações, tabelas e KPI aparecem como cartões de ação diretamente no assistente. A IA sugere; a execução só ocorre após clique e confirmação.</p></div>
+      <div class="card vcard"><span class="ico" data-ic="users"></span><h3>Auditável e compatível com a codecisão</h3><p class="muted">Cada ação fica no registo de eventos, com pessoa, função, percurso e custo. Princípio dos quatro olhos, exportação CSV e integração no Teams ou Copilot em vez de mais uma ilha.</p></div>
+      <div class="card vcard"><span class="ico" data-ic="mig"></span><h3>Do layer ao seu próprio ERP</h3><p class="muted">Um processo passa para a engine STEGARC após migração de dados, operação paralela e reconciliação. A interface mantém-se e é possível voltar atrás até à comutação.</p></div>
+    </div>
+    <div class="ly-steps" role="list">
+      <div class="card" role="listitem"><span class="n">1</span><h3>Sobrepor</h3><p class="muted">Uma inbox, uma pesquisa e um dashboard sobre os sistemas existentes. Benefício desde o dia 1, sem risco de migração.</p><span class="small faint">corresponde a Discover e Design</span></div>
+      <div class="ly-arr" aria-hidden="true">→</div>
+      <div class="card" role="listitem"><span class="n">2</span><h3>Expandir</h3><p class="muted">Processos individuais são criados na engine STEGARC. Os dados são transferidos através do módulo de migração e reconciliados em operação paralela.</p><span class="small faint">corresponde a Migrate</span></div>
+      <div class="ly-arr" aria-hidden="true">→</div>
+      <div class="card" role="listitem"><span class="n">3</span><h3>Substituir</h3><p class="muted">Após a comutação, o sistema legado fica apenas em leitura até poder ser desligado. No final, o STEGARC é o seu ERP.</p><span class="small faint">corresponde a Operate</span></div>
+    </div>
+    <div class="row" style="margin-top:18px;gap:10px;flex-wrap:wrap"><a class="btn pri" id="layerDemo" href="index.html?lang=pt&layer=1#home">Demo ao vivo no Experience Layer</a><a class="btn" id="layerStory" href="index.html?lang=pt&story=replace">Story: substituir processo a processo</a></div>
+    <p class="small faint" style="margin-top:10px">Na demo, todos os sistemas externos são simulados e assinalados como tal: dados sintéticos, sem integração real. Os custos por acesso são valores de exemplo, não preços de fabricante.</p>
+  </section>
+
+<!--FILM:START-->  <section class="s" id="filme" aria-labelledby="filmeTitle">
+    <p class="eyebrow">Para investidores e TI</p><h2 class="s-title" id="filmeTitle">Portfólio à vista. Infraestrutura sob controlo.</h2>
+    <div class="ts-vgrid">
+      <div class="card ts-vcard"><div class="ts-video"><video controls preload="none" playsinline poster="media/stegarc-pe-command-center.jpg" aria-label="STEGARC PE Command Center"><source src="media/stegarc-pe-command-center.mp4" type="video/mp4"><track kind="subtitles" srclang="pt" label="Português" src="media/stegarc-pe-command-center.pt.vtt" default></video></div><h3>PE Command Center</h3><p class="muted">Vendas, EBITDA e liquidez de todas as empresas do portfólio numa só vista – com Integration Hub, consolidação e transformação ERP.</p><a class="btn" href="index.html?lang=pt#pe">Abrir PE Command Center</a></div>
+      <div class="card ts-vcard"><div class="ts-video"><video controls preload="none" playsinline poster="media/stegarc-it-infrastruktur.jpg" aria-label="STEGARC Infraestrutura de TI e sizing"><source src="media/stegarc-it-infrastruktur.mp4" type="video/mp4"><track kind="subtitles" srclang="pt" label="Português" src="media/stegarc-it-infrastruktur.pt.vtt" default></video></div><h3>Infraestrutura de TI e sizing</h3><p class="muted">Arquitetura por sistema, carga ao vivo, sizing com pressupostos abertos e what-if para cada aquisição. Valores de exemplo, sem sizing de fabricante.</p><a class="btn" href="index.html?lang=pt#infra">Abrir infraestrutura de TI</a></div>
+    </div>
+    <p class="small faint">Demo com dados sintéticos · filme em inglês com legendas</p>
+  </section><!--FILM:END-->
+
+  <section class="s" id="roi">
+    <p class="eyebrow">Business case interativo</p><h2 class="s-title">Quanto custa a sua liberdade de ERP?</h2>
+    <p class="s-sub">Ajuste os pressupostos – a comparação é recalculada de imediato. É indicativa e não uma tabela de preços de um fornecedor.</p>
+    <div class="calc">
+      <form class="card" id="calcForm" onsubmit="return false">
+        <label class="f">Panorama ERP atual<select class="input" id="vendor"><option>SAP</option><option>Microsoft Dynamics</option><option>Oracle</option><option>Outro / misto</option></select><span class="hint">Serve para orientar a conversa; não se pressupõem preços de fabricante.</span></label>
+        <label class="f"><span class="row between">Utilizadores de ERP <span class="v" id="usersLabel">1.000</span></span><input type="range" id="users" min="100" max="5000" step="100" value="1000" style="accent-color:var(--accent)"></label>
+        <label class="f">Período de análise<select class="input" id="years"><option value="3">3 anos</option><option value="5" selected>5 anos</option><option value="10">10 anos</option></select></label>
+        <label class="f">Custos de licença atuais por utilizador e mês (€)<input class="input" type="number" id="license" min="0" max="1000" value="80"></label>
+        <div class="grid g2"><label class="f">Implementação clássica (€)<input class="input" type="number" id="oldImpl" min="0" step="10000" value="1500000"></label><label class="f">Implementação STEGARC (€)<input class="input" type="number" id="newImpl" min="0" step="10000" value="1800000"></label></div>
+        <div class="grid g2"><label class="f">Manutenção clássica / ano (€)<input class="input" type="number" id="oldMaint" min="0" step="10000" value="250000"></label><label class="f">Manutenção STEGARC / ano (€)<input class="input" type="number" id="newMaint" min="0" step="10000" value="240000"></label></div>
+        <div class="grid g2"><label class="f">Infraestrutura clássica / ano (€)<input class="input" type="number" id="oldInfra" min="0" step="10000" value="150000"></label><label class="f">Infraestrutura e serviços externos STEGARC / ano (€)<input class="input" type="number" id="newInfra" min="0" step="10000" value="120000"></label></div>
+        <button type="button" class="btn" id="reset" style="justify-content:center">Repor valores de exemplo</button>
+      </form>
+      <div class="card res">
+        <span class="live">CALCULADO AO VIVO</span>
+        <div class="grid g3"><div class="card kpi"><span class="eyebrow">ERP clássico · TCO</span><span class="v" id="oldTotal">–</span></div><div class="card kpi"><span class="eyebrow">STEGARC · TCO</span><span class="v" id="newTotal">–</span></div><div class="card kpi"><span class="eyebrow">Diferença potencial</span><span class="v" id="saving" style="color:var(--accent)">–</span><span class="small muted" id="savingPct"></span></div></div>
+        <div class="cmp"><div class="row between small"><span>ERP clássico</span><b class="num" id="oldBarLabel"></b></div><div class="bar old"><i id="oldBar" style="width:100%"></i></div><div class="row between small" style="margin-top:6px"><span>STEGARC</span><b class="num" id="newBarLabel"></b></div><div class="bar acc"><i id="newBar" style="width:50%"></i></div></div>
+        <div class="tbl-wrap"><table class="cost"><thead><tr><th>Bloco de custos</th><th>Clássico</th><th>STEGARC</th></tr></thead><tbody id="costRows"></tbody></table></div>
+        <div class="note acc small" id="businessMessage"></div>
+        <div class="row no-print"><button class="btn pri" id="print">Imprimir como PDF</button><button class="btn" id="csv">Cálculo em CSV</button></div>
+        <p class="small faint">Metodologia: custo total = implementação + utilizadores × valor mensal de licença × 12 × anos + (manutenção anual + infraestrutura e serviços externos anuais) × anos. Para o STEGARC não é considerada taxa de licença por utilizador. Não incluído: equipas de projeto internas, alterações de processos, formação, limpeza de dados, impostos, financiamento e serviços de terceiros não registados. Uma análise de TCO sólida requer um conceito vinculativo de serviços e operação.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="s" id="demo">
+    <p class="eyebrow">Demo ao vivo · business engine real</p><h2 class="s-title">Três setores. Uma plataforma.</h2>
+    <p class="s-sub">Cada demo corre na STEGARC Suite sobre a business engine real com contabilidade por partidas dobradas, stocks e aprovações. Nas stories do Experience Layer, os sistemas externos são simulados e assinalados. Todas as empresas e dados são fictícios; cada demo pode ser reposta e repetida de forma idêntica.</p>
+    <div class="seg" role="tablist" id="demoTabs"><button class="on" data-co="elevon">Elevon · Indústria</button><button data-co="novamart">NovaMart · Retalho</button><button data-co="aventra">Aventra · Serviços</button></div>
+    <div class="story-grid" id="stories"></div>
+  </section>
+
+  <section class="s" id="journey">
+    <p class="eyebrow">Your path to independence</p><h2 class="s-title">Do seu panorama atual para o seu ERP.</h2>
+    <div class="tline">
+      <div class="card"><span class="n">01</span><h3>Discover</h3><p class="muted">Levantar em conjunto processos, sistemas, dados, riscos e TCO.</p></div>
+      <div class="card"><span class="n">02</span><h3>Design</h3><p class="muted">Visão-alvo individual com arquitetura STEGARC modular e requisitos claros.</p></div>
+      <div class="card"><span class="n">03</span><h3>Migrate</h3><p class="muted">Migração de teste, regras, aprovação de quatro olhos e reconciliação – ligadas à solução universal de migração do parceiro.</p></div>
+      <div class="card"><span class="n">04</span><h3>Operate</h3><p class="muted">On-premises ou híbrido, manutenção definida e custos operacionais transparentes.</p></div>
+    </div>
+  </section>
+
+  <section class="s"><div class="card cta"><p class="eyebrow">The enterprise is yours</p><h2 class="s-title" style="font-size:clamp(28px,4vw,46px)">Os seus processos. Os seus dados.<br><span style="color:var(--accent)">O seu futuro.</span></h2><p class="s-sub">Desenvolvemos o caminho para um panorama ERP adequado à sua empresa – sem taxas de licença STEGARC por utilizador.</p><div class="row" style="justify-content:center"><a class="btn pri" href="#roi">Construir business case</a><a class="btn" id="suiteCta" href="index.html?lang=pt">Abrir STEGARC Suite</a></div></div></section>
+</main>
+<footer class="ts-foot"><div class="wrap"><div><b>STEGARC</b><br>Marcel Wagner</div><div class="small">Your Business. Your Rules. Your ERP.<br>Página de conceito · As indicações de preço e desempenho são pressupostos ilustrativos.</div></div></footer>
+<script>
+const IC={
+ users:'<circle cx="9" cy="8.5" r="3.2"/><path d="M3.5 19.5c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5"/><circle cx="16.5" cy="9.5" r="2.6"/><path d="M15.5 14.6c2.6-.3 4.5 1.3 5 4.4"/>',
+ start:'<path d="M3.5 11L12 4l8.5 7"/><path d="M5.5 9.5V20h4.5v-5.5h4V20h4.5V9.5"/>',
+ proj:'<path d="M3 7.5A2.5 2.5 0 015.5 5h3.6l2 2h7.4A2.5 2.5 0 0121 9.5v7a2.5 2.5 0 01-2.5 2.5h-13A2.5 2.5 0 013 16.5z"/>',
+ mig:'<path d="M8 4v15M8 19l-3-3M8 19l3-3M16 20V5M16 5l-3 3M16 5l3 3"/>',
+ proc:'<circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="12" cy="18" r="2.5"/><path d="M8.5 6h7M7.2 8.2l3.6 7.6M16.8 8.2l-3.6 7.6"/>',
+ test:'<rect x="5" y="4.5" width="14" height="16.5" rx="2"/><path d="M9 4.5V3h6v1.5M9 13l2 2 4-4.5"/>',
+ cut:'<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
+ an:'<rect x="3.5" y="3.5" width="17" height="17" rx="2.5"/><path d="M8 16.5v-4M12 16.5v-9M16 16.5v-6"/>',
+ ai:'<path d="M11 3.5l1.7 4.8 4.8 1.7-4.8 1.7L11 16.5l-1.7-4.8L4.5 10l4.8-1.7z"/><path d="M18 14.5l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z"/>',
+ bell:'<path d="M6 16.5V11a6 6 0 0112 0v5.5l1.5 1.5h-15z"/><path d="M10 20.5a2.2 2.2 0 004 0"/>',
+ help:'<circle cx="12" cy="12" r="8.5"/><path d="M9.6 9.5a2.5 2.5 0 014.9.6c0 1.8-2.5 2.1-2.5 3.9"/><path d="M12 17h.01"/>',
+ cal:'<rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
+ send:'<path d="M4.5 12.5L20 4.5l-5 15.5-3-6.5z"/><path d="M12 13.5l8-9"/>',
+ plus:'<path d="M12 5v14M5 12h14"/>',
+ sliders:'<path d="M4 7.5h9M17.5 7.5H20M4 16.5h3M11.5 16.5H20"/><circle cx="15.5" cy="7.5" r="2"/><circle cx="9.5" cy="16.5" r="2"/>',
+ db:'<ellipse cx="12" cy="6" rx="7" ry="2.6"/><path d="M5 6v12c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6V6M5 12c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6"/>',
+ layers:'<path d="M12 3.5l8.5 4.5L12 12.5 3.5 8z"/><path d="M3.5 12L12 16.5 20.5 12M3.5 16L12 20.5 20.5 16"/>',
+ checkc:'<circle cx="12" cy="12" r="8.5"/><path d="M8 12.2l2.8 2.8 5.2-5.6"/>',
+ flag:'<path d="M5.5 21V4"/><path d="M5.5 4.5h12l-2.5 4 2.5 4h-12"/>',
+ shield:'<path d="M12 3l7 3v5c0 4.6-3 8-7 10-4-2-7-5.4-7-10V6z"/><path d="M12 8.5v4.5M12 16h.01"/>',
+ doc:'<path d="M6.5 3h8l4 4v14h-12z"/><path d="M14.5 3v4h4M9.5 12h5M9.5 16h5"/>',
+ pie:'<circle cx="12" cy="12" r="8.5"/><path d="M12 3.5V12h8.5"/>',
+ bars:'<path d="M5 20v-6M10 20V9M15 20v-8M20 20V5"/>',
+ cube:'<path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9"/>',
+ check:'<path d="M5 12.5l4.5 4.5L19 7"/>',
+ building:'<rect x="5" y="3" width="14" height="18" rx="1.5"/><path d="M9 7h2M13 7h2M9 11h2M13 11h2M9 15h2M13 15h2"/>',
+ chev:'<path d="M7 10l5 5 5-5"/>',
+ search:'<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/>',
+ moon:'<path d="M19.5 14.5A8 8 0 019.5 4.5a7.5 7.5 0 1010 10z"/>',
+ x:'<path d="M6 6l12 12M18 6L6 18"/>',
+ appr:'<path d="M12 3l7 3v5c0 4.6-3 8-7 10-4-2-7-5.4-7-10V6z"/><path d="M9 12l2 2 4-4.5"/>',
+ set:'<circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/>',
+ arrowr:'<path d="M5 12h14M13 6l6 6-6 6"/>',
+ rocket:'<path d="M14 4c3 0 6 3 6 6l-7.5 7.5-6-6z"/><path d="M6.5 11.5L4 11l3-4h4M12.5 17.5l.5 2.5 4-3v-4"/><circle cx="15" cy="9" r="1.5"/>',
+ gauge:'<path d="M4 16a8 8 0 1116 0"/><path d="M12 16l4-5"/>',
+ dots:'<circle cx="5.5" cy="12" r="1.3" fill="currentColor"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/><circle cx="18.5" cy="12" r="1.3" fill="currentColor"/>'
+};
+const ic=(k,s=18)=>`<svg class="ic" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[k]}</svg>`;
+const LOGO=(s=34)=>`<svg width="${s}" height="${s}" viewBox="0 0 40 40" aria-hidden="true"><defs><linearGradient id="lg-n" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#4f7bff"/><stop offset=".55" stop-color="#7b5cff"/><stop offset="1" stop-color="#c06bff"/></linearGradient></defs><path d="M31 11.5C28.8 8.6 25 7.5 20.5 7.5 14.4 7.5 10 10.3 10 14.4s4 5.9 10.3 6.9c6.3 1 10.2 2.8 10.2 7S26 34 19.7 34C15 34 11.3 32.8 9 30" fill="none" stroke="url(#lg-n)" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+
+(function () {
+  const $ = id => document.getElementById(id);
+  const ON_PAGES = /github\.io$/.test(location.hostname);
+  const SUITE = ON_PAGES ? "index.html?lang=pt" : "https://marcelwagner-afk.github.io/stegarc-suite/index.html?lang=pt";
+  $("logo").innerHTML = LOGO(30); document.querySelectorAll("[data-ic]").forEach(e => e.innerHTML = ic(e.dataset.ic, 22));
+  $("suiteTop").href = SUITE; $("suiteCta").href = SUITE; const sq = q => SUITE + (SUITE.includes("?") ? "&" : "?") + q; $("layerDemo").href = sq("layer=1#home"); $("layerStory").href = sq("story=replace");
+  const eur = n => new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(n);
+  const short = n => Math.abs(n) >= 1e6 ? (n / 1e6).toLocaleString("pt-PT", { maximumFractionDigits: 2 }) + " M€" : Math.abs(n) >= 1000 ? (n / 1000).toLocaleString("pt-PT", { maximumFractionDigits: 1 }) + " mil €" : eur(n);
+  const num = id => Math.max(0, Number($(id).value) || 0);
+  let last = {};
+  function calc() {
+    const u = num("users"), y = num("years"), lic = num("license"), oldI = num("oldImpl"), newI = num("newImpl"), oldM = num("oldMaint") * y, newM = num("newMaint") * y, oldF = num("oldInfra") * y, newF = num("newInfra") * y;
+    const license = u * lic * 12 * y, old = oldI + license + oldM + oldF, nex = newI + newM + newF, diff = old - nex, pct = old ? diff / old * 100 : 0;
+    last = { u, y, lic, oldI, newI, oldM, newM, oldF, newF, license, old, nex, diff, pct };
+    $("usersLabel").textContent = u.toLocaleString("pt-PT"); $("oldTotal").textContent = short(old); $("newTotal").textContent = short(nex); $("saving").textContent = short(diff);
+    $("savingPct").textContent = Math.abs(pct).toLocaleString("pt-PT", { maximumFractionDigits: 1 }) + " % " + (pct >= 0 ? "TCO inferior" : "TCO superior");
+    $("saving").style.color = diff >= 0 ? "var(--accent)" : "var(--crit)";
+    $("heroSaving").textContent = short(diff); $("heroPct").textContent = Math.round(pct) + " %"; $("heroLabel").textContent = `Cenário ilustrativo a ${y} anos · ${u.toLocaleString("pt-PT")} utilizadores ERP`;
+    $("oldBarLabel").textContent = short(old); $("newBarLabel").textContent = short(nex); const max = Math.max(old, nex, 1); $("oldBar").style.width = old / max * 100 + "%"; $("newBar").style.width = nex / max * 100 + "%";
+    const rows = [["Implementação", oldI, newI], ["Licenças de utilizador", license, 0], ["Manutenção e suporte", oldM, newM], ["Infraestrutura / serviços externos", oldF, newF]];
+    $("costRows").innerHTML = rows.map(([a, b, c]) => `<tr><td>${a}</td><td>${eur(b)}</td><td>${eur(c)}</td></tr>`).join("") + `<tr class="sum"><td>Total</td><td>${eur(old)}</td><td>${eur(nex)}</td></tr>`;
+    $("businessMessage").textContent = diff >= 0 ? `No modelo selecionado, o STEGARC fica ${eur(diff)} abaixo do ERP clássico. É um cenário, não uma vantagem de preço garantida.` : `No modelo selecionado, o STEGARC fica ${eur(-diff)} acima do ERP clássico. Verifique o âmbito da implementação e os custos recorrentes.`;
+  }
+  document.querySelectorAll("#calcForm input,#calcForm select").forEach(e => e.addEventListener("input", calc));
+  $("reset").onclick = () => { const d = { vendor: "SAP", users: 1000, years: 5, license: 80, oldImpl: 1500000, newImpl: 1800000, oldMaint: 250000, newMaint: 240000, oldInfra: 150000, newInfra: 120000 }; Object.entries(d).forEach(([k, v]) => $(k).value = v); calc(); };
+  $("print").onclick = () => window.print();
+  $("csv").onclick = () => { const L = last; const r = [["Cálculo-modelo de TCO STEGARC"], ["Panorama ERP", $("vendor").value], ["Utilizadores", L.u], ["Anos", L.y], ["Valor de licença EUR por utilizador/mês", L.lic], ["Rubrica de custo", "ERP clássico EUR", "STEGARC EUR"], ["Implementação", L.oldI, L.newI], ["Licenças", L.license, 0], ["Manutenção", L.oldM, L.newM], ["Infraestrutura e serviços externos", L.oldF, L.newF], ["Total", L.old, L.nex], ["Diferença", L.diff], ["Nota", "Cálculo-modelo ilustrativo; não é uma proposta"]];
+    const csv = "﻿" + r.map(row => row.map(x => '"' + String(x).replaceAll('"', '""') + '"').join(";")).join("\r\n"); const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" })); a.download = "STEGARC_TCO.csv"; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000); };
+  const STORY_LIST = [{"id": "industrial", "tenant": "elevon", "cross": [], "short": "Da encomenda à montagem", "title": "From Customer Order to Manufacturing, Installation and Service", "situation": "A Rheinpark Immobilien planeia um edifício de escritórios e pretende 12 instalações de elevadores. O armazém e a fábrica de Stuttgart têm uma carga normal.", "steps": 17}, {"id": "retail", "tenant": "novamart", "cross": [], "short": "Da encomenda ao reaprovisionamento", "title": "From Customer Demand to Intelligent Fulfillment", "situation": "Um cliente NovaClub encomenda online um televisor de 55 polegadas. O armazém central tem 21 unidades, ponto de encomenda 20.", "steps": 11}, {"id": "services", "tenant": "aventra", "cross": ["elevon"], "short": "Tempo até pagamento", "title": "From Opportunity to Profitable Project Delivery", "situation": "A Aventra realiza a transformação S/4HANA na Elevon (P-1001, orçamento 500.000 €). Três consultores registaram horas esta semana.", "steps": 9}, {"id": "crosslift", "tenant": "novamart", "cross": ["elevon"], "short": "Loja compra elevadores", "title": "Entre empresas: a NovaMart compra elevadores à Elevon", "situation": "A NovaMart remodela uma loja e precisa de dois elevadores. O fornecedor é a Elevon.", "steps": 10}, {"id": "service", "tenant": "elevon", "cross": [], "short": "Da avaria à faturação", "title": "Service-to-Cash: um elevador avaria", "situation": "Na Rheinpark Tower em Colónia, uma cabina está parada entre dois pisos. A instalação tem um contrato de manutenção parcial.", "steps": 7}, {"id": "omni", "tenant": "novamart", "cross": [], "short": "Click & Collect e devolução", "title": "Omnicanal: Click & Collect e devolução", "situation": "Uma cliente encomenda online e levanta na loja. Outro cliente devolve um televisor por defeito de imagem.", "steps": 9}, {"id": "migration", "tenant": "elevon", "cross": [], "short": "Migração e cutover", "title": "Aquisição da Liftservice Nord: migração de dados e cutover", "situation": "A Elevon adquire a Liftservice Nord GmbH com 42 clientes, 61 instalações, 26 partidas em aberto e um armazém de peças sobresselentes.", "steps": 8}, {"id": "design", "tenant": "elevon", "cross": [], "short": "Do desenho ao produto acabado", "title": "Design-to-Make: do desenho CAD ao conjunto acabado", "situation": "A engenharia desenhou a estrutura de máquina MR-1200 para a unidade de acionamento: duas folhas, estrutura tubular soldada, cinco peças de corte a laser, perfis com furos e roscas, peças normalizadas, duas peças compradas, pintura a pó. São necessárias 10 estruturas.", "steps": 11}, {"id": "p2p", "tenant": "novamart", "cross": [], "short": "Compras indiretas", "title": "Procure-to-Pay indireto: da necessidade ao pagamento", "situation": "A gerência da loja precisa de papel de fotocópia, o armazém central de um novo serviço de limpeza regular.", "steps": 6}, {"id": "hire", "tenant": "elevon", "cross": [], "short": "Do recrutamento ao onboarding", "title": "Hire-to-Onboard: nova técnica de assistência", "situation": "A Elevon procura uma técnica de assistência. Uma candidata está em entrevista.", "steps": 4}, {"id": "crosssys", "tenant": "elevon", "cross": [], "short": "Aprovação entre sistemas", "title": "Aprovação entre sistemas: do onboarding à receção de mercadoria", "situation": "Uma nova colaboradora começa na Elevon. O seu onboarding corre no Workday, os pedidos de TI no ServiceNow, as requisições de compra no SAP – encomenda de compra e receção de mercadoria no motor STEGARC. Todos os sistemas externos são simulados.", "steps": 6}, {"id": "oneday", "tenant": "elevon", "cross": [], "short": "Um dia no Experience Layer", "title": "Um dia no Experience Layer: a CFO trata a sua caixa de entrada", "situation": "Martin Seidel, CFO da Elevon, tem aprovações no SAP, Microsoft 365, ServiceNow e Workday – todos simulados – e tarefas no motor STEGARC.", "steps": 6}, {"id": "replace", "tenant": "elevon", "cross": [], "short": "Substituir processo a processo", "title": "Substituir processo a processo: requisições de compra do SAP para o motor STEGARC", "situation": "Na Elevon, as requisições de compra correm hoje no SAP (simulado). As compras já trabalham no Experience Layer.", "steps": 8}];
+  /* Marktposition „Wer liefert die eine Oberfläche für alle Anwendungen?“
+   Eine Datenquelle für Karte, Matrix und Quellen. Pflege: siehe README „Marktposition pflegen“.
+   Texte, Daten und Quellen aus docs/positionierung-referenz.html. Qualitative Einordnung, keine Messung. */
+const MARKET = {
+  asOf: "2026-11",
+  asOfLabel: "Novembro de 2026",
+  criteria: ["Independente de fabricantes", "Ações e ecrãs no diálogo", "Pesquisa entre sistemas", "Protocolos abertos (MCP, A2A)", "Funciona em Teams / Copilot", "Conforme às licenças SAP", "Custos por chamada visíveis"],
+  lastColumn: "Maturidade segundo as fontes",
+  points: [
+    { id: "nexnow", n: "STEGARC hoje (motor próprio)", x: .08, y: .82, c: "nex0", ga: 1, a: "start", dy: -18, internal: true },
+    { id: "nexgoal", n: "STEGARC · visão-alvo", x: .90, y: .82, c: "nex", ga: 0, a: "end", dy: -18 },
+    { id: "sap", n: "SAP Joule Work", x: .16, y: .62, c: "suite", ga: 0, a: "start" },
+    { id: "oracle", n: "Oracle Fusion Agents", x: .05, y: .50, c: "suite", ga: 1, a: "start" },
+    { id: "ms", n: "Microsoft 365 Copilot", x: .44, y: .66, c: "ai", ga: 1, a: "start" },
+    { id: "snow", n: "ServiceNow EmployeeWorks", x: .55, y: .58, c: "work", ga: 1, a: "start" },
+    { id: "sf", n: "Slack + Agentforce", x: .36, y: .53, c: "suite", ga: 1, a: "start" },
+    { id: "workday", n: "Workday Everywhere", x: .26, y: .40, c: "suite", ga: 1, a: "start" },
+    { id: "google", n: "Gemini Enterprise", x: .68, y: .44, c: "ai", ga: 1, a: "start" },
+    { id: "openai", n: "OpenAI Workspace Agents", x: .71, y: .34, c: "ai", ga: 0, a: "start" },
+    { id: "glean", n: "Glean", x: .86, y: .26, c: "ai", ga: 1, a: "start" },
+    { id: "sap", n: "SAP Build Work Zone", x: .14, y: .24, c: "suite", ga: 1, a: "start" },
+    { id: "ms", n: "Viva Connections", x: .38, y: .20, c: "work", ga: 1, a: "start" },
+    { id: "intranet", n: "Suites de intranet (Staffbase, Simpplr, LumApps)", x: .80, y: .15, c: "work", ga: 1, a: "end" },
+    { id: "omnissa", n: "Omnissa Intelligent Hub", x: .92, y: .11, c: "work", ga: 1, a: "end" }
+  ],
+  rows: [
+    ["sap", "SAP", "Build Work Zone · Joule / Joule Work", "", [[1, "preferência SAP"], [2, "Joule atua no SAP"], [2, "Work Zone sem pesquisa em sistemas de terceiros"], [2, "A2A sim, MCP só interno ou via gateway"], [2, "Joule no Teams anunciado"], [3, "fabricante próprio"], [1, "AI Units"]], "Work Zone disponível · Joule Work sem data de GA"],
+    ["ms", "Microsoft", "M365 Copilot · Agent 365 · Viva", "", [[2, "Centrado na Microsoft"], [3, "MCP Apps no Copilot"], [2, "Graph e conectores"], [3, "MCP, MCP Apps"], [3, "nativ"], [2, "via acoplamento ao Joule"], [2, "0,01 $ por mensagem, consulta = 30"]], "Copilot disponível · Agent 365 em Early Access"],
+    ["google", "Google", "Gemini Enterprise", "", [[2, "„Front Door“ para todos"], [0, ""], [2, "Conectores"], [3, "A2A"], [0, ""], [0, ""], [2, "21–30 $ por seat"]], "disponível desde out. 2025"],
+    ["snow", "ServiceNow", "EmployeeWorks (Moveworks)", "", [[2, "„any business system“"], [3, "Workflows e aprovações"], [3, "Mais de 100 conectores de pesquisa"], [3, "Action Fabric com MCP"], [0, ""], [0, ""], [1, "Licenças adicionais Now Assist"]], "Mobile em Controlled Availability"],
+    ["sf", "Salesforce", "Slack + Agentforce 360", "", [[1, "Centrado na Salesforce"], [2, "Ações no Slack"], [2, ""], [3, "Headless 360, mais de 60 ferramentas MCP"], [1, "Slack em vez de Teams"], [0, ""], [0, ""]], "Agentforce em cerca de 12.000 de 150.000 clientes"],
+    ["workday", "Workday", "Workday Everywhere", "", [[1, "Dados do Workday"], [2, "Agente de self-service"], [1, ""], [2, "Agent System of Record"], [3, "Copilot, Teams, Slack, Gemini"], [0, ""], [2, "Flex Credits"]], "disponível por ativação no tenant"],
+    ["glean", "Glean", "Work AI", "", [[3, ""], [0, ""], [3, "Mais de 250 conectores"], [3, "MCP Gateway"], [0, ""], [0, ""], [0, ""]], "mais de 300 M$ ARR (maio de 2026)"],
+    ["intranet", "Suites de intranet", "Staffbase · Simpplr · LumApps/Beekeeper", "", [[3, ""], [1, "Ações apenas através de conectores"], [2, ""], [0, ""], [0, ""], [1, ""], [0, ""]], "Gartner MQ 2025: 17 fornecedores"],
+    ["nexnow", "STEGARC hoje", "Demo v0.7 · motor de negócio próprio", "now", [[1, "apenas motor próprio"], [2, "Claude lê, ações em ecrãs"], [1, "apenas entidades próprias"], [2, "Ferramentas do motor com esquema"], [1, "página própria"], [0, "sem acesso ao SAP"], [1, ""]], "demo clicável, 47 testes de aceitação", { internal: true }],
+    ["nexgoal", "STEGARC", "Visão-alvo após a reestruturação", "goal", [[3, "Conectores para cada sistema, substituição por processo"], [3, "Cartões de ação com aprovação"], [3, "uma pesquisa, uma caixa de entrada"], [3, "Ferramentas MCP, agentes A2A"], [3, "Modo incorporado"], [3, "Via de integração por acesso"], [3, "Contador de custos por chamada"]], "Reestruturação em nove fases, ver prompt",
+      { publicName: "STEGARC · Roadmap", publicSub: "capacidades planeadas", publicMaturity: "Roadmap, em implementação", planned: true }]
+  ],
+  texts: {
+    matIntro: { internal: "Avaliado segundo as conclusões da pesquisa. Onde as fontes não fornecem nada de fiável, aparece um traço em vez de uma suposição. A linha „STEGARC hoje“ mostra honestamente o estado da demo v0.7, a linha abaixo a visão-alvo após a reestruturação.", public: "Avaliado segundo as conclusões da pesquisa. Onde as fontes não fornecem nada de fiável, aparece um traço em vez de uma suposição. A linha „STEGARC · Roadmap“ mostra capacidades planeadas, não o estado atual." },
+    wsIntro: { internal: "Derivado das conclusões, não comprovado por nós. Cada ponto está implementado como fase própria no prompt de reestruturação.", public: "Derivado das conclusões, não comprovado por nós. Estes quatro pontos constituem o roadmap do STEGARC." },
+    pathNote: { internal: "Barras ilustrativas. Base na suite: o módulo de migração e cutover com execução de teste, aprovação a quatro olhos e reconciliação já existe na demo v0.7. O prompt de reestruturação implementa este caminho como fase própria.", public: "Barras ilustrativas. Base na suite: o módulo de migração e cutover com execução de teste, aprovação a quatro olhos e reconciliação já existe na demo v0.7. A substituição é feita processo a processo, com operação em paralelo e reconciliação." },
+    arrow: "Reestruturação: o motor próprio torna-se um conector entre muitos"
+  },
+  sources: [
+    { label: "SAPinsider: Joule como Front Door (Sapphire 2026)", url: "https://sapinsider.org/articles/joule-is-now-the-front-door-to-your-business-what-sap-sapphire-2026-means-for-customers-vendors-and-partners/" },
+    { label: "ERP Today: Joule Work sem data de GA", url: "https://erp.today/at-sap-connect-sap-expands-joule-across-every-line-of-business/" },
+    { label: "Vantaio: SAP Build Work Zone Standard vs. Advanced", url: "https://www.vantaio.com/en/sap-build-work-zone-comparison" },
+    { label: "Techzine (artigo de opinião): SAP API Policy, números da DSAG, Salesforce Headless 360, ServiceNow Action Fabric", url: "https://www.techzine.eu/blogs/applications/141323/sap-blocks-external-ai-agents-salesforce-and-servicenow-dont/" },
+    { label: "Microsoft: Ignite 2025, Agent 365", url: "https://news.microsoft.com/en-hk/2025/11/19/microsoft-ignite-2025-empowering-the-frontier-firm-with-ai-agents-and-copilot/" },
+    { label: "The Decoder: faturação por mensagem", url: "https://the-decoder.com/microsoft-introduces-pay-per-message-pricing-for-ai-agents-and-a-free-copilot-chat-tier/" },
+    { label: "Techzine: Gemini Enterprise como Front Door", url: "https://www.techzine.eu/news/applications/135293/google-launches-gemini-enterprise-the-front-door-for-workplace-ai" },
+    { label: "Business Wire: ServiceNow adquire a Moveworks", url: "https://www.businesswire.com/news/home/20251215128980/en/ServiceNow-completes-acquisition-of-Moveworks" },
+    { label: "ServiceNow Community: EmployeeWorks", url: "https://www.servicenow.com/community/employee-center-blog/servicenow-employeeworks-introducing-employee-slate/ba-p/3537890" },
+    { label: "Workday: Workday Everywhere", url: "https://www.workday.com/en-ca/products/platform-product-extensions/workday-everywhere.html" },
+    { label: "Glean: mais de 300 M$ ARR, MCP Gateway", url: "https://www.glean.com/fr/press/glean-surpasses-300m-arr-unrivaled-enterprise-context-fuels-ai-adoption" },
+    { label: "NYU Shanghai RITS: MCP Apps no standard", url: "https://rits.shanghai.nyu.edu/ai/mcp-apps-interactive-uis-become-an-official-part-of-mcp" },
+    { label: "Staffbase: Gartner Magic Quadrant Intranet 2025", url: "https://staffbase.com/blog/gartner-magic-quadrant-intranet" },
+    { label: "Gartner: 40 % das aplicações empresariais com agentes até 2026", url: "https://gartner.com/en/newsroom/press-releases/2025-08-26-gartner-predicts-40-percent-of-enterprise-apps-will-feature-task-specific-ai-agents-by-2026-up-from-less-than-5-percent-in-2025" },
+    { label: "The Star: Gartner sobre o abandono de projetos agênticos", url: "https://www.thestar.com.my/tech/tech-news/2025/06/25/over-40-of-agentic-ai-projects-will-be-scrapped-by-2027-gartner-says" },
+    { label: "Citrix: Microapps descontinuadas", url: "https://support.citrix.com/external/article/CTX459698/notice-of-change-announcement-eol-microa.html" }
+  ]
+};
+
+/* Zeichnet Karte, Matrix, variable Texte und Quellen. internal=false: öffentliche Fassung. */
+function renderMarket(internal) {
+  const $ = id => document.getElementById(id);
+  const pts = MARKET.points.filter(p => internal || !p.internal);
+  const rows = MARKET.rows.filter(r => internal || !(r[6] && r[6].internal));
+  /* Karte */
+  const svg = $("mkChart"); const NS = "http://www.w3.org/2000/svg";
+  while (svg.lastChild && svg.lastChild.tagName !== "desc") svg.removeChild(svg.lastChild);
+  const el = (t, a, txt) => { const e = document.createElementNS(NS, t); for (const k in a) e.setAttribute(k, a[k]); if (txt != null) e.textContent = txt; return e; };
+  const COL = { suite: "var(--cat-suite)", work: "var(--cat-work)", ai: "var(--cat-ai)", nex: "var(--accent)", nex0: "var(--accent-2)" };
+  const L = 90, R = 960, T = 60, B = 560, X = v => L + v * (R - L), Y = v => B - v * (B - T), mx = X(.5), my = Y(.5);
+  svg.appendChild(el("rect", { x: mx, y: T, width: R - mx, height: my - T, rx: 14, fill: "var(--accent-soft)" }));
+  svg.appendChild(el("rect", { x: L, y: T, width: R - L, height: B - T, fill: "none", stroke: "var(--line-strong)", "stroke-width": 1.2, rx: 14 }));
+  svg.appendChild(el("line", { x1: mx, y1: T, x2: mx, y2: B, stroke: "var(--line-strong)", "stroke-dasharray": "4 6" }));
+  svg.appendChild(el("line", { x1: L, y1: my, x2: R, y2: my, stroke: "var(--line-strong)", "stroke-dasharray": "4 6" }));
+  const q = (x, y, a, t, c) => svg.appendChild(el("text", { x, y, "text-anchor": a, "font-size": 12.5, "font-weight": 700, "letter-spacing": "1.5", fill: c || "var(--fg-3)", "font-family": "JetBrains Mono, monospace" }, t));
+  q(L + 14, T + 24, "start", "SUITE-ASSISTENTEN"); q(R - 14, T + 24, "end", "ESPAÇO EM BRANCO · NEUTRO E PROFUNDO", "var(--accent)"); q(L + 14, B - 14, "start", "SUITE-PORTALE"); q(R - 14, B - 14, "end", "ENTRADA NEUTRA");
+  svg.appendChild(el("text", { x: L, y: B + 30, "font-size": 14, fill: "var(--fg-2)" }, "vinculado a uma suite"));
+  svg.appendChild(el("text", { x: R, y: B + 30, "text-anchor": "end", "font-size": 14, fill: "var(--fg-2)" }, "herstellerneutral"));
+  svg.appendChild(el("text", { x: (L + R) / 2, y: B + 30, "text-anchor": "middle", "font-size": 14, "font-weight": 700, fill: "var(--fg)" }, "Neutralidade →"));
+  svg.appendChild(el("text", { x: 0, y: 0, "text-anchor": "middle", "font-size": 14, "font-weight": 700, fill: "var(--fg)", transform: `translate(48 ${(T + B) / 2}) rotate(-90)` }, "Profundidade da unificação →"));
+  svg.appendChild(el("text", { x: 0, y: 0, "text-anchor": "start", "font-size": 12.5, fill: "var(--fg-3)", transform: `translate(70 ${B}) rotate(-90)` }, "entrada comum"));
+  svg.appendChild(el("text", { x: 0, y: 0, "text-anchor": "end", "font-size": 12.5, fill: "var(--fg-3)", transform: `translate(70 ${T}) rotate(-90)` }, "trabalho unificado"));
+  if (internal) {
+    const n0 = MARKET.points.find(p => p.id === "nexnow"), n1 = MARKET.points.find(p => p.id === "nexgoal");
+    const defs = el("defs", {}); const mk = el("marker", { id: "mkArr", viewBox: "0 0 10 10", refX: 8, refY: 5, markerWidth: 8, markerHeight: 8, orient: "auto-start-reverse" });
+    mk.appendChild(el("path", { d: "M0 0 L10 5 L0 10 z", fill: "var(--accent)" })); defs.appendChild(mk); svg.appendChild(defs);
+    const g = el("g", { id: "mkArrow" }); g.appendChild(el("line", { x1: X(n0.x) + 16, y1: Y(n0.y), x2: X(n1.x) - 22, y2: Y(n1.y), stroke: "var(--accent)", "stroke-width": 2.2, "stroke-dasharray": "7 6", "marker-end": "url(#mkArr)" }));
+    g.appendChild(el("text", { x: (X(n0.x) + X(n1.x)) / 2, y: Y(n0.y) + 24, "text-anchor": "middle", "font-size": 13.5, "font-weight": 600, fill: "var(--accent)" }, MARKET.texts.arrow)); svg.appendChild(g);
+  }
+  for (const p of pts) {
+    const g = el("g", { class: "pt", tabindex: 0, role: "button", "data-id": p.id, "aria-label": p.n + (p.ga ? "" : " (anunciado, preview ou visão-alvo)") });
+    const r = p.c === "nex" ? 13 : (p.c === "nex0" ? 10 : 8.5);
+    if (p.c === "nex") g.appendChild(el("circle", { cx: X(p.x), cy: Y(p.y), r: 24, fill: "var(--accent)", opacity: .14 }));
+    g.appendChild(el("circle", { class: "ring", cx: X(p.x), cy: Y(p.y), r, fill: p.ga ? COL[p.c] : "var(--surface)", stroke: COL[p.c], "stroke-width": p.ga ? 0 : 3 }));
+    const big = p.c === "nex" || p.c === "nex0";
+    g.appendChild(el("text", { x: X(p.x) + (p.dy ? 0 : (p.a === "end" ? -15 : 15)), y: Y(p.y) + (p.dy || 5), "text-anchor": p.a, "font-size": big ? 16 : 14.5, "font-weight": big ? 800 : 600, fill: big ? "var(--accent)" : "var(--fg)" }, p.n));
+    g.addEventListener("click", () => mkHighlight(p.id)); g.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); mkHighlight(p.id); } });
+    svg.appendChild(g);
+  }
+  /* Matrix */
+  const LBL = { 3: "stark", 2: "teilweise", 1: "schwach oder nicht", 0: "sem informação fiável", p: "planeado (roadmap)" };
+  const cell = (v, t, planned) => `<td><div class="r ${planned ? "rp" : "r" + v}"><span class="sym" role="img" aria-label="${planned ? LBL.p : LBL[v]}"></span>${t ? `<em>${t}</em>` : ""}</div></td>`;
+  $("mkMatHead").innerHTML = `<tr><th scope="col">Proposta</th>${MARKET.criteria.map(c => `<th scope="col">${c.replace("neutral", "&shy;neutral").replace("transversal", "&shy;transversal").replace("lizenzkonform", "lizenz&shy;konform")}</th>`).join("")}<th scope="col">${MARKET.lastColumn}</th></tr>`;
+  $("mkMatBody").innerHTML = rows.map(([id, n, s, cls, v, m, opt]) => { opt = opt || {}; const planned = !internal && opt.planned; const name = !internal && opt.publicName ? opt.publicName : n; const sub = !internal && opt.publicSub ? opt.publicSub : s; const mat = !internal && opt.publicMaturity ? opt.publicMaturity : m;
+    return `<tr data-id="${id}" class="${cls}"><th scope="row">${name}<small>${sub}</small></th>${v.map(x => cell(x[0], x[1], planned)).join("")}<td><em class="mat">${mat}</em></td></tr>`; }).join("");
+  $("mkLegendPlanned").hidden = !!internal;
+  /* Variable Texte */
+  const T2 = MARKET.texts; $("mkMatIntro").textContent = internal ? T2.matIntro.internal : T2.matIntro.public; $("mkWsIntro").textContent = internal ? T2.wsIntro.internal : T2.wsIntro.public; $("mkPathNote").textContent = internal ? T2.pathNote.internal : T2.pathNote.public;
+  $("mkAsOf").textContent = "Posição competitiva · estado " + MARKET.asOfLabel;
+  $("mkInternalBadge").hidden = !internal;
+  /* Quellen */
+  $("mkSources").innerHTML = MARKET.sources.map(s => `<li><a href="${s.url}" target="_blank" rel="noopener">${s.label}</a></li>`).join("");
+}
+function mkHighlight(id) {
+  document.querySelectorAll("#mkMatBody tr").forEach(r => r.classList.toggle("hl", r.dataset.id === id));
+  const row = document.querySelector(`#mkMatBody tr[data-id="${id}"]`);
+  if (row) row.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "center" });
+}
+
+  const MARKET_INTERNAL = false; const mkInternal = () => MARKET_INTERNAL || location.hash === "#markt-intern";
+  renderMarket(mkInternal()); window.addEventListener("hashchange", () => { if (/^#markt/.test(location.hash)) { renderMarket(mkInternal()); document.getElementById("markt").scrollIntoView(); } });
+  if (location.hash === "#markt-intern") document.getElementById("markt").scrollIntoView();
+  function renderStories(co) { $("stories").innerHTML = STORY_LIST.filter(s => s.tenant === co || (s.cross || []).includes(co)).map(s => `<div class="card story"><span class="eyebrow">${s.short}</span><h3>${s.title}</h3><span class="steps-n">${s.steps} passos · aprox. ${Math.max(2, Math.round(s.steps * 0.9))} minutos</span><p>${s.situation}</p><a class="btn pri sm go" href="${SUITE}?story=${s.id}" ${ON_PAGES ? "" : 'target="_blank" rel="noopener"'}>Iniciar na suite</a></div>`).join(""); }
+  document.querySelectorAll("#demoTabs button").forEach(b => b.onclick = () => { document.querySelectorAll("#demoTabs button").forEach(x => x.classList.toggle("on", x === b)); renderStories(b.dataset.co); });
+  calc(); renderStories("elevon");
+})();
+</script>
+</body></html>
