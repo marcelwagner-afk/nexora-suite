@@ -2,7 +2,7 @@ import json
 import pathlib
 d=pathlib.Path(__file__).parent/'src'; out=pathlib.Path(__file__).parent/'dist'
 # Filme: aus, bis die STEGARC-Fassungen in media/ liegen (Dateinamen siehe VIDEOS in src/app_media.js)
-FILMS = False
+FILMS = True
 import re as _re
 def films(t): return t.replace('/*FILMS_ON*/false', 'true' if FILMS else 'false') if FILMS else _re.sub(r'<!--FILM:START-->.*?<!--FILM:END-->', '', t, flags=_re.S).replace('/*FILMS_ON*/false', 'false')
 css=(d/'base.css').read_text()+'\n'+(d/'extra.css').read_text()+'\n'+(d/'layer.css').read_text()+'\n'+(d/'pe.css').read_text()+'\n'+(d/'infra.css').read_text()+'\n'+(d/'media.css').read_text()

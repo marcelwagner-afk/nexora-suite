@@ -1,8 +1,10 @@
 import asyncio, json
 from playwright.async_api import async_playwright
-import os, pathlib
+import os, pathlib, re
 ROOT=pathlib.Path(__file__).resolve().parent.parent
 SP=str(ROOT/"test-results")+"/"; os.makedirs(SP, exist_ok=True)
+# Filmschalter aus build.py: an → Filme müssen erscheinen, aus → müssen ausgeblendet sein
+FILMS = bool(re.search(r"^FILMS = True$", (ROOT/"build.py").read_text(encoding="utf-8"), re.M))
 
 async def markt(p):
   """Marktposition auf der STEGARC-Produktseite: öffentliche und interne Fassung, Interaktion, Mobil, Hell/Dunkel."""
@@ -31,7 +33,7 @@ async def markt(p):
     await d.goto(base + "#markt"); await d.wait_for_timeout(400); await d.add_style_tag(content=".ts-top{position:static!important}"); el = await d.query_selector("#markt"); await el.screenshot(path=SP + "ts_markt_dunkel.png")
     m = await b.new_page(viewport={"width": 400, "height": 860}); m.on("pageerror", lambda e: errs.append(str(e)))
     await m.goto(base + "#markt"); await m.wait_for_timeout(400); sw = await m.evaluate("document.documentElement.scrollWidth"); print("Markt mobil scrollWidth", sw); assert sw == 400, sw
-    st = await m.evaluate("document.querySelectorAll('#stories .story').length"); assert st > 0, "Storys auf der STEGARC-Produktseite"; assert await m.evaluate("document.querySelectorAll('video').length === 0 && !document.getElementById('filme')"), "Filme auf der Produktseite ausgeblendet"
+    st = await m.evaluate("document.querySelectorAll('#stories .story').length"); assert st > 0, "Storys auf der STEGARC-Produktseite"; assert await m.evaluate("document.querySelectorAll('video').length === 4 && !!document.getElementById('filme')" if FILMS else "document.querySelectorAll('video').length === 0 && !document.getElementById('filme')"), "Filme auf der Produktseite " + ("sichtbar" if FILMS else "ausgeblendet")
     su = await b.new_page(viewport={"width": 1440, "height": 900}); su.on("pageerror", lambda e: errs.append(str(e))); await su.goto(f"http://127.0.0.1:{port}/index.html"); await su.wait_for_timeout(400)
     href = await su.evaluate("[...document.querySelectorAll('nav.side a')].filter(a=>a.textContent.trim() === 'Marktposition').map(a=>a.getAttribute('href'))[0]"); print("Suite-Link Marktposition:", href); assert href and href.endswith("stegarc.html#markt"), href
   finally:
@@ -254,9 +256,11 @@ async def pe(p):
   await pg.click("tr[data-act=peOpenInfra][data-id=PC20]"); await pg.wait_for_selector("[data-ix-co=PC20]", timeout=3000); sf = await pg.evaluate("(() => { const n = document.querySelector('.ix-node[data-ix=sftp]'); return [n.className, n.innerText]; })()"); print("PE Aurelis SFTP:", sf[0], "|", sf[1].replace("\n", " ")[:90]); assert "ix-crit" in sf[0] and "Zugang abgelaufen" in sf[1]
   await pg.screenshot(path=SP + "infra_pe.png", full_page=True)
   # Filme: Knopf unter der Überschrift, Spieler als eigene Ebene – übersteht Neuzeichnen, Esc schließt
-  # Standard: Filme ausgeblendet (bis die STEGARC-Fassungen produziert sind) – kein Knopf, kein Spieler
-  for r in ["home", "pe", "infra", "pe-infra", "systems"]:
-    await pg.evaluate(f"location.hash='{r}'; render()"); await pg.wait_for_timeout(80); assert await pg.evaluate("!document.querySelector('.vid-chip') && FILMS_ON === false"), "Film sichtbar auf " + r
+  # Filmschalter: aus → kein Knopf, kein Spieler; an → Schalter in der Suite gesetzt (Knöpfe prüft der Block darunter)
+  assert await pg.evaluate("FILMS_ON") == FILMS, "Filmschalter der Suite passt nicht zu build.py"
+  if not FILMS:
+    for r in ["home", "pe", "infra", "pe-infra", "systems"]:
+      await pg.evaluate(f"location.hash='{r}'; render()"); await pg.wait_for_timeout(80); assert await pg.evaluate("!document.querySelector('.vid-chip')"), "Film sichtbar auf " + r
   # Mechanik bleibt geprüft: Schalter an
   await pg.evaluate("FILMS_ON = true")
   vids = {}

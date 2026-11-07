@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.10.1 – STEGARC-Filme (2026-11)
+
+- **Filme wieder eingeschaltet:** neue Fassungen mit STEGARC in Bild, Ton und Untertiteln (`media/stegarc-*.mp4|jpg`, 1280 px, Vorschaubild bei 9,2 s); Schalter `FILMS = True`. Texterkennung über alle acht Fassungen: kein alter Name im Bild.
+- **Tests:** e2e prüft den Filmschalter in beide Richtungen (an → vier Filme auf der Produktseite und Knöpfe in der Suite, aus → ausgeblendet).
+
 ## v0.10.0 – STEGARC (2026-11)
 
 - **Neuer Produktname STEGARC:** ersetzt den bisherigen Arbeitstitel in Suite, Produktseite (`stegarc.html`), Prototyp, Doku, Agentenkarte, MCP-Werkzeugen und Tests. Repository und Seite heißen `stegarc-suite`.
